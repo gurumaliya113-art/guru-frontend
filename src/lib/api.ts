@@ -1,16 +1,6 @@
 import type { GeneratedPaper, Question, QuizAttempt, UserProfile } from "./types";
 
-const USER_ID_KEY = "smartprep.userId";
 const ADMIN_TOKEN_KEY = "smartprep.adminToken";
-
-export function getUserId(): string {
-  let uid = localStorage.getItem(USER_ID_KEY);
-  if (!uid) {
-    uid = "u_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-    localStorage.setItem(USER_ID_KEY, uid);
-  }
-  return uid;
-}
 
 export function getAdminToken(): string | null {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -23,14 +13,17 @@ export function setAdminToken(token: string | null) {
 async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-user-id": getUserId(),
     ...((init.headers as Record<string, string>) || {}),
   };
   if (opts.admin) {
     const t = getAdminToken();
     if (t) headers["x-admin-token"] = t;
   }
-  const res = await fetch(path, { ...init, headers });
+  const res = await fetch(path, {
+    ...init,
+    headers,
+    credentials: "include" // Include cookies for session authentication
+  });
   if (!res.ok) {
     let detail = "";
     try { detail = (await res.json()).error || ""; } catch {}
