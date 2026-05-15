@@ -1,6 +1,5 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -11,9 +10,12 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <Button onClick={logout} variant="outline">
+            <button
+              onClick={logout}
+              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
               Logout
-            </Button>
+            </button>
           </div>
 
           {user && (
