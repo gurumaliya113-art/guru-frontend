@@ -37,7 +37,7 @@ export default function Login() {
               />
             </svg>
             Continue with Google
-          </Button>
+          </button>
         </div>
 
         <div className="text-center text-sm text-gray-500">
