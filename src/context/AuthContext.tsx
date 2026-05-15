@@ -112,8 +112,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    setUser(data);
+    const userData = await response.json();
+    setUser(userData);
   };
 
   const logout = async () => {
