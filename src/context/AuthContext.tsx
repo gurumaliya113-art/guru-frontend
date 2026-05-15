@@ -92,12 +92,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data);
   };
 
-  const loginWithGoogle = async (googleData: any) => {
+  const loginWithGoogle = async (data: { credential: string }) => {
     const response = await fetch("/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ googleData }),
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
