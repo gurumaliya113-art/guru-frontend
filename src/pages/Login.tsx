@@ -18,16 +18,36 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (window.google) {
+    let isMounted = true;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const initializeGoogleButton = () => {
+      if (!window.google?.accounts?.id) return false;
+      const element = document.getElementById("google-signin-button");
+      if (!element) return false;
+
       window.google.accounts.id.initialize({
         client_id: "624499359248-r1sga1d1r2eq4g7jj124eumuoqrdj08i.apps.googleusercontent.com",
         callback: handleGoogleResponse,
       });
-      window.google.accounts.id.renderButton(
-        document.getElementById("google-signin-button"),
-        { theme: "outline", size: "large" }
-      );
+      window.google.accounts.id.renderButton(element, {
+        theme: "outline",
+        size: "large",
+      });
+      return true;
+    };
+
+    if (!initializeGoogleButton()) {
+      pollTimer = setInterval(() => {
+        if (!isMounted) return;
+        initializeGoogleButton();
+      }, 200);
     }
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearInterval(pollTimer);
+    };
   }, []);
 
   const handleGoogleResponse = async (response: any) => {
