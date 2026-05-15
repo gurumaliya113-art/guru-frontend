@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+﻿import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface User {
-  id: number;
-  googleId: string;
+  id: string;
   email: string;
   name: string;
   picture?: string;
@@ -12,7 +11,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (googleData: any) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -43,8 +44,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = () => {
-    window.location.href = "/auth/google";
+  const login = async (email: string, password: string) => {
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Login failed.";
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData?.error || errorMessage;
+      } catch {
+        if (text) errorMessage = text;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    setUser(data);
+  };
+
+  const signup = async (email: string, password: string) => {
+    const response = await fetch("/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Signup failed.";
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData?.error || errorMessage;
+      } catch {
+        if (text) errorMessage = text;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    setUser(data);
+  };
+
+  const loginWithGoogle = async (googleData: any) => {
+    const response = await fetch("/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ googleData }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Google login failed.";
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData?.error || errorMessage;
+      } catch {
+        if (text) errorMessage = text;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    setUser(data);
   };
 
   const logout = async () => {
@@ -64,6 +133,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     login,
+    signup,
+    loginWithGoogle,
     logout,
     isAuthenticated: !!user,
   };
