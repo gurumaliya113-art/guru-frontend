@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { Icon } from "@/components/ui";
 import { colors } from "@/lib/colors";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
@@ -62,13 +65,24 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { profile, isLoading } = useApp();
+  const { profile, isLoading: appLoading } = useApp();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  if (isLoading) {
+  if (authLoading || appLoading) {
     return (
       <div className="h-full flex items-center justify-center" style={{ color: colors.mutedForeground }}>
         Loading…
       </div>
+    );
+  }
+
+  // If not authenticated, show login page
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     );
   }
 
@@ -99,6 +113,7 @@ export default function App() {
   return (
     <Routes>
       {adminRoutes}
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<Shell><Home /></Shell>} />
       <Route path="/quiz" element={<Shell><Quiz /></Shell>} />
