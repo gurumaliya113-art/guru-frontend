@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui";
 
 export default function Login() {
   const handleGoogleLogin = () => {
@@ -15,9 +14,9 @@ export default function Login() {
         </div>
 
         <div className="mt-8">
-          <Button
+          <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl px-4 py-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
