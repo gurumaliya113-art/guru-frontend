@@ -37,12 +37,20 @@ export default function Login() {
       return true;
     };
 
-    if (!initializeGoogleButton()) {
-      pollTimer = setInterval(() => {
-        if (!isMounted) return;
-        initializeGoogleButton();
-      }, 200);
+    const tryInitialize = () => {
+      if (!isMounted) return;
+      const initialized = initializeGoogleButton();
+      if (initialized && pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    tryInitialize();
+    if (!window.google?.accounts?.id) {
+      pollTimer = setInterval(tryInitialize, 200);
     }
+
 
     return () => {
       isMounted = false;
