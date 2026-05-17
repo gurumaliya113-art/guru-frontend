@@ -88,17 +88,11 @@ export default function App() {
   // legacy /login page has been retired in favour of an inline sign-in modal
   // launched from Onboarding ("Already have an account? Sign in"). Any direct
   // /login hit is redirected to /onboarding to avoid breaking old links.
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
-      </Routes>
-    );
-  }
-
-  // Admin routes are independent of onboarding state.
+  // Admin routes are independent of regular user auth/onboarding state — the
+  // admin shell is gated separately by its own JWT token. We register the same
+  // route group for both unauthenticated and authenticated users so that an
+  // admin can log into /admin/login without first creating a student/teacher
+  // account, and so that nav("/admin") inside AdminLogin lands correctly.
   const adminRoutes = (
     <>
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -111,6 +105,16 @@ export default function App() {
       </Route>
     </>
   );
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        {adminRoutes}
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+      </Routes>
+    );
+  }
 
   if (!profile.isOnboarded) {
     return (
