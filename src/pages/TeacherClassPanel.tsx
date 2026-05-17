@@ -82,7 +82,28 @@ export default function TeacherClassPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
-  if (!active) return null;
+  // No active class yet (zero classes) — still render the top action buttons
+  // so the teacher can create their first class from the dashboard.
+  if (!active) {
+    return (
+      <div className="px-4 pt-4 mb-2">
+        <button
+          onClick={() => nav("/class/create")}
+          className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
+          style={{ background: "#1c1917" }}
+        >
+          <Icon name="plus" size={16} color="#fbbf24" />
+          Create your first class
+        </button>
+        <div
+          className="text-[11px] mt-2 text-center"
+          style={{ color: colors.mutedForeground }}
+        >
+          Create a class so students can join and you can assign papers.
+        </div>
+      </div>
+    );
+  }
 
   const pending = members.filter((m) => m.status === "pending");
   const approved = members.filter((m) => m.status === "approved");

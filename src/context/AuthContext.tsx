@@ -8,6 +8,14 @@ interface User {
   role: "student" | "teacher" | "admin";
 }
 
+/**
+ * API base URL. In production on Vercel, set `VITE_API_BASE_URL` to the
+ * deployed backend origin (e.g. https://api.example.com). Empty in dev.
+ */
+const API_BASE_URL: string =
+  ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const apiUrl = (p: string) => (p.startsWith("http") ? p : `${API_BASE_URL}${p}`);
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -30,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("/auth/me", {
+      const response = await fetch(apiUrl("/auth/me"), {
         credentials: "include",
       });
       if (response.ok) {
@@ -45,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch("/auth/login", {
+    const response = await fetch(apiUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -69,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string) => {
-    const response = await fetch("/auth/signup", {
+    const response = await fetch(apiUrl("/auth/signup"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -93,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithGoogle = async (data: { credential: string }) => {
-    const response = await fetch("/auth/google", {
+    const response = await fetch(apiUrl("/auth/google"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -118,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch("/auth/logout", {
+      await fetch(apiUrl("/auth/logout"), {
         method: "POST",
         credentials: "include",
       });

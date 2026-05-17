@@ -20,6 +20,16 @@ export function setAdminToken(token: string | null) {
   else localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
+/**
+ * Base URL for all API requests.
+ * - In local dev: empty (Vite proxy or same-origin) so `/api/...` hits the local backend.
+ * - In production on Vercel: set `VITE_API_BASE_URL=https://your-backend.example.com`
+ *   in Vercel project env vars so the frontend can reach the deployed backend.
+ * Trailing slash is stripped so we can safely concatenate with paths that start with "/".
+ */
+const API_BASE_URL: string =
+  ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
 async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -29,7 +39,8 @@ async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: 
     const t = getAdminToken();
     if (t) headers["x-admin-token"] = t;
   }
-  const res = await fetch(path, {
+  const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+  const res = await fetch(url, {
     ...init,
     headers,
     credentials: "include" // Include cookies for session authentication

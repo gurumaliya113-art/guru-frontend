@@ -23,7 +23,8 @@ export default function FloatingLogout() {
     setBusy(true);
     try {
       // Clear cookie/session, then go to admin login (instead of default /login).
-      await fetch("/auth/logout", { method: "POST", credentials: "include" });
+      const base = ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
+      await fetch(`${base}/auth/logout`, { method: "POST", credentials: "include" });
     } catch {
       /* ignore */
     }
