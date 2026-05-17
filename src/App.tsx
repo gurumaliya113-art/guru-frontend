@@ -71,7 +71,12 @@ export default function App() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const loc = useLocation();
 
-  if (authLoading || appLoading) {
+  // Also wait for the post-login data fetch to complete before routing. Without
+  // this guard, the brief render between `isAuthenticated` flipping to true and
+  // the AppContext effect kicking in would see `profile = DEFAULT_PROFILE`
+  // (isOnboarded=false) and Navigate to /onboarding — trapping already-onboarded
+  // users on the registration screen even after the fresh profile arrives.
+  if (authLoading || appLoading || (isAuthenticated && !dataLoaded)) {
     return (
       <div className="h-full flex items-center justify-center" style={{ color: colors.mutedForeground }}>
         Loading…
