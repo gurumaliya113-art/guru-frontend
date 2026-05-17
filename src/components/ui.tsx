@@ -60,6 +60,8 @@ const ICON_MAP: Record<string, keyof typeof Icons> = {
   "user-x": "UserX",
   "at-sign": "AtSign",
   mail: "Mail",
+  key: "Key",
+  compass: "Compass",
 };
 
 export function Icon({

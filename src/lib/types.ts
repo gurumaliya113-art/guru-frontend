@@ -142,6 +142,8 @@ export interface UserProfile {
   schoolName?: string;
   /** Class level for students — "9" / "10" / "11" / "12" or custom */
   classLevel?: string;
+  /** Student chose to skip joining a teacher's class and explore the app on their own. */
+  skipClassJoin?: boolean;
 }
 
 export interface OnboardingExtras {
@@ -149,4 +151,6 @@ export interface OnboardingExtras {
   phone?: string;
   schoolName?: string;
   classLevel?: string;
+  /** Invite-only code required when registering as a teacher. */
+  teacherInviteCode?: string;
 }

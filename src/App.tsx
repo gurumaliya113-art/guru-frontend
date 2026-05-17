@@ -127,6 +127,7 @@ export default function App() {
     !onClassRoute &&
     ((profile.role === "teacher" && classes.length === 0) ||
       (profile.role === "student" &&
+        !profile.skipClassJoin &&
         !myMemberships.some((m) => m.status === "approved" || m.status === "pending")));
   const classRedirect = profile.role === "teacher" ? "/class/create" : "/class/join";
 

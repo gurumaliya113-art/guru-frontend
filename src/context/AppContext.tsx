@@ -250,6 +250,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => {
+      const { teacherInviteCode, ...profileExtras } = extras || {};
       const next: UserProfile = {
         ...DEFAULT_PROFILE,
         name,
@@ -257,11 +258,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         targetExam: exam,
         isOnboarded: true,
         badges: DEFAULT_BADGES,
-        ...(extras || {}),
+        ...profileExtras,
       };
-      await persistProfile(next);
+      // Send invite code to server but never store it on the profile locally.
+      setProfile(next);
+      try {
+        await api.saveProfile({ ...next, teacherInviteCode });
+      } catch (e) {
+        // Roll back the optimistic profile on failure so the user can retry.
+        setProfile(profile);
+        throw e;
+      }
     },
-    [persistProfile]
+    [profile]
   );
 
   const addAttempt = useCallback(

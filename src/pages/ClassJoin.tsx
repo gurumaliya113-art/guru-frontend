@@ -9,9 +9,19 @@ import type { ClassRoom, Membership } from "@/lib/types";
 type Step = "entry" | "lookup" | "details" | "confirm" | "done";
 
 export default function ClassJoin() {
-  const { profile, joinClass, myMemberships } = useApp();
+  const { profile, joinClass, myMemberships, updateProfile } = useApp();
   const nav = useNavigate();
   const [params] = useSearchParams();
+
+  const exploreAsGeneral = async () => {
+    try {
+      await updateProfile({ skipClassJoin: true });
+      nav("/", { replace: true });
+    } catch (e) {
+      // Even if persisting fails, navigate; the local profile state is updated.
+      nav("/", { replace: true });
+    }
+  };
 
   // If the student already has an approved or pending membership, jump to status screen.
   const activeMembership = useMemo(
@@ -177,6 +187,30 @@ export default function ClassJoin() {
               <Icon name="arrow-right" size={18} color="#1e3a8a" />
             </div>
           </button>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.18)" }} />
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
+              No class code?
+            </div>
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.18)" }} />
+          </div>
+
+          <button
+            onClick={exploreAsGeneral}
+            className="w-full rounded-2xl border py-4 flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.97] transition"
+            style={{
+              background: "rgba(255,255,255,0.08)",
+              borderColor: "rgba(255,255,255,0.2)",
+              color: "#fff",
+            }}
+          >
+            <Icon name="compass" size={16} color="#fff" />
+            Explore the app as a general student
+          </button>
+          <div className="text-[11px] mt-2 text-center" style={{ color: "rgba(255,255,255,0.5)" }}>
+            You can still join a class later from your profile.
+          </div>
         </div>
       </div>
     );

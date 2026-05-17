@@ -7,7 +7,11 @@ import type { ExamType, Role } from "@/lib/types";
 type Step = "role" | "details";
 
 // Dark theme palette inspired by the "GURTRON" mockup (deep navy + amber accent).
-const T = {
+const T: {
+  bg: string; bgGradient: string; surface: string; surfaceHi: string;
+  border: string; borderHi: string; text: string; muted: string; mutedSoft: string;
+  accent: string; accentSoft: string; accentRing: string; danger: string; dangerSoft: string;
+} = {
   bg: "#0a0e16",
   bgGradient: "linear-gradient(160deg,#0a0e16 0%,#0f1622 55%,#101826 100%)",
   surface: "#111a28",
@@ -24,6 +28,43 @@ const T = {
   dangerSoft: "rgba(248,113,113,0.12)",
 };
 
+// IMPORTANT: defined OUTSIDE the page component. Previously this lived inside
+// Onboarding, so every keystroke recreated the component type, React unmounted
+// the focused input, and the `autoFocus` on the name field stole focus back —
+// which is what caused typed digits to land in the wrong field.
+function InputRow({
+  icon, placeholder, value, onChange, type = "text", autoFocus = false, hint,
+  inputMode, autoComplete,
+}: {
+  icon: string; placeholder: string; value: string;
+  onChange: (v: string) => void; type?: string; autoFocus?: boolean; hint?: string;
+  inputMode?: "text" | "tel" | "email" | "numeric" | "decimal" | "search" | "url" | "none";
+  autoComplete?: string;
+}) {
+  return (
+    <div className="mb-3.5">
+      <div
+        className="flex items-center rounded-2xl border px-4 h-14 transition focus-within:border-[var(--accent)]"
+        style={{ background: T.surface, borderColor: T.border, ["--accent" as any]: T.accent }}
+      >
+        <Icon name={icon} size={18} color={T.mutedSoft} />
+        <input
+          autoFocus={autoFocus}
+          type={type}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="ml-3 flex-1 bg-transparent outline-none placeholder:text-white/30"
+          style={{ color: T.text }}
+        />
+      </div>
+      {hint ? <div className="text-[11px] mt-1.5 ml-1" style={{ color: T.mutedSoft }}>{hint}</div> : null}
+    </div>
+  );
+}
+
 export default function Onboarding() {
   const { completeOnboarding } = useApp();
   const nav = useNavigate();
@@ -35,6 +76,9 @@ export default function Onboarding() {
   const [phone, setPhone] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [username, setUsername] = useState("");
+
+  // Teacher-only
+  const [inviteCode, setInviteCode] = useState("");
 
   // Student-only
   const [exam, setExam] = useState<ExamType>("NEET");
@@ -48,6 +92,7 @@ export default function Onboarding() {
     if (!phone.trim() || phone.replace(/\D/g, "").length < 7) return "Please enter a valid phone number";
     if (!schoolName.trim()) return role === "teacher" ? "Please enter your school / coaching name" : "Please enter your school name";
     if (!username.trim() || username.includes(" ")) return "Username cannot be empty or contain spaces";
+    if (role === "teacher" && !inviteCode.trim()) return "Teacher invite code is required";
     return null;
   };
 
@@ -63,6 +108,7 @@ export default function Onboarding() {
         phone: phone.trim(),
         schoolName: schoolName.trim(),
         classLevel: role === "student" ? classLevel : undefined,
+        teacherInviteCode: role === "teacher" ? inviteCode.trim() : undefined,
       });
       nav("/", { replace: true });
     } catch (e) {
@@ -71,32 +117,6 @@ export default function Onboarding() {
       setSubmitting(false);
     }
   };
-
-  const InputRow = ({
-    icon, placeholder, value, onChange, type = "text", autoFocus = false, hint,
-  }: {
-    icon: string; placeholder: string; value: string;
-    onChange: (v: string) => void; type?: string; autoFocus?: boolean; hint?: string;
-  }) => (
-    <div className="mb-3.5">
-      <div
-        className="flex items-center rounded-2xl border px-4 h-14 transition focus-within:border-[var(--accent)]"
-        style={{ background: T.surface, borderColor: T.border, ["--accent" as any]: T.accent }}
-      >
-        <Icon name={icon} size={18} color={T.mutedSoft} />
-        <input
-          autoFocus={autoFocus}
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="ml-3 flex-1 bg-transparent outline-none placeholder:text-white/30"
-          style={{ color: T.text }}
-        />
-      </div>
-      {hint ? <div className="text-[11px] mt-1.5 ml-1" style={{ color: T.mutedSoft }}>{hint}</div> : null}
-    </div>
-  );
 
   return (
     <div
@@ -198,6 +218,7 @@ export default function Onboarding() {
               placeholder={role === "teacher" ? "Full name (e.g. Mr. Sharma)" : "Full name"}
               value={name}
               onChange={setName}
+              autoComplete="name"
               autoFocus
             />
 
@@ -207,6 +228,8 @@ export default function Onboarding() {
               value={phone}
               onChange={(v) => setPhone(v.replace(/[^\d+\-\s]/g, ""))}
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
             />
 
             <InputRow
@@ -214,6 +237,7 @@ export default function Onboarding() {
               placeholder={role === "teacher" ? "School / Coaching name" : "School name"}
               value={schoolName}
               onChange={setSchoolName}
+              autoComplete="organization"
             />
 
             <InputRow
@@ -221,8 +245,20 @@ export default function Onboarding() {
               placeholder="Username"
               value={username}
               onChange={(v) => setUsername(v.replace(/\s/g, "").toLowerCase())}
+              autoComplete="username"
               hint="No spaces. This is how others will see you."
             />
+
+            {role === "teacher" && (
+              <InputRow
+                icon="key"
+                placeholder="Teacher invite code"
+                value={inviteCode}
+                onChange={setInviteCode}
+                autoComplete="off"
+                hint="Ask your admin for the invite code. Students cannot register as teachers."
+              />
+            )}
 
             {role === "student" && (
               <>
