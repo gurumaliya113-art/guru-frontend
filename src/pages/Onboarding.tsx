@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import type { ExamType, Role } from "@/lib/types";
 
 type Step = "role" | "details";
@@ -67,6 +68,7 @@ function InputRow({
 
 export default function Onboarding() {
   const { completeOnboarding } = useApp();
+  const { isAuthenticated, signup, user } = useAuth();
   const nav = useNavigate();
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
@@ -76,6 +78,13 @@ export default function Onboarding() {
   const [phone, setPhone] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [username, setUsername] = useState("");
+
+  // Account credentials. Email is only collected when the user is NOT already
+  // signed in (e.g. fresh registration). Password is collected for both new
+  // signups and authenticated Google users who want to set a password so they
+  // can later sign in with email/phone/username.
+  const [email, setEmail] = useState(user?.email || "");
+  const [password, setPassword] = useState("");
 
   // Teacher-only
   const [inviteCode, setInviteCode] = useState("");
@@ -92,6 +101,15 @@ export default function Onboarding() {
     if (!phone.trim() || phone.replace(/\D/g, "").length < 7) return "Please enter a valid phone number";
     if (!schoolName.trim()) return role === "teacher" ? "Please enter your school / coaching name" : "Please enter your school name";
     if (!username.trim() || username.includes(" ")) return "Username cannot be empty or contain spaces";
+    if (!isAuthenticated) {
+      if (!email.trim() || !/.+@.+\..+/.test(email.trim())) return "Please enter a valid email";
+      if (!password || password.length < 6) return "Password must be at least 6 characters";
+    }
+    // Authenticated users (e.g. Google) may leave password blank to keep their
+    // existing credentials, but if they fill it in, enforce the min length.
+    if (isAuthenticated && password && password.length < 6) {
+      return "Password must be at least 6 characters";
+    }
     if (role === "teacher" && !inviteCode.trim()) return "Teacher invite code is required";
     return null;
   };
@@ -103,12 +121,17 @@ export default function Onboarding() {
     setError(null);
     setSubmitting(true);
     try {
+      // Create the auth account first if the user isn't logged in yet.
+      if (!isAuthenticated) {
+        await signup(email.trim().toLowerCase(), password);
+      }
       await completeOnboarding(name.trim(), role, exam, {
         username: username.trim().toLowerCase(),
         phone: phone.trim(),
         schoolName: schoolName.trim(),
         classLevel: role === "student" ? classLevel : undefined,
         teacherInviteCode: role === "teacher" ? inviteCode.trim() : undefined,
+        password: password || undefined,
       });
       nav("/", { replace: true });
     } catch (e) {
@@ -128,6 +151,25 @@ export default function Onboarding() {
         style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }} />
       <div className="absolute bottom-10 -left-20 w-72 h-72 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }} />
+
+      {/* Top-right: jump to sign-in for users who already have an account. */}
+      {!isAuthenticated && (
+        <div className="relative z-10 max-w-md mx-auto flex justify-end mb-2">
+          <button
+            type="button"
+            onClick={() => nav("/login")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.97]"
+            style={{
+              background: T.surfaceHi,
+              border: `1px solid ${T.border}`,
+              color: T.accent,
+            }}
+          >
+            <Icon name="log-in" size={14} color={T.accent} />
+            Already registered? Sign in
+          </button>
+        </div>
+      )}
 
       <div className="relative z-10 max-w-md mx-auto">
         {/* Logo */}
@@ -249,6 +291,32 @@ export default function Onboarding() {
               hint="No spaces. This is how others will see you."
             />
 
+            {!isAuthenticated && (
+              <InputRow
+                icon="mail"
+                placeholder="Email address"
+                value={email}
+                onChange={setEmail}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+              />
+            )}
+
+            <InputRow
+              icon="lock"
+              placeholder={isAuthenticated ? "Set a password (optional)" : "Password (min 6 chars)"}
+              value={password}
+              onChange={setPassword}
+              type="password"
+              autoComplete={isAuthenticated ? "new-password" : "new-password"}
+              hint={
+                isAuthenticated
+                  ? "Set a password to also sign in with email / phone / username later."
+                  : "You'll use this with email, phone or username to sign in."
+              }
+            />
+
             {role === "teacher" && (
               <InputRow
                 icon="key"
@@ -312,7 +380,9 @@ export default function Onboarding() {
 
             <div className="text-[11px] mt-1 mb-5" style={{ color: T.mutedSoft }}>
               <Icon name="lock" size={11} color={T.mutedSoft} />
-              <span className="ml-1.5">Your login password was set when you signed up. You'll use email + password to sign in.</span>
+              <span className="ml-1.5">
+                You'll be able to sign in with your email, phone, or username — plus the password set above.
+              </span>
             </div>
 
             <button

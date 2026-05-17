@@ -80,12 +80,15 @@ export default function App() {
     );
   }
 
-  // If not authenticated, show login page
+  // If not authenticated, show login OR the registration (onboarding) page.
+  // Unauthenticated users land on /onboarding by default so they can register;
+  // the onboarding page has a "Already registered? Sign in" toggle to /login.
   if (!isAuthenticated) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }

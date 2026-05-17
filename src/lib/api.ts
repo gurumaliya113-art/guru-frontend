@@ -84,7 +84,7 @@ export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai";
 
 export const api = {
   getProfile: () => request<{ profile: UserProfile | null }>("/api/profile"),
-  saveProfile: (profile: UserProfile & { teacherInviteCode?: string }) =>
+  saveProfile: (profile: UserProfile & { teacherInviteCode?: string; password?: string }) =>
     request<{ profile: UserProfile }>("/api/profile", {
       method: "PUT",
       body: JSON.stringify(profile),

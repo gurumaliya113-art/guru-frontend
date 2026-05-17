@@ -26,7 +26,8 @@ const apiUrl = (p: string) => (p.startsWith("http") ? p : `${API_BASE_URL}${p}`)
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** `identifier` may be an email, username, or phone number. */
+  login: (identifier: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (googleData: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -59,12 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     const response = await fetch(apiUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     });
 
     if (!response.ok) {

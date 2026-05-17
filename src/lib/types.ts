@@ -153,4 +153,6 @@ export interface OnboardingExtras {
   classLevel?: string;
   /** Invite-only code required when registering as a teacher. */
   teacherInviteCode?: string;
+  /** Optional password to set/update on the account. */
+  password?: string;
 }

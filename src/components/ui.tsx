@@ -62,6 +62,7 @@ const ICON_MAP: Record<string, keyof typeof Icons> = {
   mail: "Mail",
   key: "Key",
   compass: "Compass",
+  "log-in": "LogIn",
 };
 
 export function Icon({

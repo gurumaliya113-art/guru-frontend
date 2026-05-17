@@ -9,7 +9,7 @@ declare global {
 }
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +81,10 @@ export default function Login() {
 
     try {
       if (isSignup) {
-        await signup(email.trim().toLowerCase(), password);
+        // Signup currently requires an email (not phone/username).
+        await signup(identifier.trim().toLowerCase(), password);
       } else {
-        await login(email.trim().toLowerCase(), password);
+        await login(identifier.trim(), password);
       }
       // Go to root — App.tsx will route to onboarding / class-create / home
       // depending on the user's state.
@@ -181,13 +182,9 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={() => setIsSignup(true)}
+              onClick={() => navigate("/onboarding")}
               className="rounded-2xl px-4 py-3 font-semibold transition"
-              style={
-                isSignup
-                  ? { background: T.accent, color: "#0a0e16", boxShadow: `0 8px 24px ${T.accentSoft}` }
-                  : { background: T.surfaceHi, color: T.muted, border: `1px solid ${T.border}` }
-              }
+              style={{ background: T.surfaceHi, color: T.muted, border: `1px solid ${T.border}` }}
             >
               Create account
             </button>
@@ -196,16 +193,18 @@ export default function Login() {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-xs uppercase tracking-wider font-medium mb-1.5" style={{ color: T.muted }} htmlFor="email">
-              Email address
+            <label className="block text-xs uppercase tracking-wider font-medium mb-1.5" style={{ color: T.muted }} htmlFor="identifier">
+              {isSignup ? "Email address" : "Email, phone or username"}
             </label>
             <input
-              id="email"
-              type="email"
-              autoComplete="email"
+              id="identifier"
+              type={isSignup ? "email" : "text"}
+              autoComplete={isSignup ? "email" : "username"}
+              inputMode={isSignup ? "email" : "text"}
               required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              placeholder={isSignup ? "you@example.com" : "you@example.com / 98XXXXXXXX / yourname"}
               className="w-full rounded-2xl px-4 py-3 outline-none transition placeholder:text-white/30"
               style={{
                 background: T.surfaceHi,
@@ -264,7 +263,7 @@ export default function Login() {
           ) : (
             <>
               New to Gurutron?{' '}
-              <button className="font-semibold" style={{ color: T.accent }} type="button" onClick={() => setIsSignup(true)}>
+              <button className="font-semibold" style={{ color: T.accent }} type="button" onClick={() => navigate("/onboarding")}>
                 Create account
               </button>
             </>
