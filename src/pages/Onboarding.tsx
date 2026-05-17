@@ -152,21 +152,28 @@ export default function Onboarding() {
       <div className="absolute bottom-10 -left-20 w-72 h-72 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }} />
 
-      {/* Top-right: jump to sign-in for users who already have an account. */}
+      {/* Top banner: prominent jump to sign-in for users who already have an account. */}
       {!isAuthenticated && (
-        <div className="relative z-10 max-w-md mx-auto flex justify-end mb-2">
+        <div className="relative z-10 max-w-md mx-auto mb-4">
           <button
             type="button"
             onClick={() => nav("/login")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-[0.97]"
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98]"
             style={{
               background: T.surfaceHi,
-              border: `1px solid ${T.border}`,
-              color: T.accent,
+              border: `1px solid ${T.accentRing}`,
+              color: T.text,
+              boxShadow: `0 4px 18px ${T.accentSoft}`,
             }}
           >
-            <Icon name="log-in" size={14} color={T.accent} />
-            Already registered? Sign in
+            <span className="flex items-center gap-2">
+              <Icon name="log-in" size={16} color={T.accent} />
+              <span>Already have an account?</span>
+            </span>
+            <span className="flex items-center gap-1.5" style={{ color: T.accent }}>
+              Sign in
+              <Icon name="arrow-right" size={14} color={T.accent} />
+            </span>
           </button>
         </div>
       )}
@@ -399,6 +406,20 @@ export default function Onboarding() {
                 {!submitting && <Icon name="arrow-right" size={18} color="#0a0e16" />}
               </div>
             </button>
+
+            {!isAuthenticated && (
+              <div className="text-center mt-4 text-sm" style={{ color: T.muted }}>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => nav("/login")}
+                  className="font-bold underline-offset-2 hover:underline"
+                  style={{ color: T.accent }}
+                >
+                  Sign in here
+                </button>
+              </div>
+            )}
           </div>
         )}
 
