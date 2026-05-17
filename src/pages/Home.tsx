@@ -173,18 +173,12 @@ export default function Home() {
 
   function TeacherHome() {
     const nav = useNavigate();
-    const avgClassScore =
-      students.length > 0
-        ? Math.round(students.reduce((s, st) => s + st.score, 0) / students.length)
-        : 0;
+    const hasStudents = students.length > 0;
+    const avgClassScore = hasStudents
+      ? Math.round(students.reduce((s, st) => s + st.score, 0) / students.length)
+      : null;
     const topStudents = [...students].sort((a, b) => b.score - a.score).slice(0, 3);
     const needHelp = [...students].sort((a, b) => a.score - b.score).slice(0, 2);
-    const subjectBreakdown = [
-      { label: "Physics", avg: 72, color: "#3b82f6" },
-      { label: "Chemistry", avg: 65, color: "#8b5cf6" },
-      { label: "Biology", avg: 81, color: "#22c55e" },
-      { label: "Mathematics", avg: 58, color: "#f59e0b" },
-    ];
 
     return (
       <div>
@@ -206,7 +200,7 @@ export default function Home() {
           <div className="flex items-center rounded-2xl py-3.5 px-4 relative" style={{ background: "rgba(255,255,255,0.1)" }}>
             {[
               { icon: "users", val: students.length, label: "students" },
-              { icon: "bar-chart-2", val: avgClassScore + "%", label: "class avg" },
+              { icon: "bar-chart-2", val: hasStudents ? `${avgClassScore}%` : "—", label: "class avg" },
               { icon: "file-text", val: papers.length, label: "papers" },
             ].map((s, i, arr) => (
               <div key={s.label} className="flex-1 flex items-center justify-center">
@@ -241,77 +235,84 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="text-[17px] font-bold mb-3" style={{ color: colors.foreground }}>Class Performance</div>
-          <div className="rounded-2xl p-4 border mb-6 bg-white shadow-sm" style={{ borderColor: colors.border }}>
-            {subjectBreakdown.map(({ label, avg, color }) => (
-              <div key={label} className="flex items-center gap-2.5 mb-3.5 last:mb-0">
-                <div className="w-[90px] text-[13px] font-medium" style={{ color: colors.foreground }}>{label}</div>
-                <div className="flex-1"><ProgressBar progress={avg / 100} color={color} height={6} /></div>
-                <div className="w-9 text-right text-[13px] font-bold" style={{ color }}>{avg}%</div>
+          {hasStudents ? (
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>Top Performers</div>
+                <Icon name="award" size={16} color="#f59e0b" />
               </div>
-            ))}
-          </div>
+              <div className="rounded-2xl border mb-6 bg-white shadow-sm overflow-hidden" style={{ borderColor: colors.border }}>
+                {topStudents.map((st, idx) => (
+                  <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < topStudents.length - 1 ? `1px solid ${colors.border}` : "none" }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[13px]"
+                      style={{ background: idx === 0 ? "#fef3c7" : idx === 1 ? "#f1f5f9" : "#fef3c7", color: idx === 0 ? "#d97706" : idx === 1 ? "#475569" : "#92400e" }}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold" style={{ color: colors.foreground }}>{st.name}</div>
+                      <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.totalQuizzes} quizzes • {st.lastActive}</div>
+                    </div>
+                    <div className="px-2.5 py-1 rounded-lg font-bold text-[13px]"
+                      style={{ background: st.score >= 85 ? "#dcfce7" : st.score >= 70 ? "#fef3c7" : "#fee2e2", color: st.score >= 85 ? "#16a34a" : st.score >= 70 ? "#d97706" : "#dc2626" }}>
+                      {st.score}%
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          <div className="flex justify-between items-center mb-3">
-            <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>Top Performers</div>
-            <Icon name="award" size={16} color="#f59e0b" />
-          </div>
-          <div className="rounded-2xl border mb-6 bg-white shadow-sm overflow-hidden" style={{ borderColor: colors.border }}>
-            {topStudents.map((st, idx) => (
-              <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < topStudents.length - 1 ? `1px solid ${colors.border}` : "none" }}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[13px]"
-                  style={{ background: idx === 0 ? "#fef3c7" : idx === 1 ? "#f1f5f9" : "#fef3c7", color: idx === 0 ? "#d97706" : idx === 1 ? "#475569" : "#92400e" }}>
-                  {idx + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold" style={{ color: colors.foreground }}>{st.name}</div>
-                  <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.totalQuizzes} quizzes • {st.lastActive}</div>
-                </div>
-                <div className="px-2.5 py-1 rounded-lg font-bold text-[13px]"
-                  style={{ background: st.score >= 85 ? "#dcfce7" : st.score >= 70 ? "#fef3c7" : "#fee2e2", color: st.score >= 85 ? "#16a34a" : st.score >= 70 ? "#d97706" : "#dc2626" }}>
-                  {st.score}%
-                </div>
+              <div className="flex justify-between items-center mb-3">
+                <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>Need Attention</div>
+                <Icon name="alert-triangle" size={16} color="#ef4444" />
               </div>
-            ))}
-          </div>
+              <div className="rounded-2xl border mb-6 overflow-hidden" style={{ background: "#fff5f5", borderColor: "#fecaca" }}>
+                {needHelp.map((st, idx) => (
+                  <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < needHelp.length - 1 ? "1px solid #fecaca" : "none" }}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#ef4444" }} />
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold" style={{ color: "#7f1d1d" }}>{st.name}</div>
+                      <div className="text-xs" style={{ color: "#b91c1c" }}>Weak in {st.weakSubject} • {st.avgAccuracy}% accuracy</div>
+                    </div>
+                    <button onClick={() => nav("/paper/generate")} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: "#ef4444" }}>
+                      Assign
+                    </button>
+                  </div>
+                ))}
+              </div>
 
-          <div className="flex justify-between items-center mb-3">
-            <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>Need Attention</div>
-            <Icon name="alert-triangle" size={16} color="#ef4444" />
-          </div>
-          <div className="rounded-2xl border mb-6 overflow-hidden" style={{ background: "#fff5f5", borderColor: "#fecaca" }}>
-            {needHelp.map((st, idx) => (
-              <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < needHelp.length - 1 ? "1px solid #fecaca" : "none" }}>
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#ef4444" }} />
-                <div className="flex-1">
-                  <div className="text-sm font-semibold" style={{ color: "#7f1d1d" }}>{st.name}</div>
-                  <div className="text-xs" style={{ color: "#b91c1c" }}>Weak in {st.weakSubject} • {st.avgAccuracy}% accuracy</div>
-                </div>
-                <button onClick={() => nav("/paper/generate")} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: "#ef4444" }}>
-                  Assign
-                </button>
+              <div className="text-[17px] font-bold mb-3" style={{ color: colors.foreground }}>All Students</div>
+              <div className="rounded-2xl border mb-6 bg-white shadow-sm overflow-hidden" style={{ borderColor: colors.border }}>
+                {[...students].sort((a, b) => b.score - a.score).map((st, idx, arr) => (
+                  <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${colors.border}` : "none" }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold" style={{ background: colors.muted, color: colors.mutedForeground }}>
+                      {st.name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold" style={{ color: colors.foreground }}>{st.name}</div>
+                      <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.totalQuizzes} quizzes • {st.lastActive}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold" style={{ color: st.score >= 80 ? "#16a34a" : st.score >= 60 ? "#d97706" : "#ef4444" }}>{st.score}%</div>
+                      <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.weakSubject}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          <div className="text-[17px] font-bold mb-3" style={{ color: colors.foreground }}>All Students</div>
-          <div className="rounded-2xl border mb-6 bg-white shadow-sm overflow-hidden" style={{ borderColor: colors.border }}>
-            {[...students].sort((a, b) => b.score - a.score).map((st, idx, arr) => (
-              <div key={st.id} className="flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${colors.border}` : "none" }}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold" style={{ background: colors.muted, color: colors.mutedForeground }}>
-                  {st.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold" style={{ color: colors.foreground }}>{st.name}</div>
-                  <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.totalQuizzes} quizzes • {st.lastActive}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold" style={{ color: st.score >= 80 ? "#16a34a" : st.score >= 60 ? "#d97706" : "#ef4444" }}>{st.score}%</div>
-                  <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{st.weakSubject}</div>
-                </div>
+            </>
+          ) : (
+            <div className="rounded-2xl p-6 border mb-6 bg-white shadow-sm text-center" style={{ borderColor: colors.border }}>
+              <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: colors.muted }}>
+                <Icon name="users" size={22} color={colors.mutedForeground} />
               </div>
-            ))}
-          </div>
+              <div className="text-[15px] font-semibold mb-1" style={{ color: colors.foreground }}>
+                No student activity yet
+              </div>
+              <div className="text-[13px] leading-relaxed" style={{ color: colors.mutedForeground }}>
+                Share your class join code with students. Class performance, top
+                performers and at-risk learners will appear here once students
+                start attempting tests.
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

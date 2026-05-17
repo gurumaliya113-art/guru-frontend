@@ -26,14 +26,10 @@ const DEFAULT_BADGES: Badge[] = [
   { id: "first-paper", name: "Paper Maker", description: "Generate your first paper", icon: "file-text", earned: false },
 ];
 
-const MOCK_STUDENTS: StudentRecord[] = [
-  { id: "s1", name: "Priya Sharma", score: 87, totalQuizzes: 12, avgAccuracy: 82, weakSubject: "Chemistry", lastActive: "Today" },
-  { id: "s2", name: "Arjun Mehta", score: 74, totalQuizzes: 8, avgAccuracy: 71, weakSubject: "Physics", lastActive: "Yesterday" },
-  { id: "s3", name: "Sneha Patel", score: 91, totalQuizzes: 15, avgAccuracy: 89, weakSubject: "Organic Chemistry", lastActive: "Today" },
-  { id: "s4", name: "Rahul Gupta", score: 63, totalQuizzes: 6, avgAccuracy: 60, weakSubject: "Biology", lastActive: "2 days ago" },
-  { id: "s5", name: "Ananya Singh", score: 95, totalQuizzes: 20, avgAccuracy: 93, weakSubject: "Waves", lastActive: "Today" },
-  { id: "s6", name: "Karan Joshi", score: 58, totalQuizzes: 4, avgAccuracy: 55, weakSubject: "Mathematics", lastActive: "3 days ago" },
-];
+// No mock students — the teacher dashboard now reflects real class membership
+// data only. Student records will be populated once we have per-student quiz
+// metrics wired up; until then the dashboard shows empty states.
+const MOCK_STUDENTS: StudentRecord[] = [];
 
 const DEFAULT_PROFILE: UserProfile = {
   name: "",
