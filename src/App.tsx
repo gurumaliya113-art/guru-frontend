@@ -4,7 +4,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Icon } from "@/components/ui";
 import FloatingLogout from "@/components/FloatingLogout";
 import { colors } from "@/lib/colors";
-import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
 import ClassCreate from "@/pages/ClassCreate";
@@ -80,13 +79,13 @@ export default function App() {
     );
   }
 
-  // If not authenticated, show login OR the registration (onboarding) page.
-  // Unauthenticated users land on /onboarding by default so they can register;
-  // the onboarding page has a "Already registered? Sign in" toggle to /login.
+  // Unauthenticated users see the registration (Onboarding) page only. The
+  // legacy /login page has been retired in favour of an inline sign-in modal
+  // launched from Onboarding ("Already have an account? Sign in"). Any direct
+  // /login hit is redirected to /onboarding to avoid breaking old links.
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>

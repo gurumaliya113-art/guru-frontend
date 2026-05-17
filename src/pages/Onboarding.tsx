@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import type { ExamType, Role } from "@/lib/types";
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 type Step = "role" | "details";
 
@@ -72,6 +78,9 @@ export default function Onboarding() {
   const nav = useNavigate();
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
+  // Inline sign-in modal for already-registered users. Replaces the old
+  // standalone /login screen which the user found confusing.
+  const [showSignIn, setShowSignIn] = useState(false);
 
   // Common fields
   const [name, setName] = useState("");
@@ -157,7 +166,7 @@ export default function Onboarding() {
         <div className="relative z-10 max-w-md mx-auto mb-4">
           <button
             type="button"
-            onClick={() => nav("/login")}
+            onClick={() => setShowSignIn(true)}
             className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98]"
             style={{
               background: T.surfaceHi,
@@ -412,7 +421,7 @@ export default function Onboarding() {
                 Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => nav("/login")}
+                  onClick={() => setShowSignIn(true)}
                   className="font-bold underline-offset-2 hover:underline"
                   style={{ color: T.accent }}
                 >
@@ -444,6 +453,200 @@ export default function Onboarding() {
           <Icon name="shield" size={12} color={T.mutedSoft} />
           Admin Login
         </button>
+      </div>
+
+      {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
+    </div>
+  );
+}
+
+// =============================================================================
+// SignInModal — inline sign-in popup shown over the registration page so
+// already-registered users can log in without leaving the page.
+// Supports email / phone / username + password, and Google.
+// =============================================================================
+function SignInModal({ onClose }: { onClose: () => void }) {
+  const { login, loginWithGoogle } = useAuth();
+  const nav = useNavigate();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+
+  // Close on Escape for a snappier feel.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Initialize the Google Identity Services button inside the modal.
+  useEffect(() => {
+    let mounted = true;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const init = () => {
+      if (!mounted) return false;
+      if (!window.google?.accounts?.id) return false;
+      if (!googleBtnRef.current) return false;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: "624499359248-r1sga1d1r2eq4g7jj124eumuoqrdj08i.apps.googleusercontent.com",
+          callback: async (response: any) => {
+            setError(null);
+            setBusy(true);
+            try {
+              await loginWithGoogle({ credential: response.credential });
+              onClose();
+              nav("/", { replace: true });
+            } catch (err) {
+              setError((err as Error)?.message || "Google sign-in failed.");
+              setBusy(false);
+            }
+          },
+        });
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "filled_black",
+          size: "large",
+          shape: "pill",
+          text: "continue_with",
+          width: 320,
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    if (!init()) {
+      timer = setInterval(() => { if (init() && timer) { clearInterval(timer); timer = null; } }, 200);
+    }
+    return () => { mounted = false; if (timer) clearInterval(timer); };
+  }, [loginWithGoogle, nav, onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier.trim() || !password) {
+      setError("Enter your login ID and password.");
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      await login(identifier.trim(), password);
+      onClose();
+      nav("/", { replace: true });
+    } catch (err) {
+      setError((err as Error)?.message || "Sign-in failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
+      style={{ background: "rgba(2,6,15,0.78)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl border p-6 relative"
+        style={{
+          background: T.surface,
+          borderColor: T.border,
+          boxShadow: `0 30px 80px ${T.accentSoft}`,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90"
+          style={{ background: T.surfaceHi, border: `1px solid ${T.border}`, color: T.muted }}
+        >
+          <Icon name="x" size={16} color={T.muted} />
+        </button>
+
+        <div className="text-center mb-5">
+          <div
+            className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+            style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
+          >
+            <Icon name="log-in" size={26} color={T.accent} />
+          </div>
+          <div className="text-xl font-bold tracking-tight">Welcome back</div>
+          <div className="text-xs mt-1" style={{ color: T.muted }}>
+            Sign in with your email, phone, or username.
+          </div>
+        </div>
+
+        {error ? (
+          <div
+            className="text-xs rounded-xl px-3 py-2 mb-3"
+            style={{ background: T.dangerSoft, color: T.danger, border: `1px solid rgba(248,113,113,0.25)` }}
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <InputRow
+            icon="at-sign"
+            placeholder="Email / phone / username"
+            value={identifier}
+            onChange={setIdentifier}
+            autoComplete="username"
+            autoFocus
+          />
+          <InputRow
+            icon="lock"
+            placeholder="Password"
+            value={password}
+            onChange={setPassword}
+            type="password"
+            autoComplete="current-password"
+          />
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full rounded-2xl py-3 font-bold transition active:scale-[0.98] disabled:opacity-60"
+            style={{
+              background: `linear-gradient(135deg, ${T.accent} 0%, #ffd27a 100%)`,
+              color: "#0a0e16",
+              boxShadow: `0 10px 30px ${T.accentSoft}`,
+            }}
+          >
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full h-px" style={{ background: T.border }} />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="px-3 text-[11px] uppercase tracking-wider" style={{ background: T.surface, color: T.mutedSoft }}>
+              or
+            </span>
+          </div>
+        </div>
+
+        <div ref={googleBtnRef} className="flex justify-center" />
+
+        <div className="mt-4 text-center text-xs" style={{ color: T.muted }}>
+          New here?{" "}
+          <button
+            type="button"
+            onClick={onClose}
+            className="font-semibold"
+            style={{ color: T.accent }}
+          >
+            Create an account
+          </button>
+        </div>
       </div>
     </div>
   );
