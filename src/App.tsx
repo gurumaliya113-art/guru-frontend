@@ -91,6 +91,7 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
