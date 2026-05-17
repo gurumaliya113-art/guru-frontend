@@ -27,8 +27,16 @@ export function setAdminToken(token: string | null) {
  *   in Vercel project env vars so the frontend can reach the deployed backend.
  * Trailing slash is stripped so we can safely concatenate with paths that start with "/".
  */
-const API_BASE_URL: string =
-  ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
+function normalizeBaseUrl(raw: string): string {
+  let v = (raw || "").trim().replace(/\/$/, "");
+  if (!v) return "";
+  // If user forgot the scheme (e.g. "api.example.com"), default to https://
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  return v;
+}
+const API_BASE_URL: string = normalizeBaseUrl(
+  (import.meta as any).env?.VITE_API_BASE_URL || ""
+);
 
 async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {

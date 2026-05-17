@@ -12,8 +12,15 @@ interface User {
  * API base URL. In production on Vercel, set `VITE_API_BASE_URL` to the
  * deployed backend origin (e.g. https://api.example.com). Empty in dev.
  */
-const API_BASE_URL: string =
-  ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
+function normalizeBaseUrl(raw: string): string {
+  let v = (raw || "").trim().replace(/\/$/, "");
+  if (!v) return "";
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  return v;
+}
+const API_BASE_URL: string = normalizeBaseUrl(
+  (import.meta as any).env?.VITE_API_BASE_URL || ""
+);
 const apiUrl = (p: string) => (p.startsWith("http") ? p : `${API_BASE_URL}${p}`);
 
 interface AuthContextType {
