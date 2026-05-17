@@ -1,9 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import type {
+  Assignment,
   Badge,
+  BatchType,
+  ClassRoom,
   ExamType,
   GeneratedPaper,
+  Membership,
+  MembershipStatus,
   Question,
   QuizAttempt,
   Role,
@@ -40,13 +46,40 @@ const DEFAULT_PROFILE: UserProfile = {
   isOnboarded: false,
 };
 
+interface CreateClassInput {
+  name: string;
+  subject?: string;
+  classLevel: string;
+  batchType: BatchType;
+  school?: string;
+  teacherName?: string;
+}
+
+interface JoinClassInput {
+  code: string;
+  studentName: string;
+  rollNumber: string;
+  parentPhone?: string;
+}
+
 interface AppContextType {
   profile: UserProfile;
   attempts: QuizAttempt[];
   papers: GeneratedPaper[];
   students: StudentRecord[];
   questions: Question[];
+  classes: ClassRoom[];
+  myMemberships: Membership[];
   refreshQuestions: () => Promise<void>;
+  refreshClasses: () => Promise<void>;
+  refreshMemberships: () => Promise<void>;
+  createClass: (input: CreateClassInput) => Promise<ClassRoom>;
+  joinClass: (input: JoinClassInput) => Promise<Membership>;
+  decideMembership: (id: string, status: MembershipStatus) => Promise<Membership>;
+  getClassMemberships: (classId: string) => Promise<Membership[]>;
+  assignPaperToClass: (paperId: string, classId: string) => Promise<{ assignment: Assignment; alreadyAssigned?: boolean }>;
+  getMyAssignments: () => Promise<Assignment[]>;
+  getClassAssignments: (classId: string) => Promise<Assignment[]>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   addAttempt: (attempt: QuizAttempt) => Promise<void>;
   addPaper: (paper: GeneratedPaper) => Promise<void>;
@@ -54,16 +87,25 @@ interface AppContextType {
   completeOnboarding: (name: string, role: Role, exam: ExamType) => Promise<void>;
   resetProgress: () => Promise<void>;
   isLoading: boolean;
+  /** True once the initial authenticated fetch has completed. */
+  dataLoaded: boolean;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [papers, setPapers] = useState<GeneratedPaper[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [classes, setClasses] = useState<ClassRoom[]>([]);
+  const [myMemberships, setMyMemberships] = useState<Membership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  /** True only after we have successfully fetched user-scoped data at least once
+      while authenticated. The class-onboarding guard waits on this so we don't
+      flicker to /class/create before classes are loaded. */
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const refreshQuestions = useCallback(async () => {
     try {
@@ -74,27 +116,123 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const refreshClasses = useCallback(async () => {
+    try {
+      const r = await api.getMyClasses();
+      setClasses(r.classes || []);
+    } catch (e) {
+      console.warn("[AppContext] classes fetch failed:", e);
+    }
+  }, []);
+
+  const refreshMemberships = useCallback(async () => {
+    try {
+      const r = await api.getMyMemberships();
+      setMyMemberships(r.memberships || []);
+    } catch (e) {
+      console.warn("[AppContext] memberships fetch failed:", e);
+    }
+  }, []);
+
+  const createClass = useCallback(
+    async (input: CreateClassInput) => {
+      const r = await api.createClass(input);
+      setClasses((prev) => [r.class, ...prev]);
+      return r.class;
+    },
+    []
+  );
+
+  const joinClass = useCallback(
+    async (input: JoinClassInput) => {
+      const r = await api.joinClass(input);
+      setMyMemberships((prev) => {
+        const others = prev.filter((m) => m.id !== r.membership.id);
+        return [r.membership, ...others];
+      });
+      return r.membership;
+    },
+    []
+  );
+
+  const decideMembership = useCallback(
+    async (id: string, status: MembershipStatus) => {
+      const r = await api.decideMembership(id, status);
+      return r.membership;
+    },
+    []
+  );
+
+  const getClassMemberships = useCallback(async (classId: string) => {
+    const r = await api.getClassMemberships(classId);
+    return r.memberships || [];
+  }, []);
+
+  const assignPaperToClass = useCallback(
+    async (paperId: string, classId: string) => {
+      const r = await api.assignPaperToClass(paperId, classId);
+      return r;
+    },
+    []
+  );
+
+  const getMyAssignments = useCallback(async () => {
+    const r = await api.getMyAssignments();
+    return r.assignments || [];
+  }, []);
+
+  const getClassAssignments = useCallback(async (classId: string) => {
+    const r = await api.getClassAssignments(classId);
+    return r.assignments || [];
+  }, []);
+
   useEffect(() => {
+    // Wait until AuthContext has resolved before deciding what to fetch.
+    if (authLoading) return;
+
+    // Not logged in: clear user-scoped state and stop loading so the login
+    // screen renders immediately.
+    if (!isAuthenticated) {
+      setProfile(DEFAULT_PROFILE);
+      setAttempts([]);
+      setPapers([]);
+      setClasses([]);
+      setMyMemberships([]);
+      setDataLoaded(false);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
     (async () => {
       try {
-        const [p, a, pp, qs] = await Promise.all([
+        const [p, a, pp, qs, cls, mems] = await Promise.all([
           api.getProfile(),
           api.getAttempts(),
           api.getPapers(),
           api.getQuestions(),
+          api.getMyClasses().catch(() => ({ classes: [] as ClassRoom[] })),
+          api.getMyMemberships().catch(() => ({ memberships: [] as Membership[] })),
         ]);
+        if (cancelled) return;
         if (p.profile) setProfile({ ...DEFAULT_PROFILE, ...p.profile });
         setAttempts(a.attempts || []);
         setPapers(pp.papers || []);
         setQuestions(qs.questions || []);
+        setClasses(cls.classes || []);
+        setMyMemberships(mems.memberships || []);
+        setDataLoaded(true);
       } catch (e) {
-        // Backend unreachable — keep defaults; user will retry by reload.
-        console.warn("[AppContext] Backend not reachable yet:", e);
+        if (!cancelled) console.warn("[AppContext] Backend not reachable yet:", e);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, authLoading]);
 
   const persistProfile = useCallback(async (next: UserProfile) => {
     setProfile(next);
@@ -173,7 +311,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         papers,
         students: MOCK_STUDENTS,
         questions,
+        classes,
+        myMemberships,
         refreshQuestions,
+        refreshClasses,
+        refreshMemberships,
+        createClass,
+        joinClass,
+        decideMembership,
+        getClassMemberships,
+        assignPaperToClass,
+        getMyAssignments,
+        getClassAssignments,
         updateProfile,
         addAttempt,
         addPaper,
@@ -181,6 +330,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         completeOnboarding,
         resetProgress,
         isLoading,
+        dataLoaded,
       }}
     >
       {children}

@@ -63,7 +63,9 @@ export default function Login() {
     setBusy(true);
     try {
       await loginWithGoogle({ credential: response.credential });
-      navigate("/dashboard");
+      // Go to root — App.tsx will route to onboarding / class-create / home
+      // depending on the user's state. /dashboard is just a placeholder.
+      navigate("/", { replace: true });
     } catch (err) {
       setError((err as Error)?.message || "Google login failed. Please try again.");
       setBusy(false);
@@ -81,7 +83,9 @@ export default function Login() {
       } else {
         await login(email.trim().toLowerCase(), password);
       }
-      navigate("/dashboard");
+      // Go to root — App.tsx will route to onboarding / class-create / home
+      // depending on the user's state.
+      navigate("/", { replace: true });
     } catch (err) {
       setError((err as Error)?.message || "Login failed. Please try again.");
     } finally {
@@ -93,7 +97,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-3xl shadow-lg border border-gray-200">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Welcome to SmartPrep</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Welcome to Gurutron</h2>
           <p className="mt-2 text-gray-600">Sign in or create your account</p>
         </div>
 
@@ -166,7 +170,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-2xl bg-primary-600 px-4 py-3 text-white font-semibold hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-white font-semibold shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {busy ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
           </button>
@@ -182,7 +186,7 @@ export default function Login() {
             </>
           ) : (
             <>
-              New to SmartPrep?{' '}
+              New to Gurutron?{' '}
               <button className="font-semibold text-primary-600" type="button" onClick={() => setIsSignup(true)}>
                 Create account
               </button>

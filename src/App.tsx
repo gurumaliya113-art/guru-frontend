@@ -2,10 +2,13 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { Icon } from "@/components/ui";
+import FloatingLogout from "@/components/FloatingLogout";
 import { colors } from "@/lib/colors";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
+import ClassCreate from "@/pages/ClassCreate";
+import ClassJoin from "@/pages/ClassJoin";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
@@ -65,8 +68,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { profile, isLoading: appLoading } = useApp();
+  const { profile, classes, myMemberships, isLoading: appLoading, dataLoaded } = useApp();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const loc = useLocation();
 
   if (authLoading || appLoading) {
     return (
@@ -110,20 +114,44 @@ export default function App() {
     );
   }
 
+  // Class-onboarding guard:
+  //  - Teachers must have created at least one class.
+  //  - Students must have an approved or pending membership (pending = waiting screen).
+  const onClassRoute =
+    loc.pathname.startsWith("/class/") || loc.pathname.startsWith("/admin");
+  // Only redirect once we've actually fetched the user's classes/memberships,
+  // otherwise the brief empty-array state right after login would push the
+  // teacher into /class/create even though they already have classes.
+  const needsClass =
+    dataLoaded &&
+    !onClassRoute &&
+    ((profile.role === "teacher" && classes.length === 0) ||
+      (profile.role === "student" &&
+        !myMemberships.some((m) => m.status === "approved" || m.status === "pending")));
+  const classRedirect = profile.role === "teacher" ? "/class/create" : "/class/join";
+
   return (
-    <Routes>
-      {adminRoutes}
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/" element={<Shell><Home /></Shell>} />
-      <Route path="/quiz" element={<Shell><Quiz /></Shell>} />
-      <Route path="/quiz/:id" element={<QuizSession />} />
-      <Route path="/papers" element={<Shell><Papers /></Shell>} />
-      <Route path="/paper/generate" element={<PaperGenerate />} />
-      <Route path="/paper/:id" element={<PaperView />} />
-      <Route path="/progress" element={<Shell><Progress /></Shell>} />
-      <Route path="/profile" element={<Shell><Profile /></Shell>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        {adminRoutes}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/class/create" element={<ClassCreate />} />
+        <Route path="/class/join" element={<ClassJoin />} />
+        <Route
+          path="/"
+          element={needsClass ? <Navigate to={classRedirect} replace /> : <Shell><Home /></Shell>}
+        />
+        <Route path="/quiz" element={<Shell><Quiz /></Shell>} />
+        <Route path="/quiz/:id" element={<QuizSession />} />
+        <Route path="/papers" element={<Shell><Papers /></Shell>} />
+        <Route path="/paper/generate" element={<PaperGenerate />} />
+        <Route path="/paper/:id" element={<PaperView />} />
+        <Route path="/progress" element={<Shell><Progress /></Shell>} />
+        <Route path="/profile" element={<Shell><Profile /></Shell>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <FloatingLogout />
+    </>
   );
 }

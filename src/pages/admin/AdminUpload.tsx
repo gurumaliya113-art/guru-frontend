@@ -2,36 +2,41 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
-import { adminApi } from "@/lib/api";
+import { adminApi, getAdminToken } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { EditableQuestion, QuestionEditor } from "./QuestionEditor";
 
-type ParserMode = "heuristic" | "ai";
+type ParserMode = "heuristic" | "groq" | "gemini";
 
 export default function AdminUpload() {
   const nav = useNavigate();
-  const { geminiAvailable } = useOutletContext<{ geminiAvailable: boolean }>();
+  const { geminiAvailable, groqAvailable } = useOutletContext<{ geminiAvailable: boolean; groqAvailable: boolean }>();
   const { refreshQuestions } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<ParserMode>("heuristic");
+
+  // Auto-pick best available parser on mount/when availability changes
+  useEffect(() => {
+    if (groqAvailable) setMode("groq");
+    else if (geminiAvailable) setMode("gemini");
+    else setMode("heuristic");
+  }, [groqAvailable, geminiAvailable]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<{ parser: string; pageCount: number; textLength: number } | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<EditableQuestion[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedCount, setSavedCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!geminiAvailable && mode === "ai") setMode("heuristic");
-  }, [geminiAvailable, mode]);
 
   const onPick = (f: File | null) => {
     setFile(f);
     setError("");
     setDrafts([]);
     setMeta(null);
+    setDocumentId(null);
     setSavedCount(null);
   };
 
@@ -41,6 +46,7 @@ export default function AdminUpload() {
     try {
       const result = await adminApi.parsePdf(file, mode);
       setMeta({ parser: result.parser, pageCount: result.pageCount, textLength: result.textLength });
+      setDocumentId(result.documentId || null);
       // Normalise into EditableQuestion shape so the editor can mutate freely.
       const ds: EditableQuestion[] = result.questions.map((q: any) => ({
         text: q.text || "",
@@ -53,6 +59,11 @@ export default function AdminUpload() {
         type: q.type || "MCQ",
         explanation: q.explanation || "",
         year: q.year,
+        documentId: q.documentId || result.documentId || undefined,
+        pageNumber: typeof q.pageNumber === "number" ? q.pageNumber : null,
+        hasFigure: typeof q.hasFigure === "boolean" ? q.hasFigure : false,
+        pageImageUrl: q.pageImageUrl || undefined,
+        source: q.source || "pdf-groq", // preserve provenance so list shows "src: pdf-groq"
       }));
       setDrafts(ds);
     } catch (e: any) {
@@ -73,7 +84,10 @@ export default function AdminUpload() {
         setSaving(false);
         return;
       }
-      const res = await adminApi.addQuestions(drafts);
+      const payload = documentId
+        ? drafts.map((d) => ({ ...d, documentId }))
+        : drafts;
+      const res = await adminApi.addQuestions(payload as any);
       setSavedCount(res.added);
       setDrafts([]);
       setFile(null);
@@ -91,7 +105,7 @@ export default function AdminUpload() {
       <div className="mb-6">
         <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Upload PDF</div>
         <div className="text-sm" style={{ color: colors.mutedForeground }}>
-          Extract questions from a past paper. Text is parsed — PDFs are never stored.
+          Upload a past paper. PDF is saved, questions are extracted, and you can review before saving them to the bank.
         </div>
       </div>
 
@@ -146,18 +160,46 @@ export default function AdminUpload() {
               </button>
 
               <button
-                onClick={() => geminiAvailable && setMode("ai")}
-                disabled={!geminiAvailable}
+                onClick={() => groqAvailable && setMode("groq")}
+                disabled={!groqAvailable}
                 className="text-left rounded-xl border p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  borderColor: mode === "ai" ? colors.primary : colors.border,
-                  background: mode === "ai" ? colors.primary + "10" : colors.card,
+                  borderColor: mode === "groq" ? colors.primary : colors.border,
+                  background: mode === "groq" ? colors.primary + "10" : colors.card,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <input type="radio" checked={mode === "ai"} readOnly disabled={!geminiAvailable} />
+                  <input type="radio" checked={mode === "groq"} readOnly disabled={!groqAvailable} />
                   <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
-                    AI parser (Gemini Flash — free tier)
+                    Groq AI (Llama 3.3 70B — free, recommended)
+                  </div>
+                  {!groqAvailable && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto"
+                      style={{ background: colors.muted, color: colors.mutedForeground }}>
+                      no key
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
+                  {groqAvailable
+                    ? "Best accuracy on JEE/NEET papers · free 30 req/min"
+                    : "Set GROQ_API_KEY in backend/.env (console.groq.com/keys)"}
+                </div>
+              </button>
+
+              <button
+                onClick={() => geminiAvailable && setMode("gemini")}
+                disabled={!geminiAvailable}
+                className="text-left rounded-xl border p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  borderColor: mode === "gemini" ? colors.primary : colors.border,
+                  background: mode === "gemini" ? colors.primary + "10" : colors.card,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <input type="radio" checked={mode === "gemini"} readOnly disabled={!geminiAvailable} />
+                  <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
+                    Gemini Flash (legacy fallback)
                   </div>
                   {!geminiAvailable && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto"
@@ -168,8 +210,8 @@ export default function AdminUpload() {
                 </div>
                 <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
                   {geminiAvailable
-                    ? "Higher accuracy on messy PDFs"
-                    : "Set GEMINI_API_KEY in server/.env to enable"}
+                    ? "Use only if Groq is unavailable"
+                    : "Set GEMINI_API_KEY in backend/.env to enable"}
                 </div>
               </button>
             </div>
@@ -229,15 +271,22 @@ export default function AdminUpload() {
             </button>
           </div>
 
-          {drafts.map((d, i) => (
-            <QuestionEditor
-              key={i}
-              index={i}
-              value={d}
-              onChange={(next) => setDrafts((arr) => arr.map((q, idx) => idx === i ? next : q))}
-              onRemove={() => setDrafts((arr) => arr.filter((_, idx) => idx !== i))}
-            />
-          ))}
+          {(() => {
+            const adminToken = getAdminToken();
+            const pdfUrl = documentId && adminToken
+              ? `/api/admin/documents/${encodeURIComponent(documentId)}/pdf?token=${encodeURIComponent(adminToken)}`
+              : null;
+            return drafts.map((d, i) => (
+              <QuestionEditor
+                key={i}
+                index={i}
+                value={d}
+                pdfUrl={pdfUrl}
+                onChange={(next) => setDrafts((arr) => arr.map((q, idx) => idx === i ? next : q))}
+                onRemove={() => setDrafts((arr) => arr.filter((_, idx) => idx !== i))}
+              />
+            ));
+          })()}
         </div>
       )}
     </div>

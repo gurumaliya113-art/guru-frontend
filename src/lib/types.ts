@@ -27,6 +27,14 @@ export interface Question {
   isNCERT?: boolean;
   /** Provenance: "seed" | "manual" | "pdf" | "pdf-ai" — admin metadata */
   source?: string;
+  /** ID of the source document (PDF), if extracted */
+  documentId?: string;
+  /** 1-indexed page number in the source PDF */
+  pageNumber?: number | null;
+  /** true if the question references a figure / diagram */
+  hasFigure?: boolean;
+  /** URL of the rendered PDF-page PNG (the diagram). Shown alongside the question. */
+  pageImageUrl?: string;
   /** ISO timestamp when added to the bank */
   createdAt?: string;
 }
@@ -73,6 +81,47 @@ export interface StudentRecord {
   avgAccuracy: number;
   weakSubject: string;
   lastActive: string;
+}
+
+export type BatchType = "toppers" | "normal";
+
+export interface ClassRoom {
+  id: string;
+  code: string;
+  name: string;
+  subject?: string;
+  classLevel: string; // "1" .. "10"
+  batchType: BatchType;
+  school?: string;
+  teacherId?: string;
+  teacherName?: string;
+  createdAt?: string;
+}
+
+export type MembershipStatus = "pending" | "approved" | "rejected";
+
+export interface Membership {
+  id: string;
+  classId: string;
+  studentId?: string;
+  studentName: string;
+  rollNumber: string;
+  parentPhone?: string;
+  status: MembershipStatus;
+  createdAt?: string;
+  decidedAt?: string;
+  class?: ClassRoom;
+}
+
+export interface Assignment {
+  id: string;
+  paperId: string;
+  paperTitle?: string;
+  classId: string;
+  classCode?: string;
+  className?: string;
+  assignedBy?: string;
+  assignedAt?: string;
 }
 
 export interface UserProfile {

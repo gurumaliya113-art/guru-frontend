@@ -45,7 +45,7 @@ export default function AdminLogin() {
           </div>
           <div>
             <div className="text-xl font-bold text-white">Admin Login</div>
-            <div className="text-xs text-white/60">SmartPrep content management</div>
+            <div className="text-xs text-white/60">Gurutron content management</div>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@smartprep.local"
+              placeholder="admin@gurutron.local"
               className="rounded-xl px-4 py-3 text-white outline-none placeholder:text-white/30"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
             />

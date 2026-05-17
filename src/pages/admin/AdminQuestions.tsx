@@ -4,11 +4,29 @@ import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
 import { colors, difficultyColor, examColor, examLight, subjectColor } from "@/lib/colors";
-import type { Difficulty, ExamType, Question, Subject } from "@/lib/types";
+import type { Difficulty, Question } from "@/lib/types";
 
-const SUBJECTS: (Subject | "All")[] = ["All", "Physics", "Chemistry", "Biology", "Mathematics"];
-const EXAMS: (ExamType | "All")[] = ["All", "NEET", "JEE", "BOARD"];
 const DIFFICULTIES: (Difficulty | "All")[] = ["All", "Easy", "Moderate", "Hard"];
+
+// Top-level categories — a category is either a class ("Class 10") or an exam track ("JEE").
+// Both are first-class browse axes for the admin question bank.
+type Category =
+  | { kind: "class"; value: string; label: string }
+  | { kind: "exam"; value: string; label: string };
+
+const EXAM_CATEGORIES: Category[] = [
+  { kind: "exam", value: "NEET", label: "NEET" },
+  { kind: "exam", value: "JEE", label: "JEE" },
+  { kind: "exam", value: "BOARD", label: "Board" },
+];
+
+function questionMatchesCategory(qn: Question, cat: Category | null): boolean {
+  if (!cat) return true;
+  if (cat.kind === "class") return (qn.classLevel || "") === cat.value;
+  // case-insensitive exam match — DB sometimes has mixed casing
+  const want = cat.value.toLowerCase();
+  return (qn.examType || []).some((e) => String(e).toLowerCase() === want);
+}
 
 export default function AdminQuestions() {
   const nav = useNavigate();
@@ -17,9 +35,12 @@ export default function AdminQuestions() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
-  const [subject, setSubject] = useState<Subject | "All">("All");
-  const [exam, setExam] = useState<ExamType | "All">("All");
   const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
+
+  // Drill-down state: null at each level means "this level is the current view".
+  const [category, setCategory] = useState<Category | null>(null);
+  const [subject, setSubject] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -35,19 +56,90 @@ export default function AdminQuestions() {
 
   useEffect(() => { load(); }, []);
 
+  // ---- Derived data for each drill level ----
+  // Categories: classes that actually exist in the data (sorted numeric ASC), plus
+  // the three fixed exam tracks. Counts are precomputed so the cards show numbers.
+  const categoryCards = useMemo(() => {
+    const classMap = new Map<string, number>();
+    let neet = 0, jee = 0, board = 0;
+    for (const x of questions) {
+      if (x.classLevel) classMap.set(x.classLevel, (classMap.get(x.classLevel) || 0) + 1);
+      const ets = (x.examType || []).map((e) => String(e).toLowerCase());
+      if (ets.includes("neet")) neet++;
+      if (ets.includes("jee")) jee++;
+      if (ets.includes("board")) board++;
+    }
+    const classCats: { cat: Category; count: number }[] = [...classMap.entries()]
+      .sort((a, b) => Number(a[0]) - Number(b[0]) || a[0].localeCompare(b[0]))
+      .map(([cls, count]) => ({ cat: { kind: "class", value: cls, label: `Class ${cls}` }, count }));
+    const examCats: { cat: Category; count: number }[] = [
+      { cat: EXAM_CATEGORIES[0], count: neet },
+      { cat: EXAM_CATEGORIES[1], count: jee },
+      { cat: EXAM_CATEGORIES[2], count: board },
+    ];
+    return { classCats, examCats };
+  }, [questions]);
+
+  // Subjects within the chosen category.
+  const subjectCards = useMemo(() => {
+    if (!category) return [];
+    const map = new Map<string, number>();
+    for (const x of questions) {
+      if (!questionMatchesCategory(x, category)) continue;
+      const s = x.subject || "Other";
+      map.set(s, (map.get(s) || 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+  }, [questions, category]);
+
+  // Topics within the chosen category + subject.
+  const topicCards = useMemo(() => {
+    if (!category || !subject) return [];
+    const map = new Map<string, number>();
+    for (const x of questions) {
+      if (!questionMatchesCategory(x, category)) continue;
+      if (x.subject !== subject) continue;
+      const t = x.topic?.trim() || "Untagged";
+      map.set(t, (map.get(t) || 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+  }, [questions, category, subject]);
+
+  // Final question list: filtered by current drill state + search + difficulty.
+  // If the user is searching, we ignore drill state (search-jumps-to-results UX).
+  const isSearching = q.trim().length > 0;
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return questions.filter((x) => {
-      if (subject !== "All" && x.subject !== subject) return false;
+      if (!isSearching) {
+        if (!questionMatchesCategory(x, category)) return false;
+        if (subject && x.subject !== subject) return false;
+        // "__ALL__" sentinel = "show every question in this subject regardless of topic"
+        if (topic && topic !== "__ALL__") {
+          const t = x.topic?.trim() || "Untagged";
+          if (t !== topic) return false;
+        }
+      }
       if (difficulty !== "All" && x.difficulty !== difficulty) return false;
-      if (exam !== "All" && !x.examType.includes(exam)) return false;
       if (needle) {
         const hay = (x.text + " " + (x.topic || "") + " " + x.options.join(" ")).toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     });
-  }, [questions, q, subject, exam, difficulty]);
+  }, [questions, q, isSearching, category, subject, topic, difficulty]);
+
+  // Which view is active right now?
+  // Search overrides the drill — any non-empty query takes you straight to the question list.
+  const view: "category" | "subject" | "topic" | "questions" = isSearching
+    ? "questions"
+    : !category
+      ? "category"
+      : !subject
+        ? "subject"
+        : !topic
+          ? "topic"
+          : "questions";
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this question? This cannot be undone.")) return;
@@ -60,13 +152,18 @@ export default function AdminQuestions() {
     }
   };
 
+  // Reset drill state to root.
+  const goRoot = () => { setCategory(null); setSubject(null); setTopic(null); };
+  const goSubjects = () => { setSubject(null); setTopic(null); };
+  const goTopics = () => { setTopic(null); };
+
   return (
     <div className="p-8 max-w-6xl">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Questions</div>
+          <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Question Bank</div>
           <div className="text-sm" style={{ color: colors.mutedForeground }}>
-            {loading ? "Loading…" : `${filtered.length} of ${questions.length} shown`}
+            {loading ? "Loading…" : `${questions.length} total questions`}
           </div>
         </div>
         <div className="flex gap-2">
@@ -87,7 +184,7 @@ export default function AdminQuestions() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search + difficulty (always visible). Search jumps to questions view. */}
       <div className="rounded-2xl border bg-white p-4 mb-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center"
         style={{ borderColor: colors.border }}>
         <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ borderColor: colors.border }}>
@@ -104,23 +201,181 @@ export default function AdminQuestions() {
             </button>
           )}
         </div>
-        <Select value={subject} onChange={(v) => setSubject(v as any)} options={SUBJECTS} label="Subject" />
-        <Select value={exam} onChange={(v) => setExam(v as any)} options={EXAMS} label="Exam" />
         <Select value={difficulty} onChange={(v) => setDifficulty(v as any)} options={DIFFICULTIES} label="Difficulty" />
       </div>
 
-      {err && <div className="mb-3 px-3 py-2 rounded-lg text-sm" style={{ background: "#fee2e2", color: colors.destructive }}>{err}</div>}
-
-      {/* List */}
-      {!loading && filtered.length === 0 && (
-        <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
-          <Icon name="inbox" size={40} color={colors.mutedForeground} />
-          <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No questions match the filters.</div>
+      {/* Breadcrumbs — only when drilled in (or searching) */}
+      {(category || isSearching) && (
+        <div className="flex items-center gap-1.5 text-[13px] mb-4 flex-wrap" style={{ color: colors.mutedForeground }}>
+          <button onClick={goRoot} className="font-semibold hover:underline" style={{ color: colors.primary }}>
+            All
+          </button>
+          {!isSearching && category && (
+            <>
+              <Icon name="chevron-right" size={12} color={colors.mutedForeground} />
+              <button
+                onClick={goSubjects}
+                className={subject ? "font-semibold hover:underline" : "font-semibold"}
+                style={{ color: subject ? colors.primary : colors.foreground }}
+              >
+                {category.label}
+              </button>
+            </>
+          )}
+          {!isSearching && category && subject && (
+            <>
+              <Icon name="chevron-right" size={12} color={colors.mutedForeground} />
+              <button
+                onClick={goTopics}
+                className={topic ? "font-semibold hover:underline" : "font-semibold"}
+                style={{ color: topic ? colors.primary : colors.foreground }}
+              >
+                {subject}
+              </button>
+            </>
+          )}
+          {!isSearching && category && subject && topic && (
+            <>
+              <Icon name="chevron-right" size={12} color={colors.mutedForeground} />
+              <span className="font-semibold" style={{ color: colors.foreground }}>
+                {topic === "__ALL__" ? "All topics" : topic}
+              </span>
+            </>
+          )}
+          {isSearching && (
+            <>
+              <Icon name="chevron-right" size={12} color={colors.mutedForeground} />
+              <span className="font-semibold" style={{ color: colors.foreground }}>Search results</span>
+            </>
+          )}
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {filtered.map((x) => (
+      {err && <div className="mb-3 px-3 py-2 rounded-lg text-sm" style={{ background: "#fee2e2", color: colors.destructive }}>{err}</div>}
+
+      {/* ---- LEVEL 1: CATEGORY (classes + exam tracks) ---- */}
+      {!loading && view === "category" && (
+        <>
+          {questions.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
+              <Icon name="inbox" size={40} color={colors.mutedForeground} />
+              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No questions yet. Upload a PDF or add manually.</div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              <Section title="Class" subtitle="Browse by class level">
+                {categoryCards.classCats.length === 0 ? (
+                  <EmptyHint>No questions are tagged with a class yet.</EmptyHint>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {categoryCards.classCats.map(({ cat, count }) => (
+                      <CategoryCard
+                        key={`class-${cat.value}`}
+                        label={cat.label}
+                        count={count}
+                        accent={colors.primary}
+                        onClick={() => setCategory(cat)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Section>
+              <Section title="Exam track" subtitle="Browse by competitive exam">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {categoryCards.examCats.map(({ cat, count }) => (
+                    <CategoryCard
+                      key={`exam-${cat.value}`}
+                      label={cat.label}
+                      count={count}
+                      accent={examColor(cat.value as any) || colors.primary}
+                      bg={examLight(cat.value as any)}
+                      onClick={() => setCategory(cat)}
+                    />
+                  ))}
+                </div>
+              </Section>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ---- LEVEL 2: SUBJECT ---- */}
+      {!loading && view === "subject" && (
+        <>
+          {subjectCards.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
+              <Icon name="inbox" size={40} color={colors.mutedForeground} />
+              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No questions found for {category?.label}.</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {subjectCards.map(({ name, count }) => (
+                <CategoryCard
+                  key={name}
+                  label={name}
+                  count={count}
+                  accent={subjectColor(name as any) || colors.primary}
+                  onClick={() => setSubject(name)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ---- LEVEL 3: TOPIC ---- */}
+      {!loading && view === "topic" && (
+        <>
+          {topicCards.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
+              <Icon name="inbox" size={40} color={colors.mutedForeground} />
+              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No topics found.</div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setTopic("__ALL__")}
+                className="text-left rounded-2xl border bg-white p-4 hover:shadow-md transition"
+                style={{ borderColor: colors.primary }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-[15px]" style={{ color: colors.primary }}>All {subject} questions</div>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md"
+                    style={{ background: colors.primary + "18", color: colors.primary }}>
+                    {topicCards.reduce((s, t) => s + t.count, 0)}
+                  </span>
+                </div>
+              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {topicCards.map(({ name, count }) => (
+                  <CategoryCard
+                    key={name}
+                    label={name}
+                    count={count}
+                    accent={subjectColor(subject as any) || colors.primary}
+                    onClick={() => setTopic(name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ---- LEVEL 4: QUESTIONS ---- */}
+      {!loading && view === "questions" && (
+        <>
+          <div className="text-sm mb-3" style={{ color: colors.mutedForeground }}>
+            Showing {filtered.length} question{filtered.length === 1 ? "" : "s"}
+          </div>
+          {filtered.length === 0 && (
+            <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
+              <Icon name="inbox" size={40} color={colors.mutedForeground} />
+              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No questions match.</div>
+            </div>
+          )}
+          <div className="flex flex-col gap-3">
+            {filtered.map((x) => (
           <div key={x.id} className="rounded-2xl border bg-white p-4" style={{ borderColor: colors.border }}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -135,6 +390,24 @@ export default function AdminQuestions() {
                   {x.source && <Tag color={colors.mutedForeground} muted>src: {x.source}</Tag>}
                 </div>
                 <div className="text-[14px] leading-6 font-medium mb-2" style={{ color: colors.foreground }}>{x.text}</div>
+                {x.pageImageUrl && (
+                  <a
+                    href={x.pageImageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block mb-2 rounded-lg overflow-hidden border max-w-md"
+                    style={{ borderColor: colors.border }}
+                    title="Click to open full source page"
+                  >
+                    <img
+                      src={x.pageImageUrl}
+                      alt={`Source page ${x.pageNumber ?? ""}`}
+                      className="w-full block"
+                      style={{ background: "#fff", maxHeight: 220, objectFit: "contain" }}
+                      loading="lazy"
+                    />
+                  </a>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
                   {x.options.map((o, i) => (
                     <div key={i} className="flex items-center gap-2 text-[12px]"
@@ -164,8 +437,10 @@ export default function AdminQuestions() {
               </div>
             </div>
           </div>
-        ))}
-      </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -183,6 +458,51 @@ function Select({ value, onChange, options, label }: { value: string; onChange: 
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </label>
+  );
+}
+
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-2">
+        <div className="text-[15px] font-bold" style={{ color: colors.foreground }}>{title}</div>
+        {subtitle && <div className="text-xs" style={{ color: colors.mutedForeground }}>{subtitle}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border-2 border-dashed p-6 text-center text-sm"
+      style={{ borderColor: colors.border, color: colors.mutedForeground }}>
+      {children}
+    </div>
+  );
+}
+
+function CategoryCard({ label, count, accent, bg, onClick }: {
+  label: string; count: number; accent: string; bg?: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-left rounded-2xl border bg-white p-4 hover:shadow-md transition relative overflow-hidden"
+      style={{ borderColor: colors.border }}
+    >
+      <div className="absolute inset-x-0 top-0 h-1" style={{ background: accent }} />
+      <div className="flex items-center justify-between gap-2">
+        <div className="font-bold text-[15px] leading-tight" style={{ color: colors.foreground }}>{label}</div>
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
+          style={{ background: bg || (accent + "18"), color: accent }}>
+          {count}
+        </span>
+      </div>
+      <div className="text-[11px] mt-1" style={{ color: colors.mutedForeground }}>
+        {count === 0 ? "No questions" : count === 1 ? "1 question" : `${count} questions`}
+      </div>
+    </button>
   );
 }
 

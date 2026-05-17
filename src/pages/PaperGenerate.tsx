@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
@@ -26,7 +26,26 @@ export default function PaperGenerate() {
       : examType === "JEE"
         ? ["Physics", "Chemistry", "Mathematics"]
         : ["Physics", "Chemistry", "Biology", "Mathematics"];
-  const topics = ["All", ...(TOPICS_BY_SUBJECT[subject] || [])];
+
+  // Topics are derived live from the question bank so that anything an admin
+  // adds (e.g. "Raman Effect" under Physics/BOARD) shows up here automatically.
+  // We merge with the static fallback list so the UX stays populated even when
+  // the bank has no questions yet for the selected subject.
+  const topics = useMemo(() => {
+    const fromPool = pool
+      .filter(
+        (q) =>
+          q.subject === subject &&
+          Array.isArray(q.examType) &&
+          q.examType.includes(examType)
+      )
+      .map((q) => (q.topic || "").trim())
+      .filter(Boolean);
+    const staticList = TOPICS_BY_SUBJECT[subject] || [];
+    const merged = Array.from(new Set<string>([...fromPool, ...staticList]));
+    merged.sort((a, b) => a.localeCompare(b));
+    return ["All", ...merged];
+  }, [pool, subject, examType]);
 
   const handleGenerate = async () => {
     setGenerating(true);

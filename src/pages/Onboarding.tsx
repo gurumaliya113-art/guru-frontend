@@ -38,7 +38,7 @@ export default function Onboarding() {
             style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)" }}>
             <Icon name="book-open" size={32} color="#fff" />
           </div>
-          <div className="text-[28px] font-bold tracking-tight">SmartPrep</div>
+          <div className="text-[28px] font-bold tracking-tight">Gurutron</div>
           <div className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>Master NEET & JEE with AI</div>
         </div>
 

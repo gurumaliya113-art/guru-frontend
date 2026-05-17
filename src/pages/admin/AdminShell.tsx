@@ -15,6 +15,7 @@ export default function AdminShell() {
   const nav = useNavigate();
   const [ready, setReady] = useState(false);
   const [geminiAvailable, setGeminiAvailable] = useState(false);
+  const [groqAvailable, setGroqAvailable] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -25,6 +26,7 @@ export default function AdminShell() {
       try {
         const me = await adminApi.me();
         setGeminiAvailable(me.geminiAvailable);
+        setGroqAvailable(me.groqAvailable);
         setReady(true);
       } catch {
         setAdminToken(null);
@@ -56,7 +58,7 @@ export default function AdminShell() {
               <Icon name="book-open" size={18} color="#fff" />
             </div>
             <div>
-              <div className="text-[15px] font-bold" style={{ color: colors.foreground }}>SmartPrep</div>
+              <div className="text-[15px] font-bold" style={{ color: colors.foreground }}>Gurutron</div>
               <div className="text-[11px]" style={{ color: colors.mutedForeground }}>Admin Panel</div>
             </div>
           </div>
@@ -82,8 +84,8 @@ export default function AdminShell() {
         </nav>
         <div className="px-3 py-3 border-t" style={{ borderColor: colors.border }}>
           <div className="px-3 pb-2 text-[11px]" style={{ color: colors.mutedForeground }}>
-            AI parser: <span style={{ color: geminiAvailable ? colors.neet : colors.mutedForeground, fontWeight: 600 }}>
-              {geminiAvailable ? "ready" : "off (no key)"}
+            AI parser: <span style={{ color: (groqAvailable || geminiAvailable) ? colors.neet : colors.mutedForeground, fontWeight: 600 }}>
+              {groqAvailable ? "Groq ready" : geminiAvailable ? "Gemini ready" : "off (no key)"}
             </span>
           </div>
           <button
@@ -105,7 +107,7 @@ export default function AdminShell() {
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
-        <Outlet context={{ geminiAvailable }} />
+        <Outlet context={{ geminiAvailable, groqAvailable }} />
       </main>
     </div>
   );

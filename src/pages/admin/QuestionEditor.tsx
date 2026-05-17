@@ -29,6 +29,12 @@ export type EditableQuestion = Partial<Question> & {
   classLevel?: string;
   board?: string;
   isNCERT?: boolean;
+  // PDF source tracking (set by upload flow):
+  documentId?: string;
+  pageNumber?: number | null;
+  hasFigure?: boolean;
+  /** URL of the rendered page-image PNG (the diagram). Backend writes this on parse. */
+  pageImageUrl?: string;
 };
 
 export function emptyQuestion(): EditableQuestion {
@@ -54,13 +60,20 @@ export function QuestionEditor({
   onRemove,
   index,
   compact = false,
+  pdfUrl,
 }: {
   value: EditableQuestion;
   onChange: (next: EditableQuestion) => void;
   onRemove?: () => void;
   index?: number;
   compact?: boolean;
+  /** When provided AND value.hasFigure AND value.pageNumber, an inline PDF page preview is shown. */
+  pdfUrl?: string | null;
 }) {
+  // Prefer the saved page-image PNG (fast, lightweight). Fall back to the PDF iframe
+  // only if we have a pdfUrl but no image (e.g. older parsed questions).
+  const showImage = !!value.pageImageUrl;
+  const showPdfFallback = !showImage && !!pdfUrl && !!value.hasFigure && !!value.pageNumber;
   const update = (patch: Partial<EditableQuestion>) => onChange({ ...value, ...patch });
   const baseTopics = TOPICS_BY_SUBJECT[value.subject as keyof typeof TOPICS_BY_SUBJECT] || [];
 
@@ -94,12 +107,85 @@ export function QuestionEditor({
             Question
           </span>
         </div>
-        {onRemove && (
-          <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-50">
-            <Icon name="trash-2" size={16} color={colors.destructive} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {value.pageNumber ? (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+              style={{ background: colors.muted, color: colors.mutedForeground }}
+            >
+              Page {value.pageNumber}
+            </span>
+          ) : null}
+          {value.hasFigure && (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"
+              style={{ background: "#fef3c7", color: "#92400e" }}
+              title="This question references a diagram/figure — verify the source page"
+            >
+              <Icon name="alert-triangle" size={10} color="#92400e" />
+              Has figure
+            </span>
+          )}
+          {onRemove && (
+            <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-50">
+              <Icon name="trash-2" size={16} color={colors.destructive} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {showImage && (
+        <div className="mb-4 rounded-xl border overflow-hidden" style={{ borderColor: colors.border }}>
+          <div className="flex items-center justify-between px-3 py-2" style={{ background: colors.muted }}>
+            <div className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: colors.mutedForeground }}>
+              <Icon name="image" size={12} color={colors.mutedForeground} />
+              Source page {value.pageNumber} — verify diagram & labels
+            </div>
+            <a
+              href={value.pageImageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-semibold underline"
+              style={{ color: colors.primary }}
+            >
+              Open image →
+            </a>
+          </div>
+          <img
+            src={value.pageImageUrl}
+            alt={`PDF page ${value.pageNumber}`}
+            className="w-full block"
+            style={{ background: "#fff", maxHeight: 480, objectFit: "contain" }}
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      {showPdfFallback && pdfUrl && (
+        <div className="mb-4 rounded-xl border overflow-hidden" style={{ borderColor: colors.border }}>
+          <div className="flex items-center justify-between px-3 py-2" style={{ background: colors.muted }}>
+            <div className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: colors.mutedForeground }}>
+              <Icon name="file-text" size={12} color={colors.mutedForeground} />
+              Source page {value.pageNumber} (PDF preview)
+            </div>
+            <a
+              href={`${pdfUrl}#page=${value.pageNumber}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-semibold underline"
+              style={{ color: colors.primary }}
+            >
+              Open full PDF →
+            </a>
+          </div>
+          <iframe
+            title={`PDF page ${value.pageNumber}`}
+            src={`${pdfUrl}#page=${value.pageNumber}&toolbar=0&navpanes=0`}
+            className="w-full border-0"
+            style={{ height: 360, background: "#fff" }}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         <Field label="Question text">

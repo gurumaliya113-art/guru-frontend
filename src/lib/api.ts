@@ -1,6 +1,16 @@
-import type { GeneratedPaper, Question, QuizAttempt, UserProfile } from "./types";
+import type {
+  Assignment,
+  BatchType,
+  ClassRoom,
+  GeneratedPaper,
+  Membership,
+  MembershipStatus,
+  Question,
+  QuizAttempt,
+  UserProfile,
+} from "./types";
 
-const ADMIN_TOKEN_KEY = "smartprep.adminToken";
+const ADMIN_TOKEN_KEY = "gurutron.adminToken";
 
 export function getAdminToken(): string | null {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -41,11 +51,17 @@ export interface AdminStats {
 }
 
 export interface ParsePdfResult {
+  documentId?: string | null;
   parser: string;
   pageCount: number;
   textLength: number;
+  isScanned?: boolean;
+  questionsCount?: number;
   questions: Question[];
+  saved?: boolean;
 }
+
+export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai";
 
 export const api = {
   getProfile: () => request<{ profile: UserProfile | null }>("/api/profile"),
@@ -72,6 +88,65 @@ export const api = {
 
   // Public questions catalogue
   getQuestions: () => request<{ questions: Question[] }>("/api/questions"),
+
+  // ---- Classes ----
+  getMyClasses: () => request<{ classes: ClassRoom[] }>("/api/classes/mine"),
+  createClass: (payload: {
+    name: string;
+    subject?: string;
+    classLevel: string;
+    batchType: BatchType;
+    school?: string;
+    teacherName?: string;
+  }) =>
+    request<{ class: ClassRoom }>("/api/classes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getClassByCode: (code: string) =>
+    request<{ class: ClassRoom }>(`/api/classes/by-code/${encodeURIComponent(code)}`),
+  getClassMemberships: (classId: string) =>
+    request<{ memberships: Membership[] }>(
+      `/api/classes/${encodeURIComponent(classId)}/memberships`
+    ),
+
+  // ---- Memberships ----
+  getMyMemberships: () =>
+    request<{ memberships: Membership[] }>("/api/memberships/mine"),
+  joinClass: (payload: {
+    code: string;
+    studentName: string;
+    rollNumber: string;
+    parentPhone?: string;
+  }) =>
+    request<{ membership: Membership }>("/api/memberships", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  decideMembership: (id: string, status: MembershipStatus) =>
+    request<{ membership: Membership }>(`/api/memberships/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  // ---- Assignments ----
+  getMyAssignments: () =>
+    request<{ assignments: Assignment[] }>("/api/assignments/mine"),
+  getClassAssignments: (classId: string) =>
+    request<{ assignments: Assignment[] }>(
+      `/api/classes/${encodeURIComponent(classId)}/assignments`
+    ),
+  assignPaperToClass: (paperId: string, classId: string) =>
+    request<{ assignment: Assignment; alreadyAssigned?: boolean }>(
+      `/api/papers/${encodeURIComponent(paperId)}/assign`,
+      { method: "POST", body: JSON.stringify({ classId }) }
+    ),
+  unassign: (id: string) =>
+    request<{ ok: true }>(`/api/assignments/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+  getAssignmentsForMe: () =>
+    request<{ assignments: Assignment[] }>("/api/assignments/for-me"),
 };
 
 // ---- Admin API ----
@@ -82,7 +157,7 @@ export const adminApi = {
       body: JSON.stringify({ email, password }),
     }),
   logout: () => request<{ ok: true }>("/api/admin/logout", { method: "POST" }, { admin: true }),
-  me: () => request<{ ok: true; geminiAvailable: boolean }>("/api/admin/me", {}, { admin: true }),
+  me: () => request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true }),
   stats: () => request<AdminStats>("/api/admin/stats", {}, { admin: true }),
 
   listQuestions: () => request<{ questions: Question[] }>("/api/admin/questions", {}, { admin: true }),
@@ -101,14 +176,27 @@ export const adminApi = {
       method: "DELETE",
     }, { admin: true }),
 
-  parsePdf: async (file: File, mode: "heuristic" | "ai"): Promise<ParsePdfResult> => {
+  parsePdf: async (
+    file: File,
+    mode: ParserMode = "auto",
+    opts: { save?: boolean; subject?: string; examType?: string; classLevel?: string } = {}
+  ): Promise<ParsePdfResult> => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("mode", mode);
+    fd.append("save", opts.save === true ? "1" : "0");
+    if (opts.subject)    fd.append("subject", opts.subject);
+    if (opts.examType)   fd.append("examType", opts.examType);
+    if (opts.classLevel) fd.append("classLevel", opts.classLevel);
+
     const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+
     const res = await fetch("/api/admin/parse-pdf", {
       method: "POST",
-      headers: t ? { "x-admin-token": t, "x-user-id": getUserId() } : { "x-user-id": getUserId() },
+      headers,
+      credentials: "include",
       body: fd,
     });
     if (!res.ok) {

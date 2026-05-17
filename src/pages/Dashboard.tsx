@@ -37,7 +37,7 @@ export default function Dashboard() {
 
               <div className="border-t pt-4">
                 <p className="text-gray-600">
-                  Welcome to SmartPrep! Your account has been successfully authenticated.
+                  Welcome to Gurutron! Your account has been successfully authenticated.
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
                   You can now access quizzes, papers, and track your progress.

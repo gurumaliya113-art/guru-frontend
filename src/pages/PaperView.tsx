@@ -82,7 +82,19 @@ export default function PaperView() {
               </div>
             </div>
 
-            <div className="text-sm font-medium leading-6 mb-3.5" style={{ color: colors.foreground }}>{q.text}</div>
+            <div className="text-sm font-medium leading-6 mb-2" style={{ color: colors.foreground }}>{q.text}</div>
+
+            {q.pageImageUrl && (
+              <div className="mb-3 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
+                <img
+                  src={q.pageImageUrl}
+                  alt="Question diagram"
+                  className="w-full block"
+                  style={{ background: "#fff", maxHeight: 360, objectFit: "contain" }}
+                  loading="lazy"
+                />
+              </div>
+            )}
 
             <div className="flex flex-col gap-2 mb-1">
               {q.options.map((opt, optIdx) => {

@@ -194,7 +194,19 @@ export default function QuizSession() {
             )}
           </div>
 
-          <div className="text-[17px] font-semibold leading-7 mb-5" style={{ color: colors.foreground }}>{q.text}</div>
+          <div className="text-[17px] font-semibold leading-7 mb-3" style={{ color: colors.foreground }}>{q.text}</div>
+
+          {q.pageImageUrl && (
+            <div className="mb-5 rounded-xl overflow-hidden border" style={{ borderColor: colors.border }}>
+              <img
+                src={q.pageImageUrl}
+                alt="Question diagram"
+                className="w-full block"
+                style={{ background: "#fff", maxHeight: 420, objectFit: "contain" }}
+                loading="lazy"
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2.5 mb-4">
             {q.options.map((option, idx) => {

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon, ProgressBar } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors } from "@/lib/colors";
+import TeacherClassPanel from "@/pages/TeacherClassPanel";
 
 export default function Home() {
   const { profile, attempts, papers, students, questions } = useApp();
@@ -219,6 +220,8 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        <TeacherClassPanel />
 
         <div className="px-4 pt-5">
           <div className="flex gap-2.5 mb-6">
