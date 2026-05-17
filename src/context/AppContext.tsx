@@ -10,6 +10,7 @@ import type {
   GeneratedPaper,
   Membership,
   MembershipStatus,
+  OnboardingExtras,
   Question,
   QuizAttempt,
   Role,
@@ -84,7 +85,7 @@ interface AppContextType {
   addAttempt: (attempt: QuizAttempt) => Promise<void>;
   addPaper: (paper: GeneratedPaper) => Promise<void>;
   deletePaper: (id: string) => Promise<void>;
-  completeOnboarding: (name: string, role: Role, exam: ExamType) => Promise<void>;
+  completeOnboarding: (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => Promise<void>;
   resetProgress: () => Promise<void>;
   isLoading: boolean;
   /** True once the initial authenticated fetch has completed. */
@@ -248,7 +249,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const completeOnboarding = useCallback(
-    async (name: string, role: Role, exam: ExamType) => {
+    async (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => {
       const next: UserProfile = {
         ...DEFAULT_PROFILE,
         name,
@@ -256,6 +257,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         targetExam: exam,
         isOnboarded: true,
         badges: DEFAULT_BADGES,
+        ...(extras || {}),
       };
       await persistProfile(next);
     },

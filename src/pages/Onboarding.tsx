@@ -6,147 +6,264 @@ import type { ExamType, Role } from "@/lib/types";
 
 type Step = "role" | "details";
 
+// Dark theme palette inspired by the "GURTRON" mockup (deep navy + amber accent).
+const T = {
+  bg: "#0a0e16",
+  bgGradient: "linear-gradient(160deg,#0a0e16 0%,#0f1622 55%,#101826 100%)",
+  surface: "#111a28",
+  surfaceHi: "#172238",
+  border: "rgba(255,255,255,0.08)",
+  borderHi: "rgba(245,179,51,0.45)",
+  text: "#f5f7fb",
+  muted: "rgba(255,255,255,0.55)",
+  mutedSoft: "rgba(255,255,255,0.4)",
+  accent: "#f5b133", // amber
+  accentSoft: "rgba(245,179,51,0.15)",
+  accentRing: "rgba(245,179,51,0.35)",
+  danger: "#f87171",
+  dangerSoft: "rgba(248,113,113,0.12)",
+};
+
 export default function Onboarding() {
   const { completeOnboarding } = useApp();
   const nav = useNavigate();
   const [step, setStep] = useState<Step>("role");
   const [role, setRole] = useState<Role | null>(null);
-  const [name, setName] = useState("");
-  const [exam, setExam] = useState<ExamType>("NEET");
 
-  const examColor = (e: ExamType) =>
-    e === "NEET" ? "#4ade80" : e === "JEE" ? "#fb923c" : "#a78bfa";
+  // Common fields
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [schoolName, setSchoolName] = useState("");
+  const [username, setUsername] = useState("");
+
+  // Student-only
+  const [exam, setExam] = useState<ExamType>("NEET");
+  const [classLevel, setClassLevel] = useState<string>("12");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validate = (): string | null => {
+    if (!name.trim()) return "Please enter your full name";
+    if (!phone.trim() || phone.replace(/\D/g, "").length < 7) return "Please enter a valid phone number";
+    if (!schoolName.trim()) return role === "teacher" ? "Please enter your school / coaching name" : "Please enter your school name";
+    if (!username.trim() || username.includes(" ")) return "Username cannot be empty or contain spaces";
+    return null;
+  };
 
   const handleFinish = async () => {
-    if (!name.trim() || !role) return;
-    await completeOnboarding(name.trim(), role, exam);
-    nav("/", { replace: true });
+    const v = validate();
+    if (v) { setError(v); return; }
+    if (!role) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await completeOnboarding(name.trim(), role, exam, {
+        username: username.trim().toLowerCase(),
+        phone: phone.trim(),
+        schoolName: schoolName.trim(),
+        classLevel: role === "student" ? classLevel : undefined,
+      });
+      nav("/", { replace: true });
+    } catch (e) {
+      setError((e as Error)?.message || "Could not save your profile. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const InputRow = ({
+    icon, placeholder, value, onChange, type = "text", autoFocus = false, hint,
+  }: {
+    icon: string; placeholder: string; value: string;
+    onChange: (v: string) => void; type?: string; autoFocus?: boolean; hint?: string;
+  }) => (
+    <div className="mb-3.5">
+      <div
+        className="flex items-center rounded-2xl border px-4 h-14 transition focus-within:border-[var(--accent)]"
+        style={{ background: T.surface, borderColor: T.border, ["--accent" as any]: T.accent }}
+      >
+        <Icon name={icon} size={18} color={T.mutedSoft} />
+        <input
+          autoFocus={autoFocus}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="ml-3 flex-1 bg-transparent outline-none placeholder:text-white/30"
+          style={{ color: T.text }}
+        />
+      </div>
+      {hint ? <div className="text-[11px] mt-1.5 ml-1" style={{ color: T.mutedSoft }}>{hint}</div> : null}
+    </div>
+  );
 
   return (
     <div
-      className="min-h-full px-6 py-12 text-white relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#3b82f6 100%)" }}
+      className="min-h-full px-6 py-12 relative overflow-hidden"
+      style={{ background: T.bgGradient, color: T.text }}
     >
-      <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
-      <div className="absolute bottom-24 -left-16 w-48 h-48 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+      {/* Ambient blobs */}
+      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }} />
+      <div className="absolute bottom-10 -left-20 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }} />
 
       <div className="relative z-10 max-w-md mx-auto">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="w-[72px] h-[72px] rounded-2xl mx-auto mb-3.5 flex items-center justify-center border"
-            style={{ background: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)" }}>
-            <Icon name="book-open" size={32} color="#fff" />
+        <div className="text-center mb-9">
+          <div
+            className="w-[72px] h-[72px] rounded-2xl mx-auto mb-3.5 flex items-center justify-center border"
+            style={{ background: T.surfaceHi, borderColor: T.border, boxShadow: `0 8px 30px ${T.accentSoft}` }}
+          >
+            <Icon name="book-open" size={32} color={T.accent} />
           </div>
           <div className="text-[28px] font-bold tracking-tight">Gurutron</div>
-          <div className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>Master NEET & JEE with AI</div>
+          <div className="text-sm" style={{ color: T.muted }}>Master NEET &amp; JEE with AI</div>
         </div>
 
         {step === "role" ? (
           <div className="mb-8">
             <div className="text-[26px] font-bold mb-1.5 tracking-tight">Who are you?</div>
-            <div className="text-sm mb-7" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <div className="text-sm mb-7" style={{ color: T.muted }}>
               We'll personalise your experience
             </div>
 
-            <button
-              onClick={() => { setRole("student"); setStep("details"); }}
-              className="w-full text-left mb-3.5 rounded-2xl border overflow-hidden p-5 transition active:scale-[0.97]"
-              style={{
-                borderColor: "rgba(255,255,255,0.18)",
-                background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
-              }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.25)" }}>
-                  <Icon name="user" size={28} color="#4ade80" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-lg font-bold">Student</div>
-                  <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
-                    Practice quizzes, generate papers, track your weak areas
+            {([
+              { r: "student" as Role, icon: "user", title: "Student",
+                desc: "Practice quizzes, generate papers, track your weak areas" },
+              { r: "teacher" as Role, icon: "users", title: "Teacher",
+                desc: "Create tests, assign to students, track class performance" },
+            ]).map(({ r, icon, title, desc }) => (
+              <button
+                key={r}
+                onClick={() => { setRole(r); setError(null); setStep("details"); }}
+                className="w-full text-left mb-3.5 rounded-2xl border overflow-hidden p-5 transition active:scale-[0.97] hover:border-[color:var(--bh)]"
+                style={{ background: T.surface, borderColor: T.border, ["--bh" as any]: T.borderHi }}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
+                  >
+                    <Icon name={icon} size={26} color={T.accent} />
                   </div>
-                </div>
-                <Icon name="arrow-right" size={20} color="rgba(255,255,255,0.6)" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => { setRole("teacher"); setStep("details"); }}
-              className="w-full text-left rounded-2xl border overflow-hidden p-5 transition active:scale-[0.97]"
-              style={{
-                borderColor: "rgba(255,255,255,0.18)",
-                background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
-              }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(251,191,36,0.25)" }}>
-                  <Icon name="users" size={28} color="#fbbf24" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-lg font-bold">Teacher</div>
-                  <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
-                    Create tests, assign to students, track class performance
+                  <div className="flex-1">
+                    <div className="text-lg font-bold">{title}</div>
+                    <div className="text-xs leading-relaxed" style={{ color: T.muted }}>{desc}</div>
                   </div>
+                  <Icon name="arrow-right" size={20} color={T.muted} />
                 </div>
-                <Icon name="arrow-right" size={20} color="rgba(255,255,255,0.6)" />
-              </div>
-            </button>
+              </button>
+            ))}
           </div>
         ) : (
           <div className="mb-8">
-            <button onClick={() => setStep("role")} className="flex items-center gap-1.5 mb-4 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
-              <Icon name="arrow-left" size={16} color="rgba(255,255,255,0.7)" /> Change role
+            <button
+              onClick={() => { setStep("role"); setError(null); }}
+              className="flex items-center gap-1.5 mb-4 text-sm"
+              style={{ color: T.muted }}
+            >
+              <Icon name="arrow-left" size={16} color={T.muted} /> Change role
             </button>
 
             <div
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-5"
-              style={{ background: role === "student" ? "rgba(34,197,94,0.2)" : "rgba(251,191,36,0.2)" }}
+              style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
             >
-              <Icon name={role === "student" ? "user" : "users"} size={14} color={role === "student" ? "#4ade80" : "#fbbf24"} />
-              <span className="text-xs font-semibold" style={{ color: role === "student" ? "#4ade80" : "#fbbf24" }}>
-                {role === "student" ? "Student" : "Teacher"}
+              <Icon name={role === "student" ? "user" : "users"} size={14} color={T.accent} />
+              <span className="text-xs font-semibold" style={{ color: T.accent }}>
+                {role === "student" ? "Student Registration" : "Teacher Registration"}
               </span>
             </div>
 
             <div className="text-[26px] font-bold mb-1.5 tracking-tight">
-              {role === "teacher" ? "Set up your classroom" : "Let's get started"}
+              {role === "teacher" ? "Set up your account" : "Create your profile"}
             </div>
-            <div className="text-sm mb-7" style={{ color: "rgba(255,255,255,0.55)" }}>
-              {role === "teacher" ? "Enter your name to continue" : "Enter your name and target exam"}
+            <div className="text-sm mb-6" style={{ color: T.muted }}>
+              Fill in a few quick details to continue.
             </div>
 
-            <div className="flex items-center rounded-2xl border px-4 mb-5 h-14"
-              style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }}>
-              <Icon name="user" size={18} color="rgba(255,255,255,0.5)" />
-              <input
-                autoFocus
-                placeholder={role === "teacher" ? "Your name (e.g. Mr. Sharma)" : "Your name"}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleFinish()}
-                className="ml-2.5 flex-1 bg-transparent outline-none text-white placeholder:text-white/40"
-              />
-            </div>
+            {error ? (
+              <div
+                className="text-sm rounded-xl px-3.5 py-2.5 mb-4"
+                style={{ background: T.dangerSoft, color: T.danger, border: `1px solid rgba(248,113,113,0.25)` }}
+              >
+                {error}
+              </div>
+            ) : null}
+
+            <InputRow
+              icon="user"
+              placeholder={role === "teacher" ? "Full name (e.g. Mr. Sharma)" : "Full name"}
+              value={name}
+              onChange={setName}
+              autoFocus
+            />
+
+            <InputRow
+              icon="phone"
+              placeholder="Phone number"
+              value={phone}
+              onChange={(v) => setPhone(v.replace(/[^\d+\-\s]/g, ""))}
+              type="tel"
+            />
+
+            <InputRow
+              icon="book-open"
+              placeholder={role === "teacher" ? "School / Coaching name" : "School name"}
+              value={schoolName}
+              onChange={setSchoolName}
+            />
+
+            <InputRow
+              icon="at-sign"
+              placeholder="Username"
+              value={username}
+              onChange={(v) => setUsername(v.replace(/\s/g, "").toLowerCase())}
+              hint="No spaces. This is how others will see you."
+            />
 
             {role === "student" && (
-              <div className="mb-7">
-                <div className="text-[11px] uppercase tracking-wider mb-2.5 font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
+              <>
+                <div className="mt-5 mb-2.5 text-[11px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>
+                  Class
+                </div>
+                <div className="flex gap-2.5 mb-5">
+                  {(["9", "10", "11", "12"]).map((c) => {
+                    const active = classLevel === c;
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => setClassLevel(c)}
+                        className="flex-1 py-3 rounded-xl text-sm font-bold transition"
+                        style={{
+                          background: active ? T.accentSoft : T.surface,
+                          border: `1px solid ${active ? T.accent : T.border}`,
+                          color: active ? T.accent : T.muted,
+                        }}
+                      >
+                        Class {c}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="text-[11px] uppercase tracking-wider mb-2.5 font-medium" style={{ color: T.muted }}>
                   Target Exam
                 </div>
-                <div className="flex gap-2.5">
+                <div className="flex gap-2.5 mb-6">
                   {(["NEET", "JEE", "BOARD"] as ExamType[]).map((e) => {
                     const active = exam === e;
-                    const ec = examColor(e);
                     return (
                       <button
                         key={e}
                         onClick={() => setExam(e)}
-                        className="flex-1 py-3.5 rounded-2xl text-sm font-bold"
+                        className="flex-1 py-3.5 rounded-2xl text-sm font-bold transition"
                         style={{
-                          background: active ? ec + "30" : "rgba(255,255,255,0.08)",
-                          border: `${active ? 2 : 1}px solid ${active ? ec : "rgba(255,255,255,0.15)"}`,
-                          color: active ? ec : "rgba(255,255,255,0.55)",
+                          background: active ? T.accentSoft : T.surface,
+                          border: `1px solid ${active ? T.accent : T.border}`,
+                          color: active ? T.accent : T.muted,
                         }}
                       >
                         {e}
@@ -154,18 +271,26 @@ export default function Onboarding() {
                     );
                   })}
                 </div>
-              </div>
+              </>
             )}
+
+            <div className="text-[11px] mt-1 mb-5" style={{ color: T.mutedSoft }}>
+              <Icon name="lock" size={11} color={T.mutedSoft} />
+              <span className="ml-1.5">Your login password was set when you signed up. You'll use email + password to sign in.</span>
+            </div>
 
             <button
               onClick={handleFinish}
-              disabled={!name.trim()}
-              className="w-full rounded-2xl overflow-hidden transition active:scale-[0.97] disabled:opacity-40"
-              style={{ background: "linear-gradient(to right, #ffffff, #e0e7ff)" }}
+              disabled={submitting}
+              className="w-full rounded-2xl overflow-hidden transition active:scale-[0.97] disabled:opacity-50"
+              style={{
+                background: `linear-gradient(135deg, ${T.accent} 0%, #ffd27a 100%)`,
+                boxShadow: `0 10px 30px ${T.accentSoft}`,
+              }}
             >
-              <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#1e3a8a" }}>
-                {role === "teacher" ? "Enter Dashboard" : "Start Preparing"}
-                <Icon name="arrow-right" size={18} color="#1e3a8a" />
+              <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#0a0e16" }}>
+                {submitting ? "Saving…" : role === "teacher" ? "Create Teacher Account" : "Create Student Account"}
+                {!submitting && <Icon name="arrow-right" size={18} color="#0a0e16" />}
               </div>
             </button>
           </div>
@@ -177,8 +302,8 @@ export default function Onboarding() {
             { icon: "target", label: "Smart Analytics" },
             { icon: "book-open", label: "10,000+ PYQs" },
           ].map(({ icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-              <Icon name={icon} size={16} color="rgba(255,255,255,0.5)" />
+            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: T.mutedSoft }}>
+              <Icon name={icon} size={16} color={T.accent} />
               {label}
             </div>
           ))}
@@ -186,10 +311,10 @@ export default function Onboarding() {
 
         <button
           onClick={() => nav("/admin/login")}
-          className="mt-5 flex items-center justify-center gap-2 text-[11px]"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          className="mt-5 mx-auto flex items-center justify-center gap-2 text-[11px]"
+          style={{ color: T.mutedSoft }}
         >
-          <Icon name="shield" size={12} color="rgba(255,255,255,0.45)" />
+          <Icon name="shield" size={12} color={T.mutedSoft} />
           Admin Login
         </button>
       </div>

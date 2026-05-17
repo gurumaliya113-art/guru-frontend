@@ -134,4 +134,19 @@ export interface UserProfile {
   badges: Badge[];
   rank: number;
   isOnboarded: boolean;
+  /** Display handle (unique-ish, no spaces) — collected at onboarding */
+  username?: string;
+  /** Contact phone number */
+  phone?: string;
+  /** School / coaching name */
+  schoolName?: string;
+  /** Class level for students — "9" / "10" / "11" / "12" or custom */
+  classLevel?: string;
+}
+
+export interface OnboardingExtras {
+  username?: string;
+  phone?: string;
+  schoolName?: string;
+  classLevel?: string;
 }

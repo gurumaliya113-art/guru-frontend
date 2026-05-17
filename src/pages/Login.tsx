@@ -31,8 +31,10 @@ export default function Login() {
         callback: handleGoogleResponse,
       });
       window.google.accounts.id.renderButton(element, {
-        theme: "outline",
+        theme: "filled_black",
         size: "large",
+        shape: "pill",
+        text: "continue_with",
       });
       return true;
     };
@@ -93,52 +95,108 @@ export default function Login() {
     }
   };
 
+  // Dark navy + amber theme (matches Onboarding mockup)
+  const T = {
+    bgGradient: "linear-gradient(160deg,#0a0e16 0%,#0f1622 55%,#101826 100%)",
+    surface: "#111a28",
+    surfaceHi: "#172238",
+    border: "rgba(255,255,255,0.08)",
+    text: "#f5f7fb",
+    muted: "rgba(255,255,255,0.55)",
+    mutedSoft: "rgba(255,255,255,0.4)",
+    accent: "#f5b133",
+    accentSoft: "rgba(245,179,51,0.15)",
+    accentRing: "rgba(245,179,51,0.35)",
+    danger: "#f87171",
+    dangerSoft: "rgba(248,113,113,0.12)",
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-3xl shadow-lg border border-gray-200">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Welcome to Gurutron</h2>
-          <p className="mt-2 text-gray-600">Sign in or create your account</p>
+    <div
+      className="min-h-screen flex items-center justify-center px-6 py-10 relative overflow-hidden"
+      style={{ background: T.bgGradient, color: T.text }}
+    >
+      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }} />
+      <div className="absolute bottom-0 -left-20 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }} />
+
+      <div
+        className="relative z-10 max-w-md w-full p-7 rounded-3xl border"
+        style={{
+          background: T.surface,
+          borderColor: T.border,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+        }}
+      >
+        <div className="text-center mb-6">
+          <div
+            className="w-[64px] h-[64px] rounded-2xl mx-auto mb-3 flex items-center justify-center border"
+            style={{ background: T.surfaceHi, borderColor: T.border, boxShadow: `0 8px 30px ${T.accentSoft}` }}
+          >
+            <span className="text-2xl" style={{ color: T.accent }}>📘</span>
+          </div>
+          <h2 className="text-[26px] font-bold tracking-tight">Welcome to Gurutron</h2>
+          <p className="mt-1.5 text-sm" style={{ color: T.muted }}>Sign in or create your account</p>
         </div>
 
-        {error ? <div className="text-sm text-red-600 bg-red-50 p-3 rounded">{error}</div> : null}
+        {error ? (
+          <div
+            className="text-sm rounded-xl px-3.5 py-2.5 mb-4"
+            style={{ background: T.dangerSoft, color: T.danger, border: "1px solid rgba(248,113,113,0.25)" }}
+          >
+            {error}
+          </div>
+        ) : null}
 
-        <div className="space-y-4">
+        <div className="space-y-4 mb-5">
           <div id="google-signin-button" className="flex justify-center"></div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t" style={{ borderColor: T.border }} />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3" style={{ background: T.surface, color: T.mutedSoft }}>Or continue with email</span>
             </div>
           </div>
         </div>
 
-        <div className="text-left">
-          <p className="text-sm font-medium text-gray-600 mb-3">Choose an action</p>
+        <div className="text-left mb-5">
+          <p className="text-xs uppercase tracking-wider mb-2.5 font-medium" style={{ color: T.muted }}>
+            Choose an action
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setIsSignup(false)}
-              className={`rounded-2xl px-4 py-3 font-semibold shadow-sm ${isSignup ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-slate-900 text-white"}`}
+              className="rounded-2xl px-4 py-3 font-semibold transition"
+              style={
+                !isSignup
+                  ? { background: T.accent, color: "#0a0e16", boxShadow: `0 8px 24px ${T.accentSoft}` }
+                  : { background: T.surfaceHi, color: T.muted, border: `1px solid ${T.border}` }
+              }
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => setIsSignup(true)}
-              className={`rounded-2xl px-4 py-3 font-semibold shadow-sm ${isSignup ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 border border-slate-200"}`}
+              className="rounded-2xl px-4 py-3 font-semibold transition"
+              style={
+                isSignup
+                  ? { background: T.accent, color: "#0a0e16", boxShadow: `0 8px 24px ${T.accentSoft}` }
+                  : { background: T.surfaceHi, color: T.muted, border: `1px solid ${T.border}` }
+              }
             >
               Create account
             </button>
           </div>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-gray-700" htmlFor="email">
+            <label className="block text-xs uppercase tracking-wider font-medium mb-1.5" style={{ color: T.muted }} htmlFor="email">
               Email address
             </label>
             <input
@@ -148,12 +206,19 @@ export default function Login() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              className="w-full rounded-2xl px-4 py-3 outline-none transition placeholder:text-white/30"
+              style={{
+                background: T.surfaceHi,
+                border: `1px solid ${T.border}`,
+                color: T.text,
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700" htmlFor="password">
+            <label className="block text-xs uppercase tracking-wider font-medium mb-1.5" style={{ color: T.muted }} htmlFor="password">
               Password
             </label>
             <input
@@ -163,31 +228,43 @@ export default function Login() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-gray-300 px-4 py-3 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              className="w-full rounded-2xl px-4 py-3 outline-none transition placeholder:text-white/30"
+              style={{
+                background: T.surfaceHi,
+                border: `1px solid ${T.border}`,
+                color: T.text,
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
             />
           </div>
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-white font-semibold shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-2xl px-4 py-3.5 font-bold transition active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(135deg, ${T.accent} 0%, #ffd27a 100%)`,
+              color: "#0a0e16",
+              boxShadow: `0 10px 30px ${T.accentSoft}`,
+            }}
           >
             {busy ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
           </button>
         </form>
 
-        <div className="text-center text-sm text-gray-600">
+        <div className="mt-5 text-center text-sm" style={{ color: T.muted }}>
           {isSignup ? (
             <>
               Already have an account?{' '}
-              <button className="font-semibold text-primary-600" type="button" onClick={() => setIsSignup(false)}>
+              <button className="font-semibold" style={{ color: T.accent }} type="button" onClick={() => setIsSignup(false)}>
                 Sign in
               </button>
             </>
           ) : (
             <>
               New to Gurutron?{' '}
-              <button className="font-semibold text-primary-600" type="button" onClick={() => setIsSignup(true)}>
+              <button className="font-semibold" style={{ color: T.accent }} type="button" onClick={() => setIsSignup(true)}>
                 Create account
               </button>
             </>
