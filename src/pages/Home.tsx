@@ -496,20 +496,36 @@ export default function Home() {
         <TeacherClassPanel />
 
         <div className="px-4 pt-5">
-          <div className="flex gap-2.5 mb-6">
+          {/* Teacher action row — three primary CTAs:
+              1. Generate Paper  → /paper/generate (AI-generated practice paper)
+              2. Create Quiz     → /paper/generate?mode=quiz (same flow, saves
+                                   as a quiz so it surfaces in students' Quiz
+                                   tab once assigned to a class)
+              3. Assign to Class → /papers (pick from paper bank, push to a class) */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
             <button
               onClick={() => nav("/paper/generate")}
-              className="flex-[1.4] flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold shadow-md"
+              className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl text-white font-bold shadow-md"
               style={{ background: "#d97706" }}
             >
-              <Icon name="file-plus" size={22} color="#fff" /> Create Test
+              <Icon name="file-plus" size={20} color="#fff" />
+              <span className="text-[12px]">Generate Paper</span>
+            </button>
+            <button
+              onClick={() => nav("/paper/generate?mode=quiz")}
+              className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl text-white font-bold shadow-md"
+              style={{ background: colors.primary }}
+            >
+              <Icon name="play-circle" size={20} color="#fff" />
+              <span className="text-[12px]">Create Quiz</span>
             </button>
             <button
               onClick={() => nav("/papers")}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
+              className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl border bg-white font-semibold text-[12px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
-              <Icon name="send" size={20} color="#d97706" /> Assign to Class
+              <Icon name="send" size={20} color="#d97706" />
+              <span>Assign</span>
             </button>
           </div>
 

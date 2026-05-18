@@ -11,6 +11,7 @@ import ClassJoin from "@/pages/ClassJoin";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
+import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
@@ -24,17 +25,29 @@ import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminPYP from "@/pages/admin/AdminPYP";
 
-const TABS = [
+// Tab bar entries differ by role:
+//   - Students see "Prev. Papers" (the paid PYP catalogue at /pyp)
+//   - Teachers see "Papers" (their own generated paper bank at /papers, used
+//     to assign work to their classes). Teachers should never see PYP/paywall.
+const STUDENT_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
   { path: "/pyp", label: "Prev. Papers", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];
+const TEACHER_TABS = [
+  { path: "/", label: "Home", icon: "activity" },
+  { path: "/quiz", label: "Quiz", icon: "play-circle" },
+  { path: "/papers", label: "Papers", icon: "file-text" },
+  { path: "/progress", label: "Progress", icon: "bar-chart-2" },
+  { path: "/profile", label: "Profile", icon: "user" },
+];
 
-function TabBar() {
+function TabBar({ role }: { role: "student" | "teacher" }) {
   const loc = useLocation();
   const nav = useNavigate();
+  const TABS = role === "teacher" ? TEACHER_TABS : STUDENT_TABS;
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 border-t bg-white flex items-center justify-around z-50"
@@ -58,17 +71,19 @@ function TabBar() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, role }: { children: React.ReactNode; role: "student" | "teacher" }) {
   return (
     <div className="min-h-full max-w-[640px] mx-auto" style={{ paddingBottom: 72 }}>
       {children}
-      <TabBar />
+      <TabBar role={role} />
     </div>
   );
 }
 
 export default function App() {
   const { profile, classes, myMemberships, isLoading: appLoading, dataLoaded } = useApp();
+  // Resolve the active role once so every <Shell role={...}> below stays in sync.
+  const role: "student" | "teacher" = profile.role === "teacher" ? "teacher" : "student";
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const loc = useLocation();
 
@@ -155,20 +170,21 @@ export default function App() {
         <Route path="/class/join" element={<ClassJoin />} />
         <Route
           path="/"
-          element={needsClass ? <Navigate to={classRedirect} replace /> : <Shell><Home /></Shell>}
+          element={needsClass ? <Navigate to={classRedirect} replace /> : <Shell role={role}><Home /></Shell>}
         />
-        <Route path="/quiz" element={<Shell><Quiz /></Shell>} />
+        <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
-        {/* /papers is the legacy "My generated papers" view. The student
-            app no longer generates its own papers — that flow is teacher-
-            side. Send anyone landing on /papers to the new Prev. Papers
-            catalogue instead. */}
-        <Route path="/papers" element={<Navigate to="/pyp" replace />} />
+        {/* /papers is the teacher's generated paper bank. Students arriving
+            here (e.g. via stale links) get redirected to /pyp. */}
+        <Route
+          path="/papers"
+          element={role === "teacher" ? <Shell role={role}><Papers /></Shell> : <Navigate to="/pyp" replace />}
+        />
         <Route path="/paper/generate" element={<PaperGenerate />} />
         <Route path="/paper/:id" element={<PaperView />} />
-        <Route path="/pyp" element={<Shell><PreviousYearPapers /></Shell>} />
-        <Route path="/progress" element={<Shell><Progress /></Shell>} />
-        <Route path="/profile" element={<Shell><Profile /></Shell>} />
+        <Route path="/pyp" element={<Shell role={role}><PreviousYearPapers /></Shell>} />
+        <Route path="/progress" element={<Shell role={role}><Progress /></Shell>} />
+        <Route path="/profile" element={<Shell role={role}><Profile /></Shell>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <FloatingLogout />
