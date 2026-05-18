@@ -22,7 +22,6 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUpload from "@/pages/admin/AdminUpload";
 import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
-import AdminTopics from "@/pages/admin/AdminTopics";
 
 const TABS = [
   { path: "/", label: "Home", icon: "activity" },
@@ -100,7 +99,6 @@ export default function App() {
       <Route path="/admin" element={<AdminShell />}>
         <Route index element={<AdminDashboard />} />
         <Route path="upload" element={<AdminUpload />} />
-        <Route path="topics" element={<AdminTopics />} />
         <Route path="questions" element={<AdminQuestions />} />
         <Route path="questions/new" element={<AdminQuestionForm />} />
         <Route path="questions/:id" element={<AdminQuestionForm />} />

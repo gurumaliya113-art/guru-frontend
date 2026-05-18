@@ -39,6 +39,18 @@ export interface Question {
   createdAt?: string;
 }
 
+// Topic — admin-curated entry in the topic catalogue. Independent of any
+// particular Question so admins can pre-seed an empty syllabus and have it
+// show up in the teacher's Paper Generation flow before any questions exist.
+export interface Topic {
+  id: string;
+  subject: string;
+  name: string;
+  classLevel?: string | null;
+  examType?: string | null;
+  createdAt?: string;
+}
+
 export interface QuizAttempt {
   id: string;
   quizId: string;

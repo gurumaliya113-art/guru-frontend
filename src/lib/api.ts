@@ -7,6 +7,7 @@ import type {
   MembershipStatus,
   Question,
   QuizAttempt,
+  Topic,
   UserProfile,
 } from "./types";
 
@@ -108,6 +109,10 @@ export const api = {
   // Public questions catalogue
   getQuestions: () => request<{ questions: Question[] }>("/api/questions"),
 
+  // Public topics catalogue (admin-managed). Surfaced in PaperGenerate so
+  // teachers see exactly what admins curated for them.
+  getTopics: () => request<{ topics: Topic[] }>("/api/topics"),
+
   // ---- Classes ----
   getMyClasses: () => request<{ classes: ClassRoom[] }>("/api/classes/mine"),
   createClass: (payload: {
@@ -192,6 +197,19 @@ export const adminApi = {
     }, { admin: true }),
   deleteQuestion: (id: string) =>
     request<{ ok: true }>(`/api/admin/questions/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // ---- Topics catalogue (admin) ----
+  listTopics: () =>
+    request<{ topics: Topic[] }>("/api/admin/topics", {}, { admin: true }),
+  addTopic: (payload: { subject: string; name: string; classLevel?: string | null; examType?: string | null }) =>
+    request<{ topic: Topic }>("/api/admin/topics", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deleteTopic: (id: string) =>
+    request<{ ok: true }>(`/api/admin/topics/${encodeURIComponent(id)}`, {
       method: "DELETE",
     }, { admin: true }),
 

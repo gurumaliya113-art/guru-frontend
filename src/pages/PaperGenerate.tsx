@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { filterQuestions, TOPICS_BY_SUBJECT } from "@/data/questions";
+import { api } from "@/lib/api";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
-import type { Difficulty, ExamType, Subject } from "@/lib/types";
+import type { Difficulty, ExamType, Subject, Topic } from "@/lib/types";
 
 type QuestionType = "MCQ" | "Assertion-Reason" | "Case-Based";
 
@@ -19,6 +20,21 @@ export default function PaperGenerate() {
   const [questionType, setQuestionType] = useState<QuestionType>("MCQ");
   const [questionCount, setQuestionCount] = useState(15);
   const [generating, setGenerating] = useState(false);
+
+  // Admin-curated topic catalogue — same source the admin Questions drill
+  // writes to. We fetch once on mount; failures fall back to the legacy
+  // static list so the UX never breaks if the catalogue endpoint is down.
+  const [catalogueTopics, setCatalogueTopics] = useState<Topic[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await api.getTopics();
+        setCatalogueTopics(r.topics || []);
+      } catch (e) {
+        console.warn("[PaperGenerate] failed to load topics catalogue:", e);
+      }
+    })();
+  }, []);
 
   const subjects: Subject[] =
     examType === "NEET"
@@ -41,11 +57,18 @@ export default function PaperGenerate() {
       )
       .map((q) => (q.topic || "").trim())
       .filter(Boolean);
+    // Catalogue topics for this subject — class-agnostic ones always show;
+    // exam-scoped ones must match the selected exam.
+    const fromCatalogue = catalogueTopics
+      .filter((t) => (t.subject || "").toLowerCase() === subject.toLowerCase())
+      .filter((t) => !t.examType || t.examType.toLowerCase() === examType.toLowerCase())
+      .map((t) => t.name.trim())
+      .filter(Boolean);
     const staticList = TOPICS_BY_SUBJECT[subject] || [];
-    const merged = Array.from(new Set<string>([...fromPool, ...staticList]));
+    const merged = Array.from(new Set<string>([...fromCatalogue, ...fromPool, ...staticList]));
     merged.sort((a, b) => a.localeCompare(b));
     return ["All", ...merged];
-  }, [pool, subject, examType]);
+  }, [pool, catalogueTopics, subject, examType]);
 
   const handleGenerate = async () => {
     setGenerating(true);

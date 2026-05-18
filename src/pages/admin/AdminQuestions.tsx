@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
 import { colors, difficultyColor, examColor, examLight, subjectColor } from "@/lib/colors";
-import type { Difficulty, Question } from "@/lib/types";
+import type { Difficulty, Question, Topic } from "@/lib/types";
 
 const DIFFICULTIES: (Difficulty | "All")[] = ["All", "Easy", "Moderate", "Hard"];
 
@@ -33,6 +33,9 @@ export default function AdminQuestions() {
   const { refreshQuestions } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const [questions, setQuestions] = useState<Question[]>([]);
+  // Admin-curated topic catalogue. Loaded once on mount and kept in sync
+  // locally as the admin adds/deletes — no need to re-fetch on every change.
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
@@ -65,6 +68,20 @@ export default function AdminQuestions() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Topics catalogue — pulled once on mount. Kept independent of `load()`
+  // so a topic add/delete doesn't trigger a full questions refetch.
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await adminApi.listTopics();
+        setTopics(r.topics || []);
+      } catch (e) {
+        // Non-fatal: topics view will fall back to the questions-derived list.
+        console.warn("[AdminQuestions] failed to load topics:", e);
+      }
+    })();
+  }, []);
 
   // Keep the URL in sync with drill state so refreshes / back-button preserve
   // the user's place. We only write when a value actually changed to avoid
@@ -130,17 +147,44 @@ export default function AdminQuestions() {
   }, [questions, category]);
 
   // Topics within the chosen category + subject.
+  // We merge two sources so admins see everything they care about:
+  //   1) topic names that actually appear on questions (with counts)
+  //   2) catalogue topics curated by the admin (count may be 0 — they were
+  //      pre-seeded for the syllabus and don't have questions yet)
+  // `catalogueId` is non-null only when the topic exists in the catalogue —
+  // i.e. only those rows can be deleted from this view.
   const topicCards = useMemo(() => {
     if (!category || !subject) return [];
-    const map = new Map<string, number>();
+    const subjLower = subject.toLowerCase();
+
+    const countMap = new Map<string, number>();
     for (const x of questions) {
       if (!questionMatchesCategory(x, category)) continue;
       if (x.subject !== subject) continue;
       const t = x.topic?.trim() || "Untagged";
-      map.set(t, (map.get(t) || 0) + 1);
+      countMap.set(t, (countMap.get(t) || 0) + 1);
     }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
-  }, [questions, category, subject]);
+
+    // Catalogue rows scoped to this subject. We optionally narrow further
+    // when the admin is browsing inside a class drill — class-tagged topics
+    // only show in their class, but class-agnostic ones show in every class.
+    const catalogueIdByName = new Map<string, string>();
+    for (const t of topics) {
+      if ((t.subject || "").toLowerCase() !== subjLower) continue;
+      if (category.kind === "class" && t.classLevel && t.classLevel !== category.value) continue;
+      if (category.kind === "exam" && t.examType && t.examType.toLowerCase() !== category.value.toLowerCase()) continue;
+      catalogueIdByName.set(t.name, t.id);
+    }
+
+    const allNames = new Set<string>([...countMap.keys(), ...catalogueIdByName.keys()]);
+    return [...allNames]
+      .map((name) => ({
+        name,
+        count: countMap.get(name) || 0,
+        catalogueId: catalogueIdByName.get(name) || null,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [questions, topics, category, subject]);
 
   // Final question list: filtered by current drill state + search + difficulty.
   // If the user is searching, we ignore drill state (search-jumps-to-results UX).
@@ -186,6 +230,49 @@ export default function AdminQuestions() {
       refreshQuestions();
     } catch (e: any) {
       alert(e?.message || "Delete failed");
+    }
+  };
+
+  // ---- Topic catalogue handlers ----
+  // Add a new topic to the catalogue for the current subject (+ class drill,
+  // when applicable). This also surfaces immediately in the teacher's Paper
+  // Generation flow because that screen reads from /api/topics.
+  const handleAddTopic = async () => {
+    if (!subject) return;
+    const raw = window.prompt(`Add a new topic under ${subject}`);
+    if (!raw) return;
+    const name = raw.trim();
+    if (!name) return;
+    try {
+      const r = await adminApi.addTopic({
+        subject,
+        name,
+        classLevel: category?.kind === "class" ? category.value : null,
+        examType: category?.kind === "exam" ? category.value : null,
+      });
+      // Replace-or-prepend: the backend may return an existing row when the
+      // (subject, class, name) combo already exists, so dedupe by id.
+      setTopics((arr) => [r.topic, ...arr.filter((t) => t.id !== r.topic.id)]);
+    } catch (e: any) {
+      alert(e?.message || "Add topic failed");
+    }
+  };
+
+  // Delete from the catalogue only — existing questions tagged with this
+  // topic name are untouched. We warn the admin if questions still reference
+  // the name so they aren't surprised when it keeps showing in the list.
+  const handleDeleteTopic = async (id: string, name: string, count: number) => {
+    const msg =
+      count > 0
+        ? `"${name}" still has ${count} question${count === 1 ? "" : "s"}. ` +
+          `Remove it from the topic catalogue? (Questions will keep their topic tag.)`
+        : `Remove "${name}" from the topic catalogue?`;
+    if (!window.confirm(msg)) return;
+    try {
+      await adminApi.deleteTopic(id);
+      setTopics((arr) => arr.filter((t) => t.id !== id));
+    } catch (e: any) {
+      alert(e?.message || "Delete topic failed");
     }
   };
 
@@ -362,14 +449,34 @@ export default function AdminQuestions() {
 
       {/* ---- LEVEL 3: TOPIC ---- */}
       {!loading && view === "topic" && (
-        <>
+        <div className="flex flex-col gap-3">
+          {/* Add-topic affordance is always visible at this level so admins
+              can pre-seed an empty syllabus; teacher PaperGenerate picks
+              these up immediately via /api/topics. */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[13px]" style={{ color: colors.mutedForeground }}>
+              {topicCards.length === 0
+                ? `No topics yet for ${subject}.`
+                : `${topicCards.length} topic${topicCards.length === 1 ? "" : "s"} in ${subject}`}
+            </div>
+            <button
+              onClick={handleAddTopic}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-white font-semibold text-sm"
+              style={{ background: colors.primary }}
+            >
+              <Icon name="plus" size={14} color="#fff" /> Add Topic
+            </button>
+          </div>
+
           {topicCards.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed p-10 text-center" style={{ borderColor: colors.border }}>
               <Icon name="inbox" size={40} color={colors.mutedForeground} />
-              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>No topics found.</div>
+              <div className="text-sm mt-3" style={{ color: colors.mutedForeground }}>
+                Click "Add Topic" to start curating the syllabus for this subject.
+              </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <>
               <button
                 onClick={() => setTopic("__ALL__")}
                 className="text-left rounded-2xl border bg-white p-4 hover:shadow-md transition"
@@ -384,19 +491,24 @@ export default function AdminQuestions() {
                 </div>
               </button>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {topicCards.map(({ name, count }) => (
-                  <CategoryCard
+                {topicCards.map(({ name, count, catalogueId }) => (
+                  <TopicCard
                     key={name}
                     label={name}
                     count={count}
                     accent={subjectColor(subject as any) || colors.primary}
                     onClick={() => setTopic(name)}
+                    onDelete={
+                      catalogueId
+                        ? () => handleDeleteTopic(catalogueId, name, count)
+                        : undefined
+                    }
                   />
                 ))}
               </div>
-            </div>
+            </>
           )}
-        </>
+        </div>
       )}
 
       {/* ---- LEVEL 4: QUESTIONS ---- */}
@@ -540,6 +652,58 @@ function CategoryCard({ label, count, accent, bg, onClick }: {
         {count === 0 ? "No questions" : count === 1 ? "1 question" : `${count} questions`}
       </div>
     </button>
+  );
+}
+
+// Same visual treatment as CategoryCard, but with an optional inline trash
+// affordance for deleting the topic from the catalogue. We render a separate
+// component so the click-to-drill <button> doesn't nest the trash <button>
+// (invalid HTML, and the click handlers would fight each other).
+function TopicCard({
+  label,
+  count,
+  accent,
+  onClick,
+  onDelete,
+}: {
+  label: string;
+  count: number;
+  accent: string;
+  onClick: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div
+      className="relative rounded-2xl border bg-white p-4 hover:shadow-md transition overflow-hidden"
+      style={{ borderColor: colors.border }}
+    >
+      <div className="absolute inset-x-0 top-0 h-1" style={{ background: accent }} />
+      <button onClick={onClick} className="text-left w-full pr-7">
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-bold text-[15px] leading-tight" style={{ color: colors.foreground }}>
+            {label}
+          </div>
+          <span
+            className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
+            style={{ background: accent + "18", color: accent }}
+          >
+            {count}
+          </span>
+        </div>
+        <div className="text-[11px] mt-1" style={{ color: colors.mutedForeground }}>
+          {count === 0 ? "No questions yet" : count === 1 ? "1 question" : `${count} questions`}
+        </div>
+      </button>
+      {onDelete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-red-50"
+          title="Remove from topic catalogue"
+        >
+          <Icon name="trash-2" size={13} color={colors.destructive} />
+        </button>
+      )}
+    </div>
   );
 }
 
