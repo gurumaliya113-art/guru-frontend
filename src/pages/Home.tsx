@@ -122,11 +122,11 @@ export default function Home() {
               <Icon name="play-circle" size={22} color="#fff" /> Start Quiz
             </button>
             <button
-              onClick={() => nav("/paper/generate")}
+              onClick={() => nav("/pyp")}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
-              <Icon name="file-text" size={20} color={colors.primary} /> Generate Paper
+              <Icon name="award" size={20} color="#d97706" /> Prev. Papers
             </button>
           </div>
 
@@ -242,30 +242,42 @@ export default function Home() {
           </div>
 
           {/* ---------- Previous Year Papers / Mocks entry card ---------- */}
-          <button
-            onClick={() => nav("/pyp")}
-            className="w-full text-left rounded-2xl p-4 mb-6 border shadow-sm active:opacity-90 flex items-center gap-3"
+          <div
+            className="rounded-2xl p-4 mb-6 border shadow-sm"
             style={{
               background: "linear-gradient(135deg,#fef3c7,#fde68a)",
               borderColor: "#fcd34d",
             }}
           >
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "#fff" }}
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "#fff" }}
+              >
+                <Icon name="award" size={22} color="#d97706" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold" style={{ color: "#7c2d12" }}>
+                  Previous Year Papers &amp; Mocks
+                </div>
+                <div className="text-[12px]" style={{ color: "#92400e" }}>
+                  NEET · JEE · Board ·{" "}
+                  {profile.subscription?.active
+                    ? "all unlocked"
+                    : "first 5 free, then ₹49/year"}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => nav("/pyp")}
+              className="w-full py-2.5 rounded-xl text-white font-bold text-[13px] active:opacity-90"
+              style={{ background: "#d97706" }}
             >
-              <Icon name="award" size={22} color="#d97706" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-bold" style={{ color: "#7c2d12" }}>
-                Previous Year Papers &amp; Mocks
-              </div>
-              <div className="text-[12px]" style={{ color: "#92400e" }}>
-                NEET · JEE · Board · {profile.subscription?.active ? "all unlocked" : "first 5 free"}
-              </div>
-            </div>
-            <Icon name="chevron-right" size={18} color="#92400e" />
-          </button>
+              {profile.subscription?.active
+                ? "Open library"
+                : "Explore 5 papers now"}
+            </button>
+          </div>
 
           {/* ---------- Assigned Papers column ---------- */}
           {/* Same data source as the feed above (assignments for my classes),
