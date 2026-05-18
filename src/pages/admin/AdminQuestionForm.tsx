@@ -34,22 +34,15 @@ export default function AdminQuestionForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // Pull the admin-curated topic catalogue once and group by subject so the
-  // QuestionEditor's Topic dropdown can surface anything added from the
-  // Questions drill view (and stay in sync with the teacher portal).
-  const [topicsBySubject, setTopicsBySubject] = useState<Record<string, string[]>>({});
+  // Pull the admin-curated topic catalogue once. We pass the raw Topic[] to
+  // QuestionEditor so it can filter by both subject AND classLevel — a Class
+  // 11 question only sees topics tagged for class 11 (or class-agnostic).
+  const [catalogueTopics, setCatalogueTopics] = useState<Topic[]>([]);
   useEffect(() => {
     (async () => {
       try {
         const r = await adminApi.listTopics();
-        const grouped: Record<string, string[]> = {};
-        for (const t of (r.topics || []) as Topic[]) {
-          const key = (t.subject || "").trim();
-          if (!key || !t.name) continue;
-          if (!grouped[key]) grouped[key] = [];
-          if (!grouped[key].includes(t.name)) grouped[key].push(t.name);
-        }
-        setTopicsBySubject(grouped);
+        setCatalogueTopics(r.topics || []);
       } catch (e) {
         console.warn("[AdminQuestionForm] failed to load topics:", e);
       }
@@ -127,7 +120,7 @@ export default function AdminQuestionForm() {
       <QuestionEditor
         value={draft}
         onChange={setDraft}
-        catalogueTopicsBySubject={topicsBySubject}
+        catalogueTopics={catalogueTopics}
       />
 
       {error && (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui";
 import { TOPICS_BY_SUBJECT } from "@/data/questions";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
-import type { Difficulty, Question } from "@/lib/types";
+import type { Difficulty, Question, Topic } from "@/lib/types";
 
 // Default suggestions — admins can also add custom values which get saved as-is.
 const SUBJECTS: string[] = ["Physics", "Chemistry", "Biology", "Mathematics"];
@@ -61,7 +61,7 @@ export function QuestionEditor({
   index,
   compact = false,
   pdfUrl,
-  catalogueTopicsBySubject,
+  catalogueTopics,
 }: {
   value: EditableQuestion;
   onChange: (next: EditableQuestion) => void;
@@ -71,11 +71,12 @@ export function QuestionEditor({
   /** When provided AND value.hasFigure AND value.pageNumber, an inline PDF page preview is shown. */
   pdfUrl?: string | null;
   /**
-   * Admin-curated topics keyed by subject (case-insensitive). When supplied,
-   * the Topic dropdown will surface these alongside the static fallback list
-   * so anything added from the admin Questions drill shows up here too.
+   * Admin-curated topics. The dropdown filters this list by the currently
+   * selected subject AND classLevel so admins only see options relevant to
+   * the question they're authoring. Topics with no classLevel set are
+   * treated as class-agnostic and always shown.
    */
-  catalogueTopicsBySubject?: Record<string, string[]>;
+  catalogueTopics?: Topic[];
 }) {
   // Prefer the saved page-image PNG (fast, lightweight). Fall back to the PDF iframe
   // only if we have a pdfUrl but no image (e.g. older parsed questions).
@@ -83,13 +84,16 @@ export function QuestionEditor({
   const showPdfFallback = !showImage && !!pdfUrl && !!value.hasFigure && !!value.pageNumber;
   const update = (patch: Partial<EditableQuestion>) => onChange({ ...value, ...patch });
   const staticTopics = TOPICS_BY_SUBJECT[value.subject as keyof typeof TOPICS_BY_SUBJECT] || [];
-  // Merge catalogue topics for this subject (case-insensitive key) ahead of the
-  // static list so the admin's own curation appears first.
+  // Filter catalogue topics by subject AND classLevel so the dropdown only
+  // shows options relevant to *this* question. Catalogue rows with no
+  // classLevel are class-agnostic and always shown. Same idea for examType.
   const subjKey = (value.subject || "").toLowerCase();
-  const catalogueForSubject = catalogueTopicsBySubject
-    ? Object.entries(catalogueTopicsBySubject).find(([k]) => k.toLowerCase() === subjKey)?.[1] || []
-    : [];
-  const baseTopics = Array.from(new Set<string>([...catalogueForSubject, ...staticTopics]));
+  const clsKey = (value.classLevel || "").toLowerCase();
+  const catalogueForContext = (catalogueTopics || [])
+    .filter((t) => (t.subject || "").toLowerCase() === subjKey)
+    .filter((t) => !t.classLevel || t.classLevel.toLowerCase() === clsKey)
+    .map((t) => t.name);
+  const baseTopics = Array.from(new Set<string>([...catalogueForContext, ...staticTopics]));
 
   // Custom values added by admin during this session — merged into the base lists
   // so the new value shows up in the dropdown immediately.
