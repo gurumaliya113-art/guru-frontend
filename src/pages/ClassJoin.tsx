@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Html5Qrcode } from "html5-qrcode";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
@@ -38,6 +39,24 @@ export default function ClassJoin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [membership, setMembership] = useState<Membership | null>(activeMembership);
+  const [scanOpen, setScanOpen] = useState(false);
+
+  const handleScanned = useCallback((raw: string) => {
+    // raw can be a full URL like https://app/class/join?code=XYZ or just XYZ
+    let extracted = raw.trim();
+    try {
+      const u = new URL(extracted);
+      const fromQuery = u.searchParams.get("code");
+      if (fromQuery) extracted = fromQuery;
+    } catch {
+      // Not a URL — treat the whole string as the code.
+    }
+    extracted = extracted.toUpperCase();
+    setCode(extracted);
+    setScanOpen(false);
+    void lookup(extracted);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-look-up if a code came in via QR ?code=...
   useEffect(() => {
@@ -127,28 +146,36 @@ export default function ClassJoin() {
           </div>
 
           <button
-            disabled
-            className="w-full mb-4 rounded-2xl overflow-hidden p-5 border opacity-70"
+            onClick={() => setScanOpen(true)}
+            className="w-full mb-4 rounded-2xl overflow-hidden p-5 border active:scale-[0.98] transition"
             style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
-              borderColor: "rgba(255,255,255,0.18)",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.10))",
+              borderColor: "rgba(255,255,255,0.25)",
             }}
           >
             <div className="flex items-center gap-4">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.18)" }}
+                style={{ background: "rgba(255,255,255,0.22)" }}
               >
                 <Icon name="qr-code" size={28} color="#fff" />
               </div>
               <div className="flex-1 text-left">
                 <div className="text-base font-bold">Scan QR Code</div>
-                <div className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  Use your camera (coming soon)
+                <div className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  Use your camera to scan teacher's QR
                 </div>
               </div>
+              <Icon name="arrow-right" size={18} color="rgba(255,255,255,0.8)" />
             </div>
           </button>
+
+          {scanOpen && (
+            <QrScannerModal
+              onClose={() => setScanOpen(false)}
+              onResult={handleScanned}
+            />
+          )}
 
           <div className="text-center my-3 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
             OR
@@ -336,6 +363,152 @@ function BigField({
       >
         <Icon name={icon} size={18} color={colors.mutedForeground} />
         <div className="ml-2.5 flex-1 flex items-center">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function QrScannerModal({
+  onClose,
+  onResult,
+}: {
+  onClose: () => void;
+  onResult: (raw: string) => void;
+}) {
+  // We give the scanner host div a stable id so html5-qrcode can attach to it.
+  const containerId = "class-join-qr-scanner";
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const firedRef = useRef(false);
+  const [error, setError] = useState<string>("");
+
+  // Cleanly stop and release the camera. Safe to call multiple times.
+  const stop = useCallback(async () => {
+    const inst = scannerRef.current;
+    scannerRef.current = null;
+    if (!inst) return;
+    try {
+      // Only stop if it's actually scanning — otherwise the lib throws.
+      // @ts-ignore -- isScanning is part of html5-qrcode's runtime API.
+      if (inst.isScanning) await inst.stop();
+      await inst.clear();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    firedRef.current = false;
+
+    const start = async () => {
+      try {
+        const inst = new Html5Qrcode(containerId, { verbose: false });
+        scannerRef.current = inst;
+        await inst.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (vw, vh) => {
+              const m = Math.min(vw, vh);
+              const side = Math.max(160, Math.floor(m * 0.7));
+              return { width: side, height: side };
+            },
+            aspectRatio: 1,
+          },
+          (decoded) => {
+            if (firedRef.current) return;
+            firedRef.current = true;
+            // Fire and forget — stop in the background so UI feels instant.
+            void stop();
+            onResult(decoded);
+          },
+          // Per-frame decode errors are noisy and expected — swallow them.
+          () => { /* ignore */ }
+        );
+        if (cancelled) {
+          await stop();
+        }
+      } catch (e: any) {
+        const name = e?.name || "";
+        const msg =
+          name === "NotAllowedError" || /permission/i.test(String(e?.message))
+            ? "Camera permission denied. Allow camera access in your browser and try again."
+            : name === "NotFoundError"
+              ? "No camera found on this device."
+              : e?.message || "Could not start camera.";
+        setError(msg);
+      }
+    };
+
+    void start();
+
+    return () => {
+      cancelled = true;
+      void stop();
+    };
+  }, [stop, onResult]);
+
+  const close = () => {
+    void stop();
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.85)" }}
+      onClick={close}
+    >
+      <div
+        className="relative w-full max-w-md rounded-3xl overflow-hidden border"
+        style={{ background: "#0f172a", borderColor: "rgba(255,255,255,0.15)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-3 border-b"
+          style={{ borderColor: "rgba(255,255,255,0.1)" }}
+        >
+          <div className="text-white font-bold text-base">Scan class QR</div>
+          <button
+            onClick={close}
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.1)" }}
+            aria-label="Close scanner"
+          >
+            <Icon name="x" size={18} color="#fff" />
+          </button>
+        </div>
+
+        <div className="relative" style={{ aspectRatio: "1 / 1", background: "#000" }}>
+          {/* html5-qrcode will inject a <video> here. */}
+          <div id={containerId} className="absolute inset-0 [&_video]:object-cover [&_video]:w-full [&_video]:h-full" />
+          {!error && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div
+                className="w-2/3 h-2/3 rounded-2xl border-2"
+                style={{
+                  borderColor: "rgba(255,255,255,0.85)",
+                  boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)",
+                }}
+              />
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center text-center px-6">
+              <div className="text-white">
+                <Icon name="alert-circle" size={28} color="#fbbf24" />
+                <div className="font-bold mt-2">Camera unavailable</div>
+                <div className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  {error}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 text-[11px] text-center" style={{ color: "rgba(255,255,255,0.6)" }}>
+          Point your camera at the QR your teacher is showing.
+        </div>
       </div>
     </div>
   );

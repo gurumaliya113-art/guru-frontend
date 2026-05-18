@@ -8,12 +8,15 @@ import type { Assignment } from "@/lib/types";
 import TeacherClassPanel from "@/pages/TeacherClassPanel";
 
 export default function Home() {
-  const { profile, attempts, papers, students, questions } = useApp();
+  const { profile, attempts, papers, students, questions, myMemberships } = useApp();
   if (profile.role === "teacher") return <TeacherHome />;
   return <StudentHome />;
 
   function StudentHome() {
     const nav = useNavigate();
+    const hasClass = myMemberships.some(
+      (m) => m.status === "approved" || m.status === "pending"
+    );
 
     // Daily-updates feed. Right now we derive it from assignments the
     // student has via approved class memberships (teacher uploaded a paper /
@@ -129,6 +132,34 @@ export default function Home() {
               <Icon name="award" size={20} color="#d97706" /> Prev. Papers
             </button>
           </div>
+
+          {/* ---------- Join Class CTA (only for students without a class) ---------- */}
+          {!hasClass && (
+            <button
+              onClick={() => nav("/class/join")}
+              className="w-full text-left rounded-2xl p-3.5 mb-6 border shadow-sm active:opacity-90 flex items-center gap-3"
+              style={{
+                background: "linear-gradient(135deg,#eff6ff,#dbeafe)",
+                borderColor: "#bfdbfe",
+              }}
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "#1e3a8a" }}
+              >
+                <Icon name="qr-code" size={20} color="#fff" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>
+                  Join your class
+                </div>
+                <div className="text-[12px]" style={{ color: "#1d4ed8" }}>
+                  Scan QR or enter the code your teacher shared.
+                </div>
+              </div>
+              <Icon name="chevron-right" size={18} color="#1e3a8a" />
+            </button>
+          )}
 
           {/* ---------- Daily Updates feed ---------- */}
           {/* Empty for students who aren't in any class yet — by design,
