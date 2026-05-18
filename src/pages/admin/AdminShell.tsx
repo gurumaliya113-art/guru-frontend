@@ -8,6 +8,7 @@ const NAV = [
   { to: "/admin", label: "Dashboard", icon: "bar-chart-2", end: true },
   { to: "/admin/upload", label: "Upload PDF", icon: "file-text" },
   { to: "/admin/questions", label: "Questions", icon: "book-open" },
+  { to: "/admin/topics", label: "Topics", icon: "target" },
   { to: "/admin/questions/new", label: "Add Question", icon: "plus" },
 ];
 

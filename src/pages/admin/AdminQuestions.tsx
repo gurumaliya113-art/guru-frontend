@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
@@ -31,6 +31,7 @@ function questionMatchesCategory(qn: Question, cat: Category | null): boolean {
 export default function AdminQuestions() {
   const nav = useNavigate();
   const { refreshQuestions } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -38,9 +39,18 @@ export default function AdminQuestions() {
   const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
 
   // Drill-down state: null at each level means "this level is the current view".
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subject, setSubject] = useState<string | null>(null);
-  const [topic, setTopic] = useState<string | null>(null);
+  // Initial values come from ?subject=&classLevel=&topic= so deep links from
+  // AdminTopics (and similar) land directly on the right drill view.
+  const initialCategory: Category | null = (() => {
+    const cls = searchParams.get("classLevel");
+    if (cls) return { kind: "class", value: cls, label: `Class ${cls}` };
+    const exam = searchParams.get("exam");
+    if (exam) return { kind: "exam", value: exam.toUpperCase(), label: exam.toUpperCase() };
+    return null;
+  })();
+  const [category, setCategory] = useState<Category | null>(initialCategory);
+  const [subject, setSubject] = useState<string | null>(searchParams.get("subject"));
+  const [topic, setTopic] = useState<string | null>(searchParams.get("topic"));
 
   const load = async () => {
     setLoading(true);
@@ -55,6 +65,33 @@ export default function AdminQuestions() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Keep the URL in sync with drill state so refreshes / back-button preserve
+  // the user's place. We only write when a value actually changed to avoid
+  // looping with the initial-from-URL effect above.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const set = (key: string, val: string | null) => {
+      if (val) next.set(key, val);
+      else next.delete(key);
+    };
+    if (category?.kind === "class") {
+      set("classLevel", category.value);
+      set("exam", null);
+    } else if (category?.kind === "exam") {
+      set("exam", category.value);
+      set("classLevel", null);
+    } else {
+      set("classLevel", null);
+      set("exam", null);
+    }
+    set("subject", subject);
+    set("topic", topic && topic !== "__ALL__" ? topic : null);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, subject, topic]);
 
   // ---- Derived data for each drill level ----
   // Categories: classes that actually exist in the data (sorted numeric ASC), plus

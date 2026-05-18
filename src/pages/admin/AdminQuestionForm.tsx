@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
@@ -12,8 +12,24 @@ export default function AdminQuestionForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const { refreshQuestions } = useApp();
+  const [searchParams] = useSearchParams();
 
-  const [draft, setDraft] = useState<EditableQuestion>(emptyQuestion());
+  // For new questions, allow AdminTopics (or any other page) to prefill the
+  // subject / classLevel / topic via query params so the admin lands in the
+  // editor with the right metadata already filled in.
+  const [draft, setDraft] = useState<EditableQuestion>(() => {
+    if (id) return emptyQuestion();
+    const base = emptyQuestion();
+    const subject = searchParams.get("subject");
+    const topic = searchParams.get("topic");
+    const classLevel = searchParams.get("classLevel");
+    return {
+      ...base,
+      ...(subject ? { subject } : {}),
+      ...(topic ? { topic } : {}),
+      ...(classLevel ? { classLevel } : {}),
+    };
+  });
   const [loading, setLoading] = useState(isEdit);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
