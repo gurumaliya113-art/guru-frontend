@@ -99,6 +99,8 @@ export const api = {
       body: JSON.stringify(attempt),
     }),
   getPapers: () => request<{ papers: GeneratedPaper[] }>("/api/papers"),
+  getPaper: (id: string) =>
+    request<{ paper: GeneratedPaper }>(`/api/papers/${encodeURIComponent(id)}`),
   addPaper: (paper: GeneratedPaper) =>
     request<{ paper: GeneratedPaper }>("/api/papers", {
       method: "POST",

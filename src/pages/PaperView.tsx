@@ -1,15 +1,40 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
+import { api } from "@/lib/api";
 import { colors, examColor } from "@/lib/colors";
+import type { GeneratedPaper } from "@/lib/types";
 
 export default function PaperView() {
   const nav = useNavigate();
   const { id = "" } = useParams();
   const { papers, profile } = useApp();
   const [showAnswers, setShowAnswers] = useState(false);
-  const paper = papers.find((p) => p.id === id);
+
+  // Local-cache hit (teacher viewing own paper) is the fast path. For
+  // students opening an assigned paper, the paper isn't in their `papers`
+  // array — fetch it from the backend instead. The new GET /api/papers/:id
+  // route authorizes the caller (owner or approved-class-member) server-side.
+  const localPaper = papers.find((p) => p.id === id);
+  const [remotePaper, setRemotePaper] = useState<GeneratedPaper | null>(null);
+  const [loading, setLoading] = useState<boolean>(!localPaper && Boolean(id));
+  const [fetchError, setFetchError] = useState<string>("");
+
+  useEffect(() => {
+    if (localPaper || !id) return;
+    let cancelled = false;
+    setLoading(true);
+    setFetchError("");
+    api
+      .getPaper(id)
+      .then((r) => { if (!cancelled) setRemotePaper(r.paper); })
+      .catch((e) => { if (!cancelled) setFetchError(String(e?.message || e)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [id, localPaper]);
+
+  const paper = localPaper || remotePaper;
   const ec = examColor(paper?.examType || "NEET");
 
   // Trigger the browser's print dialog. We rely on a print stylesheet
@@ -30,8 +55,22 @@ export default function PaperView() {
           <Icon name="arrow-left" size={18} color={colors.foreground} />
         </button>
         <div className="flex flex-col items-center justify-center pt-32 gap-3" style={{ color: colors.mutedForeground }}>
-          <Icon name="file-x" size={40} color={colors.mutedForeground} />
-          <div className="text-base">Paper not found</div>
+          {loading ? (
+            <>
+              <Icon name="clock" size={36} color={colors.mutedForeground} />
+              <div className="text-base">Loading paper…</div>
+            </>
+          ) : (
+            <>
+              <Icon name="file-x" size={40} color={colors.mutedForeground} />
+              <div className="text-base">Paper not found</div>
+              {fetchError && (
+                <div className="text-xs text-center max-w-xs" style={{ color: colors.mutedForeground }}>
+                  {fetchError}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     );
