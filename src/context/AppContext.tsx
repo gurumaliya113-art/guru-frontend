@@ -299,8 +299,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addPaper = useCallback(async (paper: GeneratedPaper) => {
+    // Optimistically add, but roll back if the server rejects so the paper
+    // can never appear in the list without also existing on the backend
+    // (otherwise downstream actions like "Assign to class" 404 with
+    // "Paper not found").
     setPapers((prev) => [paper, ...prev]);
-    try { await api.addPaper(paper); } catch (e) { console.error(e); }
+    try {
+      await api.addPaper(paper);
+    } catch (e) {
+      console.error(e);
+      setPapers((prev) => prev.filter((p) => p.id !== paper.id));
+      throw e;
+    }
   }, []);
 
   const deletePaper = useCallback(async (id: string) => {
