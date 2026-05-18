@@ -141,7 +141,9 @@ export default function PaperView() {
               </div>
             </div>
 
-            <div className="text-sm font-medium leading-6 mb-2" style={{ color: colors.foreground }}>{q.text}</div>
+            {q.text && (
+              <div className="text-sm font-medium leading-6 mb-2" style={{ color: colors.foreground }}>{q.text}</div>
+            )}
 
             {q.pageImageUrl && (
               <div className="mb-3 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
@@ -149,7 +151,10 @@ export default function PaperView() {
                   src={q.pageImageUrl}
                   alt="Question diagram"
                   className="w-full block"
-                  style={{ background: "#fff", maxHeight: 360, objectFit: "contain" }}
+                  // For captured papers (image-only) we let the image grow
+                  // to its natural height so handwriting stays readable;
+                  // typed-paper diagrams are still capped.
+                  style={{ background: "#fff", maxHeight: q.options.length === 0 ? 1200 : 360, objectFit: "contain" }}
                   loading="lazy"
                 />
               </div>

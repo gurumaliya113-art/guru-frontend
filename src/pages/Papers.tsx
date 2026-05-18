@@ -64,13 +64,26 @@ export default function Papers() {
           <div className="text-[26px] font-bold mb-0.5" style={{ color: colors.foreground }}>My Papers</div>
           <div className="text-[13px]" style={{ color: colors.mutedForeground }}>{papers.length} generated</div>
         </div>
-        <button
-          onClick={() => nav("/paper/generate")}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-white text-[13px] font-semibold"
-          style={{ background: colors.primary }}
-        >
-          <Icon name="plus" size={18} color="#fff" /> New Paper
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick photo-snap path for teachers who don't feel like typing
+              MCQs. Creates an image-only paper they can assign just like
+              any AI-generated one. */}
+          <button
+            onClick={() => nav("/paper/capture")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full border text-[12px] font-semibold"
+            style={{ borderColor: colors.border, background: "#fff", color: colors.foreground }}
+            title="Snap photos of your handwritten/printed paper"
+          >
+            <Icon name="camera" size={15} color={colors.foreground} /> Capture
+          </button>
+          <button
+            onClick={() => nav("/paper/generate")}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-white text-[13px] font-semibold"
+            style={{ background: colors.primary }}
+          >
+            <Icon name="plus" size={18} color="#fff" /> New Paper
+          </button>
+        </div>
       </div>
 
       {papers.length === 0 && (

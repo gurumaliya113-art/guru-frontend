@@ -13,6 +13,7 @@ import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
 import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
+import PaperCapture from "@/pages/PaperCapture";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
 import Progress from "@/pages/Progress";
@@ -181,6 +182,7 @@ export default function App() {
           element={role === "teacher" ? <Shell role={role}><Papers /></Shell> : <Navigate to="/pyp" replace />}
         />
         <Route path="/paper/generate" element={<PaperGenerate />} />
+        <Route path="/paper/capture" element={<PaperCapture />} />
         <Route path="/paper/:id" element={<PaperView />} />
         <Route path="/pyp" element={<Shell role={role}><PreviousYearPapers /></Shell>} />
         <Route path="/progress" element={<Shell role={role}><Progress /></Shell>} />

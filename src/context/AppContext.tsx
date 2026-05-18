@@ -80,6 +80,9 @@ interface AppContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   addAttempt: (attempt: QuizAttempt) => Promise<void>;
   addPaper: (paper: GeneratedPaper) => Promise<void>;
+  /** Merge an already-persisted paper into local state without re-POSTing.
+   *  Used by the capture-upload flow where the server has already saved it. */
+  attachPaper: (paper: GeneratedPaper) => void;
   deletePaper: (id: string) => Promise<void>;
   completeOnboarding: (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => Promise<void>;
   resetProgress: () => Promise<void>;
@@ -313,6 +316,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const attachPaper = useCallback((paper: GeneratedPaper) => {
+    setPapers((prev) => {
+      // Replace if same id already present, otherwise prepend.
+      const others = prev.filter((p) => p.id !== paper.id);
+      return [paper, ...others];
+    });
+  }, []);
+
   const deletePaper = useCallback(async (id: string) => {
     setPapers((prev) => prev.filter((p) => p.id !== id));
     try { await api.deletePaper(id); } catch (e) { console.error(e); }
@@ -349,6 +360,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateProfile,
         addAttempt,
         addPaper,
+        attachPaper,
         deletePaper,
         completeOnboarding,
         resetProgress,

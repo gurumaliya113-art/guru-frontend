@@ -106,6 +106,38 @@ export const api = {
       method: "POST",
       body: JSON.stringify(paper),
     }),
+  // Upload a "captured" paper — N image snapshots that get turned into a
+  // single image-only paper on the backend. Returns the created paper so
+  // the caller can immediately navigate to /paper/:id or assign it.
+  uploadCapture: async (payload: {
+    title: string;
+    examType?: string;
+    subject?: string;
+    topic?: string;
+    difficulty?: string;
+    images: File[];
+  }): Promise<{ paper: GeneratedPaper }> => {
+    const fd = new FormData();
+    fd.append("title", payload.title);
+    if (payload.examType) fd.append("examType", payload.examType);
+    if (payload.subject) fd.append("subject", payload.subject);
+    if (payload.topic) fd.append("topic", payload.topic);
+    if (payload.difficulty) fd.append("difficulty", payload.difficulty);
+    payload.images.forEach((f) => fd.append("images", f, f.name));
+    const url = `${API_BASE_URL}/api/papers/capture`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      // NOTE: don't set Content-Type — the browser must add the multipart boundary.
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch { /* ignore */ }
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
   deletePaper: (id: string) =>
     request<{ ok: true }>(`/api/papers/${encodeURIComponent(id)}`, { method: "DELETE" }),
   reset: () => request<{ ok: true }>("/api/reset", { method: "POST" }),
