@@ -5,6 +5,8 @@ import type {
   GeneratedPaper,
   Membership,
   MembershipStatus,
+  PreviousYearPaper,
+  PreviousYearPaperSummary,
   Question,
   QuizAttempt,
   Topic,
@@ -171,6 +173,40 @@ export const api = {
     }),
   getAssignmentsForMe: () =>
     request<{ assignments: Assignment[] }>("/api/assignments/for-me"),
+
+  // ---- Previous Year Papers / Mocks ----
+  // Listing is public (no auth). Detail requires auth and enforces the
+  // 5-free-then-₹49 paywall server-side (HTTP 402 with code "PAYWALL").
+  getPyps: () => request<{ pyps: PreviousYearPaperSummary[] }>("/api/pyp"),
+  getPyp: (id: string) =>
+    request<{ pyp: PreviousYearPaper }>(`/api/pyp/${encodeURIComponent(id)}`),
+
+  // ---- Razorpay subscription payments ----
+  getPaymentConfig: () =>
+    request<{
+      configured: boolean;
+      keyId: string | null;
+      amount: number;
+      currency: string;
+      plan: string;
+    }>("/api/payments/config"),
+  createPaymentOrder: () =>
+    request<{ orderId: string; amount: number; currency: string; keyId: string }>(
+      "/api/payments/create-order",
+      { method: "POST" },
+    ),
+  verifyPayment: (payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) =>
+    request<{
+      ok: true;
+      subscription: { active: boolean; plan?: string; validUntil?: string; razorpayPaymentId?: string };
+    }>("/api/payments/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ---- Admin API ----
@@ -210,6 +246,26 @@ export const adminApi = {
     }, { admin: true }),
   deleteTopic: (id: string) =>
     request<{ ok: true }>(`/api/admin/topics/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // ---- Previous Year Papers / Mocks (admin) ----
+  listPyps: () =>
+    request<{ pyps: PreviousYearPaperSummary[] }>("/api/admin/pyp", {}, { admin: true }),
+  addPyp: (payload: {
+    title: string;
+    examType: string;
+    year: number;
+    subject?: string;
+    durationMinutes?: number;
+    questions: Partial<Question>[];
+  }) =>
+    request<{ pyp: PreviousYearPaper }>("/api/admin/pyp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deletePyp: (id: string) =>
+    request<{ ok: true }>(`/api/admin/pyp/${encodeURIComponent(id)}`, {
       method: "DELETE",
     }, { admin: true }),
 

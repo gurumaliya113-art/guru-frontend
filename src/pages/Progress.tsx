@@ -1,9 +1,29 @@
+import { useState } from "react";
 import { Icon, ProgressBar, StatCard } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, subjectColor } from "@/lib/colors";
+import { startSubscriptionCheckout } from "@/lib/razorpay";
 
 export default function Progress() {
-  const { attempts, profile } = useApp();
+  const { attempts, profile, updateProfile } = useApp();
+  const subscribed = profile.subscription?.active === true;
+  const [paying, setPaying] = useState(false);
+
+  const handlePay = () => {
+    setPaying(true);
+    startSubscriptionCheckout(
+      { name: profile.name, phone: profile.phone },
+      async (sub) => {
+        await updateProfile({ subscription: sub });
+        setPaying(false);
+        alert("Subscription activated! Enjoy unlimited access 🎉");
+      },
+      (err) => {
+        setPaying(false);
+        alert(`Payment failed: ${err.message}`);
+      },
+    );
+  };
 
   const total = attempts.length;
   const avgScore = total > 0
@@ -32,6 +52,40 @@ export default function Progress() {
     <div className="px-4 pt-12 pb-5">
       <div className="text-[26px] font-bold mb-1" style={{ color: colors.foreground }}>My Progress</div>
       <div className="text-sm mb-4" style={{ color: colors.mutedForeground }}>Track your performance</div>
+
+      {/* Subscription upsell — only shown to users without an active plan. */}
+      {!subscribed && (
+        <div
+          className="rounded-2xl p-4 mb-4 border flex items-center gap-3"
+          style={{
+            background: "linear-gradient(135deg,#fffbeb,#fef3c7)",
+            borderColor: "#fcd34d",
+          }}
+        >
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "#fff" }}
+          >
+            <Icon name="zap" size={20} color="#d97706" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[14px] font-bold" style={{ color: "#7c2d12" }}>
+              Unlock full potential
+            </div>
+            <div className="text-[12px]" style={{ color: "#92400e" }}>
+              All PYP papers · advanced analytics · just ₹49 / year
+            </div>
+          </div>
+          <button
+            onClick={handlePay}
+            disabled={paying}
+            className="px-3 py-2 rounded-xl text-white text-[12px] font-bold disabled:opacity-60"
+            style={{ background: "#d97706" }}
+          >
+            {paying ? "…" : "₹49 · Subscribe"}
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-4">
         <StatCard label="Total Quizzes" value={total} />

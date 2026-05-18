@@ -79,6 +79,24 @@ export interface GeneratedPaper {
   skipHeader?: boolean;
 }
 
+// Previous Year Paper / Mock — admin-curated, global catalogue. The summary
+// shape is returned by the list endpoint (cheap to load); the full shape is
+// returned by the detail endpoint (gated by the paywall after 5 free PYPs).
+export interface PreviousYearPaperSummary {
+  id: string;
+  title: string;
+  examType: ExamType;
+  year: number;
+  subject?: string;
+  durationMinutes?: number;
+  questionCount: number;
+  createdAt: string;
+}
+
+export interface PreviousYearPaper extends PreviousYearPaperSummary {
+  questions: Question[];
+}
+
 export interface Badge {
   id: string;
   name: string;
@@ -136,7 +154,13 @@ export interface Assignment {
   classCode?: string;
   className?: string;
   assignedBy?: string;
+  /** Display name of the assigning teacher, hydrated server-side for the
+   *  student home-feed ("Manoj sir uploaded …"). */
+  assignedByName?: string;
   assignedAt?: string;
+  /** Optional ISO deadline. When present, the home-feed renders an
+   *  "attempt by …" hint so students see the cut-off at a glance. */
+  dueAt?: string;
 }
 
 export interface UserProfile {
@@ -165,6 +189,18 @@ export interface UserProfile {
    * across sessions and devices once we sync via the profile API.
    */
   paperHeaderImage?: string;
+
+  /**
+   * Subscription state for the ₹49/year paywall (Previous Year Papers
+   * beyond the first 5, full Progress analytics, etc.). Razorpay payment
+   * webhook flips `active` to true and stores `validUntil`.
+   */
+  subscription?: {
+    active: boolean;
+    plan?: string;             // e.g. "yearly-49"
+    validUntil?: string;       // ISO date
+    razorpayPaymentId?: string;
+  };
 }
 
 export interface OnboardingExtras {

@@ -1,18 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, examColor, examLight } from "@/lib/colors";
-import type { ExamType, Role } from "@/lib/types";
+import type { ExamType } from "@/lib/types";
 
 const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BOARD"];
-const ROLES: { value: Role; label: string }[] = [
-  { value: "student", label: "Student" },
-  { value: "teacher", label: "Teacher" },
-];
 
 export default function Profile() {
-  const nav = useNavigate();
   const { profile, updateProfile, attempts, papers, resetProgress } = useApp();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
@@ -24,13 +18,6 @@ export default function Profile() {
     setEditingName(false);
   };
 
-  const handleSwitchRole = () => {
-    if (window.confirm("Switch role? This will take you back to the login screen.")) {
-      updateProfile({ isOnboarded: false });
-      nav("/onboarding", { replace: true });
-    }
-  };
-
   const handleReset = () => {
     if (window.confirm("Reset Progress? This will clear all your quiz history and papers.")) {
       resetProgress();
@@ -38,7 +25,6 @@ export default function Profile() {
   };
 
   const menuItems = [
-    { icon: "user", label: "Role", value: profile.role === "student" ? "Student" : "Teacher" },
     { icon: "target", label: "Target Exam", value: profile.targetExam },
     { icon: "book-open", label: "Papers Generated", value: String(papers.length) },
     { icon: "check-circle", label: "Quizzes Attempted", value: String(attempts.length) },
@@ -97,29 +83,8 @@ export default function Profile() {
         ))}
       </div>
 
-      <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
-        <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>I am a</div>
-        <div className="flex gap-2.5">
-          {ROLES.map(({ value, label }) => {
-            const active = profile.role === value;
-            return (
-              <button
-                key={value}
-                onClick={() => updateProfile({ role: value })}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-semibold"
-                style={{
-                  background: active ? colors.primary : colors.secondary,
-                  borderColor: active ? colors.primary : colors.border,
-                  color: active ? "#fff" : colors.mutedForeground,
-                }}
-              >
-                <Icon name={value === "student" ? "user" : "users"} size={16} color={active ? "#fff" : colors.mutedForeground} />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Role picker removed \u2014 the app is now student-only. Teacher
+          workflows live in a separate teacher app/build. */}
 
       <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
         <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>Target Exam</div>
@@ -164,15 +129,6 @@ export default function Profile() {
           </div>
         ))}
       </div>
-
-      <button
-        onClick={handleSwitchRole}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-[1.5px] mb-3 bg-white"
-        style={{ borderColor: colors.border, color: colors.foreground }}
-      >
-        <Icon name="refresh-cw" size={16} color={colors.foreground} />
-        <span className="text-sm font-semibold">Switch Role / Re-onboard</span>
-      </button>
 
       <button
         onClick={handleReset}

@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, ProgressBar } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
+import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
+import type { Assignment } from "@/lib/types";
 import TeacherClassPanel from "@/pages/TeacherClassPanel";
 
 export default function Home() {
@@ -11,6 +14,37 @@ export default function Home() {
 
   function StudentHome() {
     const nav = useNavigate();
+
+    // Daily-updates feed. Right now we derive it from assignments the
+    // student has via approved class memberships (teacher uploaded a paper /
+    // assigned a quiz). General students with no class will see an empty
+    // state — that's intentional, the home feed should stay quiet for them
+    // until they join a class.
+    const [feed, setFeed] = useState<Assignment[]>([]);
+    const [feedLoading, setFeedLoading] = useState(true);
+    useEffect(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const r = await api.getAssignmentsForMe();
+          if (cancelled) return;
+          // Newest first.
+          const sorted = [...(r.assignments || [])].sort((a, b) => {
+            const ta = a.assignedAt ? Date.parse(a.assignedAt) : 0;
+            const tb = b.assignedAt ? Date.parse(b.assignedAt) : 0;
+            return tb - ta;
+          });
+          setFeed(sorted);
+        } catch (e) {
+          console.warn("[Home] failed to load assignments feed:", e);
+          if (!cancelled) setFeed([]);
+        } finally {
+          if (!cancelled) setFeedLoading(false);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, []);
+
     const avgScore =
       attempts.length > 0
         ? Math.round(
@@ -94,6 +128,238 @@ export default function Home() {
             >
               <Icon name="file-text" size={20} color={colors.primary} /> Generate Paper
             </button>
+          </div>
+
+          {/* ---------- Daily Updates feed ---------- */}
+          {/* Empty for students who aren't in any class yet — by design,
+              we don't fill the home feed with mock content for general
+              users. As soon as they join a class and the teacher assigns
+              anything, those rows surface here. */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>
+              Daily Updates
+            </div>
+            {feed.length > 0 && (
+              <div
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md"
+                style={{ background: "#eff6ff" }}
+              >
+                <Icon name="bell" size={11} color="#2563eb" />
+                <span className="text-[11px] font-semibold" style={{ color: "#1d4ed8" }}>
+                  {feed.length} new
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="mb-6 flex flex-col gap-2">
+            {feedLoading ? (
+              <div
+                className="rounded-2xl p-4 border bg-white text-[12px]"
+                style={{ borderColor: colors.border, color: colors.mutedForeground }}
+              >
+                Loading updates…
+              </div>
+            ) : feed.length === 0 ? (
+              <div
+                className="rounded-2xl p-4 border-2 border-dashed text-center"
+                style={{ borderColor: colors.border }}
+              >
+                <Icon name="bell-off" size={20} color={colors.mutedForeground} />
+                <div
+                  className="text-[13px] font-semibold mt-1.5"
+                  style={{ color: colors.foreground }}
+                >
+                  No updates yet
+                </div>
+                <div
+                  className="text-[11px] mt-0.5"
+                  style={{ color: colors.mutedForeground }}
+                >
+                  Join a class to see assigned papers &amp; daily announcements here.
+                </div>
+              </div>
+            ) : (
+              feed.slice(0, 4).map((a) => {
+                const teacher = a.assignedByName || "Your teacher";
+                const ts = a.assignedAt ? new Date(a.assignedAt) : null;
+                const due = a.dueAt ? new Date(a.dueAt) : null;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => nav(`/paper/${a.paperId}`)}
+                    className="text-left rounded-2xl p-3.5 border bg-white shadow-sm active:opacity-90"
+                    style={{ borderColor: colors.border }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: "#dbeafe" }}
+                      >
+                        <Icon name="file-text" size={16} color="#2563eb" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="text-[13px] leading-snug"
+                          style={{ color: colors.foreground }}
+                        >
+                          <span className="font-semibold">{teacher}</span>
+                          {" "}uploaded{" "}
+                          <span className="font-semibold">
+                            {a.paperTitle || "a new paper"}
+                          </span>
+                          {due
+                            ? ` — attempt by ${due.toLocaleString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}`
+                            : ""}
+                        </div>
+                        <div
+                          className="flex items-center gap-2 mt-1 text-[11px]"
+                          style={{ color: colors.mutedForeground }}
+                        >
+                          {a.className && <span>{a.className}</span>}
+                          {a.className && ts && <span>·</span>}
+                          {ts && (
+                            <span>
+                              {ts.toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Icon name="chevron-right" size={16} color={colors.mutedForeground} />
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {/* ---------- Previous Year Papers / Mocks entry card ---------- */}
+          <button
+            onClick={() => nav("/pyp")}
+            className="w-full text-left rounded-2xl p-4 mb-6 border shadow-sm active:opacity-90 flex items-center gap-3"
+            style={{
+              background: "linear-gradient(135deg,#fef3c7,#fde68a)",
+              borderColor: "#fcd34d",
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "#fff" }}
+            >
+              <Icon name="award" size={22} color="#d97706" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-bold" style={{ color: "#7c2d12" }}>
+                Previous Year Papers &amp; Mocks
+              </div>
+              <div className="text-[12px]" style={{ color: "#92400e" }}>
+                NEET · JEE · Board · {profile.subscription?.active ? "all unlocked" : "first 5 free"}
+              </div>
+            </div>
+            <Icon name="chevron-right" size={18} color="#92400e" />
+          </button>
+
+          {/* ---------- Assigned Papers column ---------- */}
+          {/* Same data source as the feed above (assignments for my classes),
+              but rendered as a full standalone list. Stays empty for general
+              (non-class) students by design. */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>
+              Assigned Papers
+            </div>
+            {feed.length > 0 && (
+              <button
+                onClick={() => nav("/papers")}
+                className="text-[12px] font-semibold"
+                style={{ color: colors.primary }}
+              >
+                See all
+              </button>
+            )}
+          </div>
+          <div className="mb-6 flex flex-col gap-2">
+            {feedLoading ? (
+              <div
+                className="rounded-2xl p-4 border bg-white text-[12px]"
+                style={{ borderColor: colors.border, color: colors.mutedForeground }}
+              >
+                Loading…
+              </div>
+            ) : feed.length === 0 ? (
+              <div
+                className="rounded-2xl p-4 border-2 border-dashed text-center"
+                style={{ borderColor: colors.border }}
+              >
+                <Icon name="inbox" size={20} color={colors.mutedForeground} />
+                <div
+                  className="text-[13px] font-semibold mt-1.5"
+                  style={{ color: colors.foreground }}
+                >
+                  No papers assigned yet
+                </div>
+                <div
+                  className="text-[11px] mt-0.5"
+                  style={{ color: colors.mutedForeground }}
+                >
+                  Once your teacher assigns a paper to your class, it shows up here.
+                </div>
+              </div>
+            ) : (
+              feed.map((a) => {
+                const due = a.dueAt ? new Date(a.dueAt) : null;
+                return (
+                  <button
+                    key={`assigned-${a.id}`}
+                    onClick={() => nav(`/paper/${a.paperId}`)}
+                    className="text-left rounded-2xl p-3.5 border bg-white shadow-sm active:opacity-90"
+                    style={{ borderColor: colors.border }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: "#ecfdf5" }}
+                      >
+                        <Icon name="clipboard" size={18} color="#16a34a" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="text-[14px] font-semibold truncate"
+                          style={{ color: colors.foreground }}
+                        >
+                          {a.paperTitle || "Untitled paper"}
+                        </div>
+                        <div
+                          className="flex items-center gap-2 mt-0.5 text-[11px]"
+                          style={{ color: colors.mutedForeground }}
+                        >
+                          {a.className && <span>{a.className}</span>}
+                          {a.className && a.assignedByName && <span>·</span>}
+                          {a.assignedByName && <span>by {a.assignedByName}</span>}
+                        </div>
+                      </div>
+                      {due ? (
+                        <div
+                          className="text-[11px] font-semibold px-2 py-1 rounded-md"
+                          style={{ background: "#fef3c7", color: "#92400e" }}
+                        >
+                          Due {due.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        </div>
+                      ) : (
+                        <Icon name="chevron-right" size={16} color={colors.mutedForeground} />
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
 
           <div className="text-[17px] font-bold mb-3" style={{ color: colors.foreground }}>Subjects</div>

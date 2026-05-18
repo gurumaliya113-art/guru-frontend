@@ -14,6 +14,7 @@ import QuizSession from "@/pages/QuizSession";
 import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperView from "@/pages/PaperView";
+import PreviousYearPapers from "@/pages/PreviousYearPapers";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -22,6 +23,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUpload from "@/pages/admin/AdminUpload";
 import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
+import AdminPYP from "@/pages/admin/AdminPYP";
 
 const TABS = [
   { path: "/", label: "Home", icon: "activity" },
@@ -102,6 +104,7 @@ export default function App() {
         <Route path="questions" element={<AdminQuestions />} />
         <Route path="questions/new" element={<AdminQuestionForm />} />
         <Route path="questions/:id" element={<AdminQuestionForm />} />
+        <Route path="pyp" element={<AdminPYP />} />
       </Route>
     </>
   );
@@ -160,6 +163,7 @@ export default function App() {
         <Route path="/papers" element={<Shell><Papers /></Shell>} />
         <Route path="/paper/generate" element={<PaperGenerate />} />
         <Route path="/paper/:id" element={<PaperView />} />
+        <Route path="/pyp" element={<Shell><PreviousYearPapers /></Shell>} />
         <Route path="/progress" element={<Shell><Progress /></Shell>} />
         <Route path="/profile" element={<Shell><Profile /></Shell>} />
         <Route path="*" element={<Navigate to="/" replace />} />
