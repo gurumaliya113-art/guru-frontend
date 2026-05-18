@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { emptyQuestion, EditableQuestion, QuestionEditor } from "./QuestionEditor";
-import type { Question } from "@/lib/types";
+import type { Question, Topic } from "@/lib/types";
 
 export default function AdminQuestionForm() {
   const nav = useNavigate();
@@ -33,6 +33,28 @@ export default function AdminQuestionForm() {
   const [loading, setLoading] = useState(isEdit);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // Pull the admin-curated topic catalogue once and group by subject so the
+  // QuestionEditor's Topic dropdown can surface anything added from the
+  // Questions drill view (and stay in sync with the teacher portal).
+  const [topicsBySubject, setTopicsBySubject] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await adminApi.listTopics();
+        const grouped: Record<string, string[]> = {};
+        for (const t of (r.topics || []) as Topic[]) {
+          const key = (t.subject || "").trim();
+          if (!key || !t.name) continue;
+          if (!grouped[key]) grouped[key] = [];
+          if (!grouped[key].includes(t.name)) grouped[key].push(t.name);
+        }
+        setTopicsBySubject(grouped);
+      } catch (e) {
+        console.warn("[AdminQuestionForm] failed to load topics:", e);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -102,7 +124,11 @@ export default function AdminQuestionForm() {
         </div>
       </div>
 
-      <QuestionEditor value={draft} onChange={setDraft} />
+      <QuestionEditor
+        value={draft}
+        onChange={setDraft}
+        catalogueTopicsBySubject={topicsBySubject}
+      />
 
       {error && (
         <div className="mb-3 px-3 py-2 rounded-lg text-sm" style={{ background: "#fee2e2", color: colors.destructive }}>

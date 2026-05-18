@@ -61,6 +61,7 @@ export function QuestionEditor({
   index,
   compact = false,
   pdfUrl,
+  catalogueTopicsBySubject,
 }: {
   value: EditableQuestion;
   onChange: (next: EditableQuestion) => void;
@@ -69,13 +70,26 @@ export function QuestionEditor({
   compact?: boolean;
   /** When provided AND value.hasFigure AND value.pageNumber, an inline PDF page preview is shown. */
   pdfUrl?: string | null;
+  /**
+   * Admin-curated topics keyed by subject (case-insensitive). When supplied,
+   * the Topic dropdown will surface these alongside the static fallback list
+   * so anything added from the admin Questions drill shows up here too.
+   */
+  catalogueTopicsBySubject?: Record<string, string[]>;
 }) {
   // Prefer the saved page-image PNG (fast, lightweight). Fall back to the PDF iframe
   // only if we have a pdfUrl but no image (e.g. older parsed questions).
   const showImage = !!value.pageImageUrl;
   const showPdfFallback = !showImage && !!pdfUrl && !!value.hasFigure && !!value.pageNumber;
   const update = (patch: Partial<EditableQuestion>) => onChange({ ...value, ...patch });
-  const baseTopics = TOPICS_BY_SUBJECT[value.subject as keyof typeof TOPICS_BY_SUBJECT] || [];
+  const staticTopics = TOPICS_BY_SUBJECT[value.subject as keyof typeof TOPICS_BY_SUBJECT] || [];
+  // Merge catalogue topics for this subject (case-insensitive key) ahead of the
+  // static list so the admin's own curation appears first.
+  const subjKey = (value.subject || "").toLowerCase();
+  const catalogueForSubject = catalogueTopicsBySubject
+    ? Object.entries(catalogueTopicsBySubject).find(([k]) => k.toLowerCase() === subjKey)?.[1] || []
+    : [];
+  const baseTopics = Array.from(new Set<string>([...catalogueForSubject, ...staticTopics]));
 
   // Custom values added by admin during this session — merged into the base lists
   // so the new value shows up in the dropdown immediately.
