@@ -163,10 +163,20 @@ export default function PaperView() {
             {" · "}{paper.questions.length} questions · {paper.difficulty}
           </div>
         </div>
+        {/* Numbering is rendered via CSS counters (see stylesheet below)
+            instead of <ol> markers, because list-style markers are clipped
+            inside CSS multi-column layouts in Chromium / print engines. */}
         <ol className="paper-print-list">
           {paper.questions.map((q) => (
             <li key={q.id} className="paper-print-q">
               <div className="paper-print-q-text">{q.text}</div>
+              {q.pageImageUrl && (
+                <img
+                  src={q.pageImageUrl}
+                  alt=""
+                  className="paper-print-q-img"
+                />
+              )}
               <ol className="paper-print-opts" type="A">
                 {q.options.map((opt, i) => (
                   <li key={i} className={showAnswers && i === q.correctIndex ? "is-correct" : ""}>
@@ -215,21 +225,45 @@ export default function PaperView() {
           }
           .paper-print-title { font-size: 14pt; font-weight: bold; }
           .paper-print-sub   { font-size: 10pt; margin-top: 2px; }
-          /* Two-column body — questions flow side by side. */
+          /* Two-column body — questions flow side by side.
+             We drive the visible "1.", "2.", "3." numbering with a CSS counter
+             instead of relying on the <ol> marker, which the print engine
+             routinely drops or clips inside multi-column layouts. */
           .paper-print-list {
             column-count: 2;
             column-gap: 8mm;
             column-rule: 1px solid #ccc;
             margin: 0;
-            padding: 0 0 0 18px;
-            list-style-position: outside;
+            padding: 0;
+            list-style: none;
+            counter-reset: qnum;
           }
           .paper-print-q {
             break-inside: avoid;
             page-break-inside: avoid;
             margin-bottom: 8px;
+            padding-left: 22px;
+            position: relative;
+            counter-increment: qnum;
+          }
+          .paper-print-q::before {
+            content: counter(qnum) ".";
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: bold;
+            min-width: 20px;
           }
           .paper-print-q-text { margin-bottom: 3px; }
+          .paper-print-q-img {
+            display: block;
+            max-width: 100%;
+            max-height: 55mm;
+            object-fit: contain;
+            margin: 4px 0;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
           .paper-print-opts {
             margin: 0;
             padding-left: 18px;

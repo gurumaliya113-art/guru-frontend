@@ -146,12 +146,12 @@ export default function Profile() {
         </div>
       </div>
 
-      {profile.role === "teacher" && (
-        <PaperHeaderUpload
-          value={profile.paperHeaderImage}
-          onChange={(dataUrl) => updateProfile({ paperHeaderImage: dataUrl })}
-        />
-      )}
+      {/* Header / logo upload — available to everyone who generates papers,
+          not just teachers, so the "school image" option always shows up. */}
+      <PaperHeaderUpload
+        value={profile.paperHeaderImage}
+        onChange={(dataUrl) => updateProfile({ paperHeaderImage: dataUrl })}
+      />
 
       <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
         {menuItems.map((item, i) => (
