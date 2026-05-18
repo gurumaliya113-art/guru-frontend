@@ -156,6 +156,12 @@ export interface UserProfile {
   classLevel?: string;
   /** Student chose to skip joining a teacher's class and explore the app on their own. */
   skipClassJoin?: boolean;
+  /**
+   * Teacher-only: data URL of the school / institute header image stamped at
+   * the top of every generated paper PDF. Stored on the profile so it persists
+   * across sessions and devices once we sync via the profile API.
+   */
+  paperHeaderImage?: string;
 }
 
 export interface OnboardingExtras {

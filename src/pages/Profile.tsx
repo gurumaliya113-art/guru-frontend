@@ -146,6 +146,13 @@ export default function Profile() {
         </div>
       </div>
 
+      {profile.role === "teacher" && (
+        <PaperHeaderUpload
+          value={profile.paperHeaderImage}
+          onChange={(dataUrl) => updateProfile({ paperHeaderImage: dataUrl })}
+        />
+      )}
+
       <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
         {menuItems.map((item, i) => (
           <div key={item.label} className="flex justify-between items-center py-3"
@@ -178,6 +185,79 @@ export default function Profile() {
         <Icon name="trash-2" size={16} color={colors.destructive} />
         <span className="text-sm font-semibold" style={{ color: colors.destructive }}>Reset Progress</span>
       </button>
+    </div>
+  );
+}
+
+// Teacher-only card: lets the teacher upload a school / institute header
+// image that gets stamped at the top of every generated paper PDF. We store
+// it as a data URL on the profile so it round-trips through the existing
+// /api/profile sync without needing a new file-upload endpoint.
+function PaperHeaderUpload({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (dataUrl: string | undefined) => void;
+}) {
+  const onPick = (file: File) => {
+    // Cap at ~1 MB so the profile JSON stays small. Anything bigger should
+    // really live in object storage, but a header logo never needs that.
+    if (file.size > 1024 * 1024) {
+      alert("Image is too large. Please pick something under 1 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => onChange(typeof reader.result === "string" ? reader.result : undefined);
+    reader.onerror = () => alert("Could not read the image — try a different file.");
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <div className="text-[15px] font-semibold" style={{ color: colors.foreground }}>
+            Paper Header / Logo
+          </div>
+          <div className="text-[12px]" style={{ color: colors.mutedForeground }}>
+            Stamped on every paper PDF you download.
+          </div>
+        </div>
+        {value && (
+          <button
+            onClick={() => { if (window.confirm("Remove the header image?")) onChange(undefined); }}
+            className="text-[12px] font-semibold px-2 py-1 rounded-md"
+            style={{ color: colors.destructive, background: "#fee2e2" }}
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {value ? (
+        <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: colors.border }}>
+          <img src={value} alt="Header preview" className="w-full block" style={{ maxHeight: 140, objectFit: "contain" }} />
+        </div>
+      ) : (
+        <label
+          className="block cursor-pointer rounded-xl border-2 border-dashed p-6 text-center"
+          style={{ borderColor: colors.border, color: colors.mutedForeground }}
+        >
+          <Icon name="upload" size={24} color={colors.mutedForeground} />
+          <div className="text-[13px] mt-1.5 font-semibold">Click to upload header image</div>
+          <div className="text-[11px] mt-0.5">PNG or JPG · under 1 MB · landscape works best</div>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/jpg"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      )}
     </div>
   );
 }

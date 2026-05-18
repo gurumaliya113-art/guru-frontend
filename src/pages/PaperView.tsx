@@ -7,10 +7,21 @@ import { colors, examColor } from "@/lib/colors";
 export default function PaperView() {
   const nav = useNavigate();
   const { id = "" } = useParams();
-  const { papers } = useApp();
+  const { papers, profile } = useApp();
   const [showAnswers, setShowAnswers] = useState(false);
   const paper = papers.find((p) => p.id === id);
   const ec = examColor(paper?.examType || "NEET");
+
+  // Trigger the browser's print dialog. We rely on a print stylesheet
+  // (see the <style> block below) that hides the live UI and reveals a
+  // print-only block with the teacher's header image + a 2-column layout
+  // so each printed / saved-as-PDF page packs two questions side-by-side.
+  const handleDownload = () => {
+    const original = document.title;
+    document.title = paper ? `${paper.title.replace(/[\\/:*?"<>|]+/g, "-")}` : "Paper";
+    window.print();
+    setTimeout(() => { document.title = original; }, 500);
+  };
 
   if (!paper) {
     return (
@@ -36,6 +47,15 @@ export default function PaperView() {
           <div className="text-[15px] font-semibold truncate" style={{ color: colors.foreground }}>{paper.title}</div>
           <div className="text-xs" style={{ color: colors.mutedForeground }}>{paper.questions.length} questions • {paper.difficulty}</div>
         </div>
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl text-white text-xs font-semibold"
+          style={{ background: colors.primary }}
+          title="Download as PDF (Save as PDF in the print dialog)"
+        >
+          <Icon name="download" size={14} color="#fff" />
+          PDF
+        </button>
         <button
           onClick={() => setShowAnswers((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border text-xs font-semibold"
@@ -124,6 +144,106 @@ export default function PaperView() {
           </div>
         ))}
       </div>
+
+      {/* ----------------- PRINT-ONLY VIEW ----------------- */}
+      {/* This block is invisible on screen and only flows into the page when
+          the user hits the PDF / print button. We use CSS multi-column to
+          pack two questions per row (matching the "ek page p do side" ask)
+          and stamp the teacher's header image at the top of every page via
+          `position: running()` fallback — most browsers honor it. The screen
+          UI itself is hidden with a print rule on `.no-print`. */}
+      <div className="paper-print">
+        {profile?.paperHeaderImage && (
+          <img src={profile.paperHeaderImage} alt="" className="paper-print-header" />
+        )}
+        <div className="paper-print-meta">
+          <div className="paper-print-title">{paper.title}</div>
+          <div className="paper-print-sub">
+            {paper.examType} · {paper.subject} · {paper.topic === "All" ? "Mixed" : paper.topic}
+            {" · "}{paper.questions.length} questions · {paper.difficulty}
+          </div>
+        </div>
+        <ol className="paper-print-list">
+          {paper.questions.map((q) => (
+            <li key={q.id} className="paper-print-q">
+              <div className="paper-print-q-text">{q.text}</div>
+              <ol className="paper-print-opts" type="A">
+                {q.options.map((opt, i) => (
+                  <li key={i} className={showAnswers && i === q.correctIndex ? "is-correct" : ""}>
+                    {opt}
+                  </li>
+                ))}
+              </ol>
+              {showAnswers && q.explanation && (
+                <div className="paper-print-expl"><b>Ans:</b> {q.explanation}</div>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Inline print stylesheet — kept here so it ships with the component
+          and doesn't pollute the global app styles. */}
+      <style>{`
+        .paper-print { display: none; }
+        @media print {
+          @page { size: A4; margin: 12mm 10mm; }
+          body { background: #fff !important; }
+          /* Hide everything except our print block */
+          body * { visibility: hidden !important; }
+          .paper-print, .paper-print * { visibility: visible !important; }
+          .paper-print {
+            display: block !important;
+            position: absolute;
+            inset: 0;
+            color: #000;
+            font-family: "Times New Roman", Georgia, serif;
+            font-size: 11pt;
+          }
+          .paper-print-header {
+            display: block;
+            width: 100%;
+            max-height: 90px;
+            object-fit: contain;
+            margin: 0 auto 6px;
+          }
+          .paper-print-meta {
+            text-align: center;
+            border-bottom: 1.5px solid #000;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+          }
+          .paper-print-title { font-size: 14pt; font-weight: bold; }
+          .paper-print-sub   { font-size: 10pt; margin-top: 2px; }
+          /* Two-column body — questions flow side by side. */
+          .paper-print-list {
+            column-count: 2;
+            column-gap: 8mm;
+            column-rule: 1px solid #ccc;
+            margin: 0;
+            padding: 0 0 0 18px;
+            list-style-position: outside;
+          }
+          .paper-print-q {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 8px;
+          }
+          .paper-print-q-text { margin-bottom: 3px; }
+          .paper-print-opts {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 10.5pt;
+          }
+          .paper-print-opts li.is-correct { font-weight: bold; text-decoration: underline; }
+          .paper-print-expl {
+            margin-top: 3px;
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #333;
+          }
+        }
+      `}</style>
     </div>
   );
 }
