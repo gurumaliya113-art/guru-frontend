@@ -153,7 +153,7 @@ export default function PaperView() {
           `position: running()` fallback — most browsers honor it. The screen
           UI itself is hidden with a print rule on `.no-print`. */}
       <div className="paper-print">
-        {profile?.paperHeaderImage && (
+        {profile?.paperHeaderImage && !paper.skipHeader && (
           <img src={profile.paperHeaderImage} alt="" className="paper-print-header" />
         )}
         <div className="paper-print-meta">

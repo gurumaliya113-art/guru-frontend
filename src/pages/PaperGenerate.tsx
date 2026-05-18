@@ -53,7 +53,7 @@ function subjectsFor(exam: ExamType): string[] {
 
 export default function PaperGenerate() {
   const nav = useNavigate();
-  const { addPaper, questions: pool } = useApp();
+  const { addPaper, profile, updateProfile, questions: pool } = useApp();
 
   const [step, setStep] = useState<Step>("exam");
   const [examType, setExamType] = useState<ExamType | null>(null);
@@ -66,6 +66,27 @@ export default function PaperGenerate() {
   const [questionType, setQuestionType] = useState<QuestionType>("MCQ");
   const [questionCount, setQuestionCount] = useState(15);
   const [generating, setGenerating] = useState(false);
+  // Per-paper header opt-out. Profile keeps the uploaded school logo so
+  // teachers don't have to re-upload it every time, but for a one-off paper
+  // the user can hit "Continue without header" to skip stamping it.
+  const [skipHeader, setSkipHeader] = useState(false);
+
+  const handleHeaderPick = (file: File) => {
+    if (file.size > 1024 * 1024) {
+      alert("Image is too large. Please pick something under 1 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : undefined;
+      if (dataUrl) {
+        updateProfile({ paperHeaderImage: dataUrl });
+        setSkipHeader(false);
+      }
+    };
+    reader.onerror = () => alert("Could not read the image \u2014 try a different file.");
+    reader.readAsDataURL(file);
+  };
 
   // Admin-curated topic catalogue (synced with the admin Questions drill).
   const [catalogueTopics, setCatalogueTopics] = useState<Topic[]>([]);
@@ -152,6 +173,7 @@ export default function PaperGenerate() {
       difficulty,
       questions: shuffled,
       createdAt: new Date().toISOString(),
+      skipHeader,
     };
     await addPaper(paper);
     setGenerating(false);
@@ -419,6 +441,87 @@ export default function PaperGenerate() {
               ))}
             </div>
 
+            <div className="h-5" />
+            {/* Paper header / school logo — set right here in the flow so the
+                teacher doesn't have to detour through Profile. "Continue
+                without header" stores a per-paper skip flag, leaving any
+                previously uploaded logo intact for next time. */}
+            <Label>Paper Header / School Logo</Label>
+            {profile.paperHeaderImage && !skipHeader ? (
+              <div
+                className="rounded-xl border overflow-hidden bg-white mb-2"
+                style={{ borderColor: colors.border }}
+              >
+                <img
+                  src={profile.paperHeaderImage}
+                  alt="Header preview"
+                  className="w-full block"
+                  style={{ maxHeight: 120, objectFit: "contain" }}
+                />
+                <div
+                  className="flex items-center justify-between px-3 py-2 border-t text-[12px]"
+                  style={{ borderColor: colors.border, color: colors.mutedForeground }}
+                >
+                  <span>Stamped on top of every page.</span>
+                  <label
+                    className="font-semibold cursor-pointer"
+                    style={{ color: colors.primary }}
+                  >
+                    Replace
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleHeaderPick(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label
+                className="block cursor-pointer rounded-xl border-2 border-dashed p-5 text-center mb-2"
+                style={{ borderColor: colors.border, color: colors.mutedForeground }}
+              >
+                <Icon name="upload" size={22} color={colors.mutedForeground} />
+                <div className="text-[13px] mt-1.5 font-semibold">
+                  {skipHeader ? "Header skipped \u2014 click to upload one" : "Click to upload header image"}
+                </div>
+                <div className="text-[11px] mt-0.5">
+                  PNG or JPG · under 1 MB · landscape works best
+                </div>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleHeaderPick(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+            <button
+              onClick={() => setSkipHeader((v) => !v)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[13px] font-semibold mb-1"
+              style={{
+                background: skipHeader ? colors.primary + "15" : colors.secondary,
+                borderColor: skipHeader ? colors.primary : colors.border,
+                color: skipHeader ? colors.primary : colors.mutedForeground,
+              }}
+            >
+              <Icon
+                name={skipHeader ? "check-circle" : "x-circle"}
+                size={15}
+                color={skipHeader ? colors.primary : colors.mutedForeground}
+              />
+              {skipHeader ? "Will generate without header" : "Continue without header"}
+            </button>
+
             <div className="h-6" />
             {/* Live preview */}
             <div className="rounded-2xl p-4 border bg-white mb-5" style={{ borderColor: colors.border }}>
@@ -436,6 +539,16 @@ export default function PaperGenerate() {
                   <Summary label="Type" value={questionType} />
                 </>
               )}
+              <Summary
+                label="Header"
+                value={
+                  skipHeader
+                    ? "None"
+                    : profile.paperHeaderImage
+                    ? "School logo"
+                    : "None"
+                }
+              />
               <Summary label="Questions" value={`${Math.min(questionCount, matchingQuestions.length)} / ${matchingQuestions.length} available`} />
             </div>
 

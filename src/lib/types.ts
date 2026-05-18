@@ -74,6 +74,9 @@ export interface GeneratedPaper {
   difficulty: Difficulty;
   questions: Question[];
   createdAt: string;
+  // Per-paper override: when true, PaperView skips stamping the school
+  // header image on the printed PDF even if one is set on the profile.
+  skipHeader?: boolean;
 }
 
 export interface Badge {
