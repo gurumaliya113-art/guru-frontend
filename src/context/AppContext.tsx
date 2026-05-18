@@ -106,6 +106,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       while authenticated. The class-onboarding guard waits on this so we don't
       flicker to /class/create before classes are loaded. */
   const [dataLoaded, setDataLoaded] = useState(false);
+  /** Flag to prevent the useEffect from overwriting profile during onboarding */
+  const onboardingInProgress = React.useRef(false);
 
   const refreshQuestions = useCallback(async () => {
     try {
@@ -203,6 +205,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Skip fetch if onboarding is in progress to prevent race condition
+    if (onboardingInProgress.current) return;
+
     let cancelled = false;
     setIsLoading(true);
     (async () => {
@@ -262,6 +267,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Send invite code + raw password to server. Neither is stored locally
       // on the profile — the server hashes the password and strips both.
       setProfile(next);
+      onboardingInProgress.current = true;
       try {
         await api.saveProfile({ ...next, teacherInviteCode, password });
         // Re-assert the saved profile locally. This guards against a race
@@ -273,6 +279,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Roll back the optimistic profile on failure so the user can retry.
         setProfile(profile);
         throw e;
+      } finally {
+        onboardingInProgress.current = false;
       }
     },
     [profile]

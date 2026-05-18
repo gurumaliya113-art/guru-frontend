@@ -142,8 +142,6 @@ export default function Onboarding() {
         teacherInviteCode: role === "teacher" ? inviteCode.trim() : undefined,
         password: password || undefined,
       });
-      // Small delay to ensure server has persisted the profile before navigation
-      await new Promise(resolve => setTimeout(resolve, 500));
       nav("/", { replace: true });
     } catch (e) {
       setError((e as Error)?.message || "Could not save your profile. Try again.");
