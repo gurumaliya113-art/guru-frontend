@@ -48,6 +48,33 @@ export default function PaperView() {
     setTimeout(() => { document.title = original; }, 500);
   };
 
+  const handleDownloadAllImages = async () => {
+    if (!paper) return;
+    const imageUrls = paper.questions
+      .map((q) => q.pageImageUrl)
+      .filter((url): url is string => Boolean(url));
+
+    if (imageUrls.length === 0) {
+      alert("No images to download");
+      return;
+    }
+
+    for (let i = 0; i < imageUrls.length; i++) {
+      try {
+        const link = document.createElement("a");
+        link.href = imageUrls[i];
+        link.download = `${paper.title.replace(/[^a-zA-Z0-9]/g, "_")}_question_${i + 1}.png`;
+        link.click();
+        // Small delay between downloads to avoid browser blocking
+        if (i < imageUrls.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+      } catch (e) {
+        console.error(`Failed to download image ${i + 1}:`, e);
+      }
+    }
+  };
+
   if (!paper) {
     return (
       <div className="min-h-full pt-12 px-4 max-w-[640px] mx-auto">
@@ -95,6 +122,17 @@ export default function PaperView() {
           <Icon name="download" size={14} color="#fff" />
           PDF
         </button>
+        {paper.questions.some((q) => q.pageImageUrl) && (
+          <button
+            onClick={handleDownloadAllImages}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border text-xs font-semibold"
+            style={{ background: colors.secondary, borderColor: colors.border, color: colors.foreground }}
+            title="Download all images"
+          >
+            <Icon name="image" size={14} color={colors.foreground} />
+            Images
+          </button>
+        )}
         <button
           onClick={() => setShowAnswers((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border text-xs font-semibold"
@@ -147,16 +185,34 @@ export default function PaperView() {
 
             {q.pageImageUrl && (
               <div className="mb-3 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
-                <img
-                  src={q.pageImageUrl}
-                  alt="Question diagram"
-                  className="w-full block"
-                  // For captured papers (image-only) we let the image grow
-                  // to its natural height so handwriting stays readable;
-                  // typed-paper diagrams are still capped.
-                  style={{ background: "#fff", maxHeight: q.options.length === 0 ? 1200 : 360, objectFit: "contain" }}
-                  loading="lazy"
-                />
+                <div className="relative">
+                  <img
+                    src={q.pageImageUrl}
+                    alt="Question diagram"
+                    className="w-full block"
+                    // For captured papers (image-only) we let the image grow
+                    // to its natural height so handwriting stays readable;
+                    // typed-paper diagrams are still capped.
+                    style={{ background: "#fff", maxHeight: q.options.length === 0 ? 1200 : 360, objectFit: "contain" }}
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = q.pageImageUrl || "";
+                      link.download = `question-${idx + 1}.png`;
+                      link.click();
+                    }}
+                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg text-white text-xs font-semibold shadow-lg"
+                    style={{ background: colors.primary }}
+                    title="Download image"
+                  >
+                    Download
+                  </button>
+                </div>
               </div>
             )}
 
