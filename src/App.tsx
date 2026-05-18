@@ -11,7 +11,6 @@ import ClassJoin from "@/pages/ClassJoin";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
-import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
@@ -28,7 +27,7 @@ import AdminPYP from "@/pages/admin/AdminPYP";
 const TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
-  { path: "/papers", label: "Papers", icon: "file-text" },
+  { path: "/pyp", label: "Prev. Papers", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];
@@ -160,7 +159,11 @@ export default function App() {
         />
         <Route path="/quiz" element={<Shell><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
-        <Route path="/papers" element={<Shell><Papers /></Shell>} />
+        {/* /papers is the legacy "My generated papers" view. The student
+            app no longer generates its own papers — that flow is teacher-
+            side. Send anyone landing on /papers to the new Prev. Papers
+            catalogue instead. */}
+        <Route path="/papers" element={<Navigate to="/pyp" replace />} />
         <Route path="/paper/generate" element={<PaperGenerate />} />
         <Route path="/paper/:id" element={<PaperView />} />
         <Route path="/pyp" element={<Shell><PreviousYearPapers /></Shell>} />
