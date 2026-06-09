@@ -83,7 +83,7 @@ export interface ParsePdfResult {
   saved?: boolean;
 }
 
-export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai";
+export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai" | "raw";
 
 export const api = {
   getProfile: () => request<{ profile: UserProfile | null }>("/api/profile"),

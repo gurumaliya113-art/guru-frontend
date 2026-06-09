@@ -35,6 +35,8 @@ export type EditableQuestion = Partial<Question> & {
   hasFigure?: boolean;
   /** URL of the rendered page-image PNG (the diagram). Backend writes this on parse. */
   pageImageUrl?: string;
+  // Optional local flag for admin review.
+  problem?: string;
 };
 
 export function emptyQuestion(): EditableQuestion {
