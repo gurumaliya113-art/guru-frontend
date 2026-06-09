@@ -158,7 +158,7 @@ export default function AdminUpload() {
   };
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-6 sm:p-8 max-w-full mx-auto">
       <div className="mb-6">
         <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Upload PDF</div>
         <div className="text-sm" style={{ color: colors.mutedForeground }}>
@@ -294,11 +294,11 @@ export default function AdminUpload() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-5">
           <button
             onClick={onParse}
             disabled={!file || busy}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-white font-bold disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-bold disabled:opacity-50"
             style={{ background: colors.primary }}
           >
             {busy ? <><Spinner size={16} /> Parsing…</> : <><Icon name="zap" size={16} color="#fff" /> Extract Questions</>}
