@@ -51,6 +51,18 @@ export interface Topic {
   createdAt?: string;
 }
 
+export interface Flashcard {
+  id: string;
+  subject: string;
+  topic: string;
+  classLevel?: string | null;
+  examType?: string | null;
+  question: string;
+  answer: string;
+  difficulty?: string;
+  createdAt?: string;
+}
+
 export interface QuizAttempt {
   id: string;
   quizId: string;

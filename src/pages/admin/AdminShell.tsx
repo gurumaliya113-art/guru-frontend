@@ -9,6 +9,7 @@ const NAV = [
   { to: "/admin/upload", label: "Upload PDF", icon: "file-text" },
   { to: "/admin/questions", label: "Questions", icon: "book-open" },
   { to: "/admin/questions/new", label: "Add Question", icon: "plus" },
+  { to: "/admin/flashcards", label: "Flashcards", icon: "layers" },
   { to: "/admin/pyp", label: "Super App", icon: "award" },
 ];
 

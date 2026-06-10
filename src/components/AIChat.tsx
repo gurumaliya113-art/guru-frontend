@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/ui";
+import UpgradeModal from "@/components/UpgradeModal";
+import { useApp } from "@/context/AppContext";
 import { colors } from "@/lib/colors";
+import { startSubscriptionCheckout } from "@/lib/razorpay";
+import { canUseFeature, getRemaining, recordFeatureUse } from "@/lib/usageLimits";
 
 interface Message {
   id: string;
@@ -10,6 +14,8 @@ interface Message {
 }
 
 export default function AIChat() {
+  const { profile, updateProfile } = useApp();
+  const subscribed = profile.subscription?.active === true;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -20,6 +26,8 @@ export default function AIChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,8 +38,31 @@ export default function AIChat() {
     scrollToBottom();
   }, [messages]);
 
+  const handleUpgradeNow = () => {
+    setPaying(true);
+    startSubscriptionCheckout(
+      { name: profile.name, phone: profile.phone },
+      async (sub) => {
+        await updateProfile({ subscription: sub });
+        setPaying(false);
+        setUpgradeOpen(false);
+        alert("Subscription activated! Enjoy unlimited access 🎉");
+      },
+      (err) => {
+        setPaying(false);
+        alert(`Payment failed: ${err.message}`);
+      },
+    );
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
+    if (!subscribed && !canUseFeature("doubts", false)) {
+      setUpgradeOpen(true);
+      return;
+    }
+
+    recordFeatureUse("doubts");
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -159,6 +190,13 @@ export default function AIChat() {
           <Icon name="send" size={16} color="#fff" />
         </button>
       </div>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        onUpgrade={handleUpgradeNow}
+        loading={paying}
+      />
 
       <style>{`
         @keyframes bounce {

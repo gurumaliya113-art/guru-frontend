@@ -150,7 +150,8 @@ export const api = {
 
   // Public topics catalogue (admin-managed). Surfaced in PaperGenerate so
   // teachers see exactly what admins curated for them.
-  getTopics: () => request<{ topics: Topic[] }>("/api/topics"),
+  getTopics: () => request<{ topics: Topic[] }>('/api/topics'),
+  getFlashcards: () => request<{ flashcards: Flashcard[] }>('/api/flashcards'),
 
   // ---- Classes ----
   getMyClasses: () => request<{ classes: ClassRoom[] }>("/api/classes/mine"),
@@ -286,6 +287,27 @@ export const adminApi = {
   deleteTopic: (id: string) =>
     request<{ ok: true }>(`/api/admin/topics/${encodeURIComponent(id)}`, {
       method: "DELETE",
+    }, { admin: true }),
+
+  // ---- Flashcards deck (admin) ----
+  listFlashcards: () =>
+    request<{ flashcards: Flashcard[] }>('/api/admin/flashcards', {}, { admin: true }),
+  addFlashcard: (payload: {
+    subject: string;
+    topic: string;
+    classLevel?: string | null;
+    examType?: string | null;
+    question: string;
+    answer: string;
+    difficulty?: string;
+  }) =>
+    request<{ flashcard: Flashcard }>('/api/admin/flashcards', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deleteFlashcard: (id: string) =>
+    request<{ ok: true }>(`/api/admin/flashcards/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     }, { admin: true }),
 
   // ---- Previous Year Papers / Mocks (admin) ----
