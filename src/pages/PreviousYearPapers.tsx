@@ -30,7 +30,7 @@ const FLASHCARD_DECK = [
   {
     id: 1,
     tag: "Biology",
-    gradient: "linear-gradient(145deg, #0b1220 0%, #172554 45%, #2563eb 100%)",
+    gradient: "linear-gradient(145deg, #111827 0%, #1f2937 45%, #2563eb 100%)",
     accent: "#bfdbfe",
     front: "What is the powerhouse of the cell?",
     back: "The mitochondrion releases energy through cellular respiration.",
@@ -596,7 +596,7 @@ export default function PreviousYearPapers() {
                 const card = currentDeck[currentCardIndex] || currentDeck[0];
                 if (!card) return null;
                 const isFlipped = !!flipped[card.id];
-                const gradient = ("gradient" in card && card.gradient) ? card.gradient : "linear-gradient(145deg, #0b1220 0%, #172554 45%, #2563eb 100%)";
+                const gradient = ("gradient" in card && card.gradient) ? card.gradient : "linear-gradient(145deg, #111827 0%, #1f2937 45%, #2563eb 100%)";
                 const accent = ("accent" in card && card.accent) ? card.accent : "#bfdbfe";
                 const tag = ("tag" in card && card.tag) ? card.tag : card.topic;
                 const question = ("front" in card && card.front) ? card.front : card.question;

@@ -80,7 +80,7 @@ export default function Home() {
       <div>
         {/* Hero */}
         <div className="relative overflow-hidden px-5 pt-16 pb-7 text-white"
-          style={{ background: "linear-gradient(135deg,#0b1220 0%,#172554 45%,#2563eb 100%)" }}>
+          style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)" }}>
           <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
           <div className="absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
           <div className="flex items-start justify-between mb-5 relative">
