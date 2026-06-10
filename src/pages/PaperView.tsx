@@ -37,6 +37,21 @@ export default function PaperView() {
   const paper = localPaper || remotePaper;
   const ec = examColor(paper?.examType || "NEET");
 
+  const handleAttempt = () => {
+    if (!paper) return;
+    nav(`/quiz/${paper.id}`, {
+      state: {
+        title: paper.title,
+        questions: paper.questions,
+        timeLimitMin: paper.durationMinutes ?? 180,
+        examType: paper.examType,
+        subject: paper.subject,
+        topic: paper.topic,
+        difficulty: paper.difficulty,
+      },
+    });
+  };
+
   // Trigger the browser's print dialog. We rely on a print stylesheet
   // (see the <style> block below) that hides the live UI and reveals a
   // print-only block with the teacher's header image + a 2-column layout
@@ -133,6 +148,16 @@ export default function PaperView() {
             Images
           </button>
         )}
+        {paper.topic === "Previous Year" || paper.durationMinutes != null ? (
+          <button
+            onClick={handleAttempt}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl text-xs font-semibold"
+            style={{ background: colors.primary, color: "#fff" }}
+          >
+            <Icon name="book-open" size={15} color="#fff" />
+            Attempt Exam
+          </button>
+        ) : null}
         <button
           onClick={() => setShowAnswers((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border text-xs font-semibold"

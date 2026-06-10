@@ -63,19 +63,24 @@ export async function startSubscriptionCheckout(
   ctx: CheckoutContext,
   onSuccess: (sub: SubscriptionResult) => void | Promise<void>,
   onFailure?: (err: Error) => void,
+  options?: { planId?: string; planLabel?: string },
 ): Promise<void> {
   try {
     await loadRazorpaySdk();
     if (!window.Razorpay) throw new Error("Razorpay SDK not available");
 
-    const order = await api.createPaymentOrder();
+    const order = await api.createPaymentOrder(options?.planId);
 
-    const options = {
+    const description = options?.planLabel
+      ? `${options.planLabel} · all PYP papers & analytics`
+      : "Subscription · all PYP papers & analytics";
+
+    const rzpOptions = {
       key: order.keyId,
       amount: order.amount,
       currency: order.currency,
       name: "Gurutron",
-      description: "Yearly subscription · all PYP papers & analytics",
+      description,
       order_id: order.orderId,
       prefill: {
         name: ctx.name,
@@ -89,6 +94,7 @@ export async function startSubscriptionCheckout(
             razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id,
             razorpay_signature: resp.razorpay_signature,
+            plan: options?.planId,
           });
           await onSuccess(verified.subscription);
         } catch (e) {
@@ -103,7 +109,7 @@ export async function startSubscriptionCheckout(
       },
     };
 
-    const rzp = new window.Razorpay(options);
+    const rzp = new window.Razorpay(rzpOptions);
     rzp.open();
   } catch (e) {
     onFailure?.(e as Error);

@@ -160,9 +160,9 @@ export default function AdminUpload() {
   return (
     <div className="p-6 sm:p-8 max-w-full mx-auto">
       <div className="mb-6">
-        <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Upload PDF</div>
+        <div className="text-[26px] font-bold" style={{ color: colors.foreground }}>Upload Document</div>
         <div className="text-sm" style={{ color: colors.mutedForeground }}>
-          Upload a past paper. PDF is saved, questions are extracted, and you can review before saving them to the bank.
+          Upload a past paper as PDF or Word document. The file is saved, questions are extracted, and you can review before saving them to the bank.
         </div>
       </div>
 
@@ -171,7 +171,7 @@ export default function AdminUpload() {
         <div className="flex flex-col md:flex-row gap-4 items-start">
           <div className="flex-1">
             <div className="text-[11px] uppercase tracking-wider font-semibold mb-2" style={{ color: colors.mutedForeground }}>
-              1. Pick a PDF file
+              1. Pick a PDF or Word file
             </div>
             <label
               className="block rounded-xl border-2 border-dashed p-6 cursor-pointer text-center hover:bg-gray-50 transition"
@@ -180,13 +180,13 @@ export default function AdminUpload() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,.pdf,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
                 onChange={(e) => onPick(e.target.files?.[0] || null)}
                 className="hidden"
               />
               <Icon name="file-text" size={32} color={file ? colors.primary : colors.mutedForeground} />
               <div className="text-sm font-medium mt-2" style={{ color: colors.foreground }}>
-                {file ? file.name : "Click to choose a PDF"}
+                {file ? file.name : "Click to choose a PDF or Word document"}
               </div>
               <div className="text-xs mt-1" style={{ color: colors.mutedForeground }}>
                 {file ? `${(file.size / 1024).toFixed(0)} KB` : "Max 25 MB · text-based PDFs only"}

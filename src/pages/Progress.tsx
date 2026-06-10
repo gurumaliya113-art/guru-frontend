@@ -73,7 +73,7 @@ export default function Progress() {
               Unlock full potential
             </div>
             <div className="text-[12px]" style={{ color: "#92400e" }}>
-              All PYP papers · advanced analytics · just ₹49 / year
+              All PYP papers · advanced analytics · from ₹29
             </div>
           </div>
           <button
@@ -82,7 +82,7 @@ export default function Progress() {
             className="px-3 py-2 rounded-xl text-white text-[12px] font-bold disabled:opacity-60"
             style={{ background: "#d97706" }}
           >
-            {paying ? "…" : "₹49 · Subscribe"}
+            {paying ? "…" : "From ₹29 · Subscribe"}
           </button>
         </div>
       )}

@@ -73,6 +73,7 @@ export interface GeneratedPaper {
   topic: string;
   difficulty: Difficulty;
   questions: Question[];
+  durationMinutes?: number;
   createdAt: string;
   // Per-paper override: when true, PaperView skips stamping the school
   // header image on the printed PDF even if one is set on the profile.
@@ -191,9 +192,9 @@ export interface UserProfile {
   paperHeaderImage?: string;
 
   /**
-   * Subscription state for the ₹49/year paywall (Previous Year Papers
-   * beyond the first 5, full Progress analytics, etc.). Razorpay payment
-   * webhook flips `active` to true and stores `validUntil`.
+   * Subscription state for the paywall (Previous Year Papers beyond the first 5,
+   * full Progress analytics, etc.). Razorpay payment webhook flips `active`
+   * to true and stores `validUntil` when applicable.
    */
   subscription?: {
     active: boolean;

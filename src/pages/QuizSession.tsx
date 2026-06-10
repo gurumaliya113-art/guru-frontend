@@ -1,31 +1,48 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Icon, ProgressBar } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { filterQuestions } from "@/data/questions";
 import { colors } from "@/lib/colors";
-import type { ExamType, Subject } from "@/lib/types";
+import type { ExamType, Question, Subject } from "@/lib/types";
 
 type Phase = "intro" | "quiz" | "result";
 
+interface QuizState {
+  title?: string;
+  questions?: Question[];
+  timeLimitMin?: number;
+  examType?: string;
+  subject?: string;
+  topic?: string;
+  difficulty?: string;
+}
+
 export default function QuizSession() {
   const nav = useNavigate();
+  const location = useLocation();
   const { id = "" } = useParams();
   const [params] = useSearchParams();
   const { addAttempt, questions: pool } = useApp();
+  const state = location.state as QuizState | null;
 
-  const title = params.get("title") || "Quiz";
-  const subject = params.get("subject") || "All";
-  const topic = params.get("topic") || "All";
-  const difficulty = params.get("difficulty") || "All";
-  const examType = params.get("examType") || "All";
-  const timeLimitMin = parseInt(params.get("timeLimit") || "15", 10);
+  const title = state?.title || params.get("title") || "Quiz";
+  const subject = state?.subject || params.get("subject") || "All";
+  const topic = state?.topic || params.get("topic") || "All";
+  const difficulty = state?.difficulty || params.get("difficulty") || "All";
+  const examType = state?.examType || params.get("examType") || "All";
+  const timeLimitMin = state?.timeLimitMin ?? parseInt(params.get("timeLimit") || "15", 10);
   const questionsCount = parseInt(params.get("questionsCount") || "10", 10);
   const timeLimit = timeLimitMin * 60;
 
-  const questions = useMemo(
-    () => filterQuestions(pool, subject, topic, difficulty, examType, questionsCount),
-    [pool, subject, topic, difficulty, examType, questionsCount]
+  const questions = useMemo(() => {
+    if (state?.questions) return state.questions;
+    return filterQuestions(pool, subject, topic, difficulty, examType, questionsCount);
+  }, [pool, state?.questions, subject, topic, difficulty, examType, questionsCount]);
+
+  const subjects = useMemo(
+    () => Array.from(new Set(questions.map((q) => q.subject))),
+    [questions],
   );
 
   const [phase, setPhase] = useState<Phase>("intro");
@@ -80,6 +97,26 @@ export default function QuizSession() {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-full pt-12 px-4 pb-8 max-w-[640px] mx-auto">
+        <button
+          onClick={() => nav(-1)}
+          className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+          style={{ background: colors.secondary }}
+        >
+          <Icon name="arrow-left" size={20} color={colors.foreground} />
+        </button>
+        <div className="rounded-2xl p-6 border bg-white text-center" style={{ borderColor: colors.border }}>
+          <div className="text-lg font-semibold mb-2" style={{ color: colors.foreground }}>No questions available</div>
+          <div className="text-sm" style={{ color: colors.mutedForeground }}>
+            We could not load any questions for this quiz. Please go back and choose another paper.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "intro") {
     return (
       <div className="min-h-full pt-12 px-4 pb-8 max-w-[640px] mx-auto">
@@ -112,6 +149,17 @@ export default function QuizSession() {
             </div>
           ))}
         </div>
+
+        {subjects.length > 1 && (
+          <div className="flex flex-wrap gap-2.5 mb-4">
+            {subjects.map((subjectName) => (
+              <span key={subjectName} className="rounded-full px-3 py-1 text-[12px] font-semibold"
+                style={{ background: colors.secondary, color: colors.mutedForeground }}>
+                {subjectName}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="rounded-2xl p-4 border bg-white mb-5" style={{ borderColor: colors.border }}>
           <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>Instructions</div>
@@ -182,6 +230,29 @@ export default function QuizSession() {
             style={{ background: timerColor + "20", color: timerColor }}>
             <Icon name="clock" size={13} color={timerColor} />
             {formatTime(timeLeft)}
+          </div>
+        </div>
+
+        <div className="px-4">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {questions.map((question, idx) => {
+              const answered = answers[question.id] !== undefined;
+              const isCurrent = idx === currentIndex;
+              return (
+                <button
+                  key={question.id}
+                  onClick={() => setCurrentIndex(idx)}
+                  className="rounded-full px-3 py-1 text-[12px] font-semibold border"
+                  style={{
+                    background: isCurrent ? colors.primary : answered ? colors.neetLight : colors.secondary,
+                    color: isCurrent ? "#fff" : answered ? colors.neet : colors.mutedForeground,
+                    borderColor: isCurrent ? colors.primary : colors.border,
+                  }}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
           </div>
         </div>
 

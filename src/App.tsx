@@ -24,7 +24,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUpload from "@/pages/admin/AdminUpload";
 import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
-import AdminPYP from "@/pages/admin/AdminPYP";
+import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
 
 // Tab bar entries differ by role:
 //   - Students see "Prev. Papers" (the paid PYP catalogue at /pyp)
@@ -119,7 +119,7 @@ export default function App() {
         <Route path="questions" element={<AdminQuestions />} />
         <Route path="questions/new" element={<AdminQuestionForm />} />
         <Route path="questions/:id" element={<AdminQuestionForm />} />
-        <Route path="pyp" element={<AdminPYP />} />
+        <Route path="pyp" element={<AdminAddPYPForm />} />
       </Route>
     </>
   );

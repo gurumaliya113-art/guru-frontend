@@ -14,6 +14,13 @@ import { colors, examColor, examLight } from "@/lib/colors";
 import { startSubscriptionCheckout } from "@/lib/razorpay";
 import type { ExamType, PreviousYearPaperSummary } from "@/lib/types";
 
+const SUBSCRIPTION_PLANS = [
+  { id: "7d-29", label: "7 days", amount: 29, subtitle: "Short access" },
+  { id: "30d-99", label: "30 days", amount: 99, subtitle: "Most popular" },
+  { id: "3m-249", label: "3 months", amount: 249, subtitle: "Best value" },
+  { id: "lifetime-999", label: "Lifetime", amount: 999, subtitle: "Unlimited access" },
+] as const;
+
 const ALL_EXAMS: (ExamType | "ALL")[] = ["ALL", "NEET", "JEE", "BOARD"];
 
 export default function PreviousYearPapers() {
@@ -28,7 +35,10 @@ export default function PreviousYearPapers() {
   );
   const [opening, setOpening] = useState<string | null>(null);
   const [paywall, setPaywall] = useState<{ message: string } | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState(SUBSCRIPTION_PLANS[1].id);
   const [paying, setPaying] = useState(false);
+
+  const selectedPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === selectedPlanId) ?? SUBSCRIPTION_PLANS[1];
 
   const handlePay = () => {
     setPaying(true);
@@ -43,6 +53,10 @@ export default function PreviousYearPapers() {
       (err) => {
         setPaying(false);
         alert(`Payment failed: ${err.message}`);
+      },
+      {
+        planId: selectedPlan.id,
+        planLabel: selectedPlan.label,
       },
     );
   };
@@ -84,7 +98,7 @@ export default function PreviousYearPapers() {
     // The server enforces the same rule so this is purely a UX shortcut.
     if (indexInGlobal >= 5 && !subscribed) {
       setPaywall({
-        message: "First 5 papers / mocks are free. Subscribe for ₹49/year to unlock the rest.",
+        message: "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
       });
       return;
     }
@@ -102,6 +116,7 @@ export default function PreviousYearPapers() {
         subject: (r.pyp.subject as never) || ("Physics" as never),
         topic: "Previous Year",
         difficulty: "Moderate",
+        durationMinutes: r.pyp.durationMinutes,
         questions: r.pyp.questions,
         createdAt: r.pyp.createdAt,
         skipHeader: true,
@@ -112,7 +127,44 @@ export default function PreviousYearPapers() {
       if (msg.includes("PAYWALL") || msg.includes("402")) {
         setPaywall({
           message:
-            "First 5 papers / mocks are free. Subscribe for ₹49/year to unlock the rest.",
+            "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+        });
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setOpening(null);
+    }
+  };
+
+  const handleAttempt = async (p: PreviousYearPaperSummary, indexInGlobal: number) => {
+    if (indexInGlobal >= 5 && !subscribed) {
+      setPaywall({
+        message: "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+      });
+      return;
+    }
+
+    setOpening(p.id);
+    try {
+      const r = await api.getPyp(p.id);
+      nav(`/quiz/${r.pyp.id}`, {
+        state: {
+          title: r.pyp.title,
+          questions: r.pyp.questions,
+          timeLimitMin: r.pyp.durationMinutes ?? 180,
+          examType: r.pyp.examType,
+          subject: r.pyp.subject || "All",
+          topic: "Previous Year",
+          difficulty: "Moderate",
+        },
+      });
+    } catch (e: unknown) {
+      const msg = String((e as Error)?.message || e);
+      if (msg.includes("PAYWALL") || msg.includes("402")) {
+        setPaywall({
+          message:
+            "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
         });
       } else {
         setError(msg);
@@ -186,14 +238,14 @@ export default function PreviousYearPapers() {
                 Free preview: first 5 papers
               </div>
               <div className="text-[11px]" style={{ color: "#b45309" }}>
-                Unlock the full catalogue for just ₹49 / year.
+                Unlock the full catalogue from ₹29.
               </div>
             </div>
             <button
               onClick={() =>
                 setPaywall({
                   message:
-                    "Unlock unlimited previous year papers & mocks for just ₹49 / year.",
+                    "Unlock unlimited previous year papers & mocks from ₹29.",
                 })
               }
               className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white"
@@ -243,11 +295,9 @@ export default function PreviousYearPapers() {
               const ec = examColor(p.examType);
               const el = examLight(p.examType);
               return (
-                <button
+                        <div
                   key={p.id}
-                  onClick={() => handleOpen(p, globalIdx)}
-                  disabled={opening === p.id}
-                  className="text-left rounded-2xl p-3.5 border bg-white shadow-sm active:opacity-90 disabled:opacity-60"
+                  className="rounded-2xl p-3.5 border bg-white shadow-sm"
                   style={{ borderColor: colors.border }}
                 >
                   <div className="flex items-start gap-3">
@@ -298,7 +348,34 @@ export default function PreviousYearPapers() {
                       />
                     )}
                   </div>
-                </button>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleOpen(p, globalIdx)}
+                      disabled={opening === p.id}
+                      className="flex-1 min-w-[120px] rounded-2xl border py-2 text-sm font-semibold"
+                      style={{
+                        background: colors.secondary,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                      }}
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => handleAttempt(p, globalIdx)}
+                      disabled={opening === p.id}
+                      className="flex-1 min-w-[120px] rounded-2xl py-2 text-sm font-semibold"
+                      style={{
+                        background: locked ? "#fef3c7" : colors.primary,
+                        color: locked ? "#92400e" : "#fff",
+                        borderColor: locked ? colors.border : colors.primary,
+                      }}
+                    >
+                      {locked ? "Locked" : "Attempt Exam"}
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -332,10 +409,36 @@ export default function PreviousYearPapers() {
               </button>
             </div>
             <div className="text-[18px] font-bold mb-1" style={{ color: colors.foreground }}>
-              Unlock full potential
+              Choose your plan
             </div>
             <div className="text-[13px] mb-4" style={{ color: colors.mutedForeground }}>
               {paywall.message}
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {SUBSCRIPTION_PLANS.map((plan) => {
+                const active = plan.id === selectedPlanId;
+                return (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlanId(plan.id)}
+                    className="rounded-2xl border p-3 text-left"
+                    style={{
+                      background: active ? colors.primary : "#fff",
+                      borderColor: active ? colors.primary : colors.border,
+                      color: active ? "#fff" : colors.foreground,
+                    }}
+                  >
+                    <div className="text-[13px] font-semibold">{plan.label}</div>
+                    <div className="text-[20px] font-bold">₹{plan.amount}</div>
+                    <div
+                      className="text-[11px] mt-1"
+                      style={{ color: active ? "rgba(255,255,255,0.85)" : colors.mutedForeground }}
+                    >
+                      {plan.subtitle}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <ul className="text-[12px] mb-4 flex flex-col gap-1.5" style={{ color: colors.foreground }}>
               <li className="flex items-center gap-2">
@@ -357,7 +460,7 @@ export default function PreviousYearPapers() {
               className="w-full py-3 rounded-2xl text-white font-bold disabled:opacity-60"
               style={{ background: "#d97706" }}
             >
-              {paying ? "Opening Razorpay…" : "Pay ₹49 / year"}
+              {paying ? "Opening Razorpay…" : `Pay ₹${selectedPlan.amount}`}
             </button>
           </div>
         </div>

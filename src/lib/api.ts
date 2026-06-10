@@ -223,16 +223,18 @@ export const api = {
       amount: number;
       currency: string;
       plan: string;
+      plans?: { id: string; amount: number; currency: string; label: string; description: string; validityDays: number | null }[];
     }>("/api/payments/config"),
-  createPaymentOrder: () =>
+  createPaymentOrder: (planId?: string) =>
     request<{ orderId: string; amount: number; currency: string; keyId: string }>(
       "/api/payments/create-order",
-      { method: "POST" },
+      { method: "POST", body: JSON.stringify({ plan: planId }) },
     ),
   verifyPayment: (payload: {
     razorpay_order_id: string;
     razorpay_payment_id: string;
     razorpay_signature: string;
+    plan?: string;
   }) =>
     request<{
       ok: true;
