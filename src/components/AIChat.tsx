@@ -44,10 +44,15 @@ export default function AIChat() {
     setInput("");
     setLoading(true);
 
+    const rawBase = (import.meta as any).env?.VITE_API_BASE_URL || "";
+    const baseUrl = rawBase.trim().replace(/\/$/, "");
+    const url = baseUrl ? `${baseUrl}/api/ai/chat` : "/api/ai/chat";
+
     try {
-      const response = await fetch("/api/ai/chat", {
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           message: input,
           conversationHistory: messages.map((m) => ({
@@ -58,7 +63,14 @@ export default function AIChat() {
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        let errorText = response.statusText;
+        try {
+          const errData = await response.json();
+          if (errData?.error) errorText = errData.error;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(`API error: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();
