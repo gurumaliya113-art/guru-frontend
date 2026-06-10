@@ -217,181 +217,182 @@ export default function PreviousYearPapers() {
 
       {showing === "papers" ? (
         <div className="px-4 pt-4">
-          {ALL_EXAMS.map((e) => {
-            const active = filter === e;
-            const c = e === "ALL" ? colors.primary : examColor(e);
-            return (
-              <button
-                key={e}
-                onClick={() => setFilter(e)}
-                className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap"
-                style={{
-                  background: active ? c : colors.secondary,
-                  color: active ? "#fff" : colors.mutedForeground,
-                  border: `1px solid ${active ? c : colors.border}`,
-                }}
-              >
-                {e === "ALL" ? "All" : e}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Free trial banner */}
-        {!subscribed && (
-          <div
-            className="rounded-2xl p-4 mb-4 border flex items-center gap-3"
-            style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderColor: "#fcd34d" }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "#fff" }}
-            >
-              <Icon name="gift" size={20} color="#d97706" />
-            </div>
-            <div className="flex-1">
-              <div className="text-[14px] font-bold" style={{ color: "#7c2d12" }}>
-                Free Trial: 7 Days
-              </div>
-              <div className="text-[12px]" style={{ color: "#92400e" }}>
-                Try Super App completely free • AI Chat • Papers & Mocks
-              </div>
-            </div>
-            <button
-              onClick={handleUpgradeNow}
-              disabled={paying}
-              className="px-4 py-2 rounded-lg text-white text-[13px] font-semibold disabled:opacity-60 shrink-0"
-              style={{ background: "#d97706" }}
-            >
-              {paying ? "…" : "Upgrade Now"}
-            </button>
-          </div>
-        )}
-
-        {/* List */}
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size={24} />
-          </div>
-        ) : error ? (
-          <div
-            className="rounded-2xl p-4 border text-[13px]"
-            style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#991b1b" }}
-          >
-            {error}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 border-2 border-dashed text-center"
-            style={{ borderColor: colors.border }}
-          >
-            <Icon name="inbox" size={28} color={colors.mutedForeground} />
-            <div
-              className="text-[14px] font-semibold mt-2"
-              style={{ color: colors.foreground }}
-            >
-              No papers in this catalogue yet
-            </div>
-            <div
-              className="text-[12px] mt-0.5"
-              style={{ color: colors.mutedForeground }}
-            >
-              Admin is uploading. Check back soon!
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {filtered.map((p) => {
-              const globalIdx = sorted.findIndex((x) => x.id === p.id);
-              const locked = globalIdx >= 5 && !subscribed;
-              const ec = examColor(p.examType);
-              const el = examLight(p.examType);
+          <div className="flex gap-2 overflow-x-auto pb-3">
+            {ALL_EXAMS.map((e) => {
+              const active = filter === e;
+              const c = e === "ALL" ? colors.primary : examColor(e);
               return (
-                        <div
-                  key={p.id}
-                  className="rounded-2xl p-3.5 border bg-white shadow-sm"
-                  style={{ borderColor: colors.border }}
+                <button
+                  key={e}
+                  onClick={() => setFilter(e)}
+                  className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap"
+                  style={{
+                    background: active ? c : colors.secondary,
+                    color: active ? "#fff" : colors.mutedForeground,
+                    border: `1px solid ${active ? c : colors.border}`,
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative"
-                      style={{ background: el }}
-                    >
-                      <Icon name="file-text" size={18} color={ec} />
-                      {locked && (
-                        <div
-                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
-                          style={{ background: "#fef3c7" }}
-                        >
-                          <Icon name="lock" size={10} color="#d97706" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="text-[14px] font-semibold truncate"
-                        style={{ color: colors.foreground }}
-                      >
-                        {p.title}
-                      </div>
-                      <div
-                        className="flex items-center gap-2 mt-0.5 text-[11px]"
-                        style={{ color: colors.mutedForeground }}
-                      >
-                        <span
-                          className="px-1.5 py-0.5 rounded-md font-bold"
-                          style={{ background: el, color: ec }}
-                        >
-                          {p.examType}
-                        </span>
-                        <span>· {p.year}</span>
-                        {p.subject && <span>· {p.subject}</span>}
-                        <span>· {p.questionCount}Q</span>
-                        {p.durationMinutes && <span>· {p.durationMinutes} min</span>}
-                      </div>
-                    </div>
-                    {opening === p.id ? (
-                      <Spinner size={16} />
-                    ) : (
-                      <Icon
-                        name={locked ? "lock" : "chevron-right"}
-                        size={16}
-                        color={locked ? "#d97706" : colors.mutedForeground}
-                      />
-                    )}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleOpen(p, globalIdx)}
-                      disabled={opening === p.id}
-                      className="flex-1 min-w-[120px] rounded-2xl border py-2 text-sm font-semibold"
-                      style={{
-                        background: colors.secondary,
-                        borderColor: colors.border,
-                        color: colors.foreground,
-                      }}
-                    >
-                      Preview
-                    </button>
-                    <button
-                      onClick={() => handleAttempt(p, globalIdx)}
-                      disabled={opening === p.id}
-                      className="flex-1 min-w-[120px] rounded-2xl py-2 text-sm font-semibold"
-                      style={{
-                        background: locked ? "#fef3c7" : colors.primary,
-                        color: locked ? "#92400e" : "#fff",
-                        borderColor: locked ? colors.border : colors.primary,
-                      }}
-                    >
-                      {locked ? "Locked" : "Attempt Exam"}
-                    </button>
-                  </div>
-                </div>
+                  {e === "ALL" ? "All" : e}
+                </button>
               );
             })}
           </div>
-        )}
+
+          {/* Free trial banner */}
+          {!subscribed && (
+            <div
+              className="rounded-2xl p-4 mb-4 border flex items-center gap-3"
+              style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderColor: "#fcd34d" }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "#fff" }}
+              >
+                <Icon name="gift" size={20} color="#d97706" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[14px] font-bold" style={{ color: "#7c2d12" }}>
+                  Free Trial: 7 Days
+                </div>
+                <div className="text-[12px]" style={{ color: "#92400e" }}>
+                  Try Super App completely free • AI Chat • Papers & Mocks
+                </div>
+              </div>
+              <button
+                onClick={handleUpgradeNow}
+                disabled={paying}
+                className="px-4 py-2 rounded-lg text-white text-[13px] font-semibold disabled:opacity-60 shrink-0"
+                style={{ background: "#d97706" }}
+              >
+                {paying ? "…" : "Upgrade Now"}
+              </button>
+            </div>
+          )}
+
+          {/* List */}
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Spinner size={24} />
+            </div>
+          ) : error ? (
+            <div
+              className="rounded-2xl p-4 border text-[13px]"
+              style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#991b1b" }}
+            >
+              {error}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div
+              className="rounded-2xl p-8 border-2 border-dashed text-center"
+              style={{ borderColor: colors.border }}
+            >
+              <Icon name="inbox" size={28} color={colors.mutedForeground} />
+              <div
+                className="text-[14px] font-semibold mt-2"
+                style={{ color: colors.foreground }}
+              >
+                No papers in this catalogue yet
+              </div>
+              <div
+                className="text-[12px] mt-0.5"
+                style={{ color: colors.mutedForeground }}
+              >
+                Admin is uploading. Check back soon!
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {filtered.map((p) => {
+                const globalIdx = sorted.findIndex((x) => x.id === p.id);
+                const locked = globalIdx >= 5 && !subscribed;
+                const ec = examColor(p.examType);
+                const el = examLight(p.examType);
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-2xl p-3.5 border bg-white shadow-sm"
+                    style={{ borderColor: colors.border }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative"
+                        style={{ background: el }}
+                      >
+                        <Icon name="file-text" size={18} color={ec} />
+                        {locked && (
+                          <div
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{ background: "#fef3c7" }}
+                          >
+                            <Icon name="lock" size={10} color="#d97706" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="text-[14px] font-semibold truncate"
+                          style={{ color: colors.foreground }}
+                        >
+                          {p.title}
+                        </div>
+                        <div
+                          className="flex items-center gap-2 mt-0.5 text-[11px]"
+                          style={{ color: colors.mutedForeground }}
+                        >
+                          <span
+                            className="px-1.5 py-0.5 rounded-md font-bold"
+                            style={{ background: el, color: ec }}
+                          >
+                            {p.examType}
+                          </span>
+                          <span>· {p.year}</span>
+                          {p.subject && <span>· {p.subject}</span>}
+                          <span>· {p.questionCount}Q</span>
+                          {p.durationMinutes && <span>· {p.durationMinutes} min</span>}
+                        </div>
+                      </div>
+                      {opening === p.id ? (
+                        <Spinner size={16} />
+                      ) : (
+                        <Icon
+                          name={locked ? "lock" : "chevron-right"}
+                          size={16}
+                          color={locked ? "#d97706" : colors.mutedForeground}
+                        />
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleOpen(p, globalIdx)}
+                        disabled={opening === p.id}
+                        className="flex-1 min-w-[120px] rounded-2xl border py-2 text-sm font-semibold"
+                        style={{
+                          background: colors.secondary,
+                          borderColor: colors.border,
+                          color: colors.foreground,
+                        }}
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => handleAttempt(p, globalIdx)}
+                        disabled={opening === p.id}
+                        className="flex-1 min-w-[120px] rounded-2xl py-2 text-sm font-semibold"
+                        style={{
+                          background: locked ? "#fef3c7" : colors.primary,
+                          color: locked ? "#92400e" : "#fff",
+                          borderColor: locked ? colors.border : colors.primary,
+                        }}
+                      >
+                        {locked ? "Locked" : "Attempt Exam"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 p-4">
