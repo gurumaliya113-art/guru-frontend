@@ -9,7 +9,7 @@ const NAV = [
   { to: "/admin/upload", label: "Upload PDF", icon: "file-text" },
   { to: "/admin/questions", label: "Questions", icon: "book-open" },
   { to: "/admin/questions/new", label: "Add Question", icon: "plus" },
-  { to: "/admin/pyp", label: "Previous Year Papers", icon: "award" },
+  { to: "/admin/pyp", label: "Super App", icon: "award" },
 ];
 
 export default function AdminShell() {

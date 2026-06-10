@@ -104,7 +104,7 @@ export default function AdminPYP() {
     <div className="p-6 max-w-[1100px]">
       <div className="mb-6">
         <div className="text-[20px] font-bold" style={{ color: colors.foreground }}>
-          Previous Year Papers &amp; Mocks
+          Super App
         </div>
         <div className="text-[13px]" style={{ color: colors.mutedForeground }}>
           Curated catalogue surfaced to students at <code>/pyp</code>. First 5 are free; the rest are paywalled.

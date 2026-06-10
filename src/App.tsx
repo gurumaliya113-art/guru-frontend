@@ -33,7 +33,7 @@ import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
 const STUDENT_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
-  { path: "/pyp", label: "Prev. Papers", icon: "award" },
+  { path: "/pyp", label: "Super App", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];

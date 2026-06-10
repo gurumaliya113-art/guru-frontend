@@ -289,7 +289,7 @@ export default function Home() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[15px] font-bold" style={{ color: "#7c2d12" }}>
-                  Previous Year Papers &amp; Mocks
+                  Super App
                 </div>
                 <div className="text-[12px]" style={{ color: "#92400e" }}>
                   NEET · JEE · Board ·{" "}

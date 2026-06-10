@@ -190,7 +190,7 @@ export default function PreviousYearPapers() {
         </button>
         <div className="flex-1">
           <div className="text-[15px] font-semibold" style={{ color: colors.foreground }}>
-            Previous Year Papers &amp; Mocks
+            Super App
           </div>
           <div className="text-[11px]" style={{ color: colors.mutedForeground }}>
             NEET · JEE · Board · curated by admin
@@ -264,7 +264,7 @@ export default function PreviousYearPapers() {
                   Choose your plan
                 </div>
                 <div className="text-[12px]" style={{ color: colors.mutedForeground }}>
-                  Unlock unlimited previous year papers & mocks from ₹29.
+                  Unlock Super App from ₹29.
                 </div>
               </div>
 
