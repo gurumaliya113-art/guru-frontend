@@ -223,37 +223,89 @@ export default function PreviousYearPapers() {
 
         {/* Free / paid banner */}
         {!subscribed && (
-          <div
-            className="rounded-2xl p-3.5 border mb-4 flex items-center gap-3"
-            style={{ background: "#fffbeb", borderColor: "#fde68a" }}
-          >
+          <>
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "#fef3c7" }}
+              className="rounded-2xl p-3.5 border mb-4 flex items-center gap-3"
+              style={{ background: "#fffbeb", borderColor: "#fde68a" }}
             >
-              <Icon name="zap" size={16} color="#d97706" />
-            </div>
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold" style={{ color: "#92400e" }}>
-                Free preview: first 5 papers
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "#fef3c7" }}
+              >
+                <Icon name="zap" size={16} color="#d97706" />
               </div>
-              <div className="text-[11px]" style={{ color: "#b45309" }}>
-                Unlock the full catalogue from ₹29.
+              <div className="flex-1">
+                <div className="text-[13px] font-semibold" style={{ color: "#92400e" }}>
+                  Free preview: first 5 papers
+                </div>
+                <div className="text-[11px]" style={{ color: "#b45309" }}>
+                  Unlock the full catalogue from ₹29.
+                </div>
               </div>
             </div>
-            <button
-              onClick={() =>
-                setPaywall({
-                  message:
-                    "Unlock unlimited previous year papers & mocks from ₹29.",
-                })
-              }
-              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white"
-              style={{ background: "#d97706" }}
+
+            {paywall && (
+              <div
+                className="rounded-2xl p-3.5 mb-4 border bg-[#f9fafb]"
+                style={{ borderColor: colors.border }}
+              >
+                <div className="text-[13px] font-medium" style={{ color: colors.foreground }}>
+                  {paywall.message}
+                </div>
+              </div>
+            )}
+
+            <div
+              className="rounded-2xl p-4 mb-6 border bg-white shadow-sm"
+              style={{ borderColor: colors.border }}
             >
-              Upgrade
-            </button>
-          </div>
+              <div className="mb-4">
+                <div className="text-[15px] font-semibold" style={{ color: colors.foreground }}>
+                  Choose your plan
+                </div>
+                <div className="text-[12px]" style={{ color: colors.mutedForeground }}>
+                  Unlock unlimited previous year papers & mocks from ₹29.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {SUBSCRIPTION_PLANS.map((plan) => {
+                  const active = plan.id === selectedPlanId;
+                  return (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => setSelectedPlanId(plan.id)}
+                      className="rounded-2xl border p-3 text-left"
+                      style={{
+                        background: active ? colors.primary : "#fff",
+                        borderColor: active ? colors.primary : colors.border,
+                        color: active ? "#fff" : colors.foreground,
+                      }}
+                    >
+                      <div className="text-[13px] font-semibold">{plan.label}</div>
+                      <div className="text-[20px] font-bold">₹{plan.amount}</div>
+                      <div
+                        className="text-[11px] mt-1"
+                        style={{ color: active ? "rgba(255,255,255,0.85)" : colors.mutedForeground }}
+                      >
+                        {plan.subtitle}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handlePay}
+                disabled={paying}
+                className="w-full py-3 rounded-2xl text-white font-bold disabled:opacity-60"
+                style={{ background: "#d97706" }}
+              >
+                {paying ? "Opening Razorpay…" : `Pay ₹${selectedPlan.amount}`}
+              </button>
+            </div>
+          </>
         )}
 
         {/* List */}
@@ -382,89 +434,6 @@ export default function PreviousYearPapers() {
         )}
       </div>
 
-      {/* Paywall modal */}
-      {paywall && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.45)" }}
-          onClick={() => setPaywall(null)}
-        >
-          <div
-            className="w-full max-w-[420px] rounded-2xl bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: "#fef3c7" }}
-              >
-                <Icon name="zap" size={20} color="#d97706" />
-              </div>
-              <button
-                onClick={() => setPaywall(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: colors.secondary }}
-              >
-                <Icon name="x" size={16} color={colors.foreground} />
-              </button>
-            </div>
-            <div className="text-[18px] font-bold mb-1" style={{ color: colors.foreground }}>
-              Choose your plan
-            </div>
-            <div className="text-[13px] mb-4" style={{ color: colors.mutedForeground }}>
-              {paywall.message}
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {SUBSCRIPTION_PLANS.map((plan) => {
-                const active = plan.id === selectedPlanId;
-                return (
-                  <button
-                    key={plan.id}
-                    onClick={() => setSelectedPlanId(plan.id)}
-                    className="rounded-2xl border p-3 text-left"
-                    style={{
-                      background: active ? colors.primary : "#fff",
-                      borderColor: active ? colors.primary : colors.border,
-                      color: active ? "#fff" : colors.foreground,
-                    }}
-                  >
-                    <div className="text-[13px] font-semibold">{plan.label}</div>
-                    <div className="text-[20px] font-bold">₹{plan.amount}</div>
-                    <div
-                      className="text-[11px] mt-1"
-                      style={{ color: active ? "rgba(255,255,255,0.85)" : colors.mutedForeground }}
-                    >
-                      {plan.subtitle}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <ul className="text-[12px] mb-4 flex flex-col gap-1.5" style={{ color: colors.foreground }}>
-              <li className="flex items-center gap-2">
-                <Icon name="check-circle" size={14} color="#16a34a" />
-                Unlimited previous year papers
-              </li>
-              <li className="flex items-center gap-2">
-                <Icon name="check-circle" size={14} color="#16a34a" />
-                All mock tests &amp; analytics
-              </li>
-              <li className="flex items-center gap-2">
-                <Icon name="check-circle" size={14} color="#16a34a" />
-                Detailed progress reports
-              </li>
-            </ul>
-            <button
-              onClick={handlePay}
-              disabled={paying}
-              className="w-full py-3 rounded-2xl text-white font-bold disabled:opacity-60"
-              style={{ background: "#d97706" }}
-            >
-              {paying ? "Opening Razorpay…" : `Pay ₹${selectedPlan.amount}`}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
