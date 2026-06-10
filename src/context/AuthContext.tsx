@@ -19,7 +19,10 @@ function normalizeBaseUrl(raw: string): string {
   return v;
 }
 const API_BASE_URL: string = normalizeBaseUrl(
-  (import.meta as any).env?.VITE_API_BASE_URL || ""
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+    (import.meta as any).env?.DEV
+      ? "http://localhost:4000"
+      : ""
 );
 const apiUrl = (p: string) => (p.startsWith("http") ? p : `${API_BASE_URL}${p}`);
 

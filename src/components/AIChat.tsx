@@ -85,10 +85,11 @@ export default function AIChat() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
+      const messageText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again.";
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: messageText,
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errorMessage]);
