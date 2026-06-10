@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 import { colors, examColor, examLight } from "@/lib/colors";
 import { startSubscriptionCheckout } from "@/lib/razorpay";
 import type { ExamType, PreviousYearPaperSummary } from "@/lib/types";
+import AIChat from "@/components/AIChat";
 
 const SUBSCRIPTION_PLANS = [
   { id: "7d-29", label: "7 days", amount: 29, subtitle: "Short access" },
@@ -34,29 +35,21 @@ export default function PreviousYearPapers() {
     (profile.targetExam as ExamType) || "ALL",
   );
   const [opening, setOpening] = useState<string | null>(null);
-  const [paywall, setPaywall] = useState<{ message: string } | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState(SUBSCRIPTION_PLANS[1].id);
+  const [showing, setShowing] = useState<"papers" | "chat">("papers");
   const [paying, setPaying] = useState(false);
 
-  const selectedPlan = SUBSCRIPTION_PLANS.find((plan) => plan.id === selectedPlanId) ?? SUBSCRIPTION_PLANS[1];
-
-  const handlePay = () => {
+  const handleUpgradeNow = () => {
     setPaying(true);
     startSubscriptionCheckout(
       { name: profile.name, phone: profile.phone },
       async (sub) => {
         await updateProfile({ subscription: sub });
         setPaying(false);
-        setPaywall(null);
         alert("Subscription activated! Enjoy unlimited access 🎉");
       },
       (err) => {
         setPaying(false);
         alert(`Payment failed: ${err.message}`);
-      },
-      {
-        planId: selectedPlan.id,
-        planLabel: selectedPlan.label,
       },
     );
   };
@@ -198,9 +191,32 @@ export default function PreviousYearPapers() {
         </div>
       </div>
 
-      {/* Exam filter pills */}
-      <div className="px-4 pt-4">
-        <div className="flex gap-2 overflow-x-auto pb-3">
+      {/* Tab buttons */}
+      <div className="px-4 pt-4 pb-2 flex gap-2 border-b" style={{ borderColor: colors.border }}>
+        <button
+          onClick={() => setShowing("papers")}
+          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          style={{
+            background: showing === "papers" ? colors.primary : colors.secondary,
+            color: showing === "papers" ? "#fff" : colors.foreground,
+          }}
+        >
+          📚 Papers
+        </button>
+        <button
+          onClick={() => setShowing("chat")}
+          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          style={{
+            background: showing === "chat" ? colors.primary : colors.secondary,
+            color: showing === "chat" ? "#fff" : colors.foreground,
+          }}
+        >
+          🤖 AI Chat
+        </button>
+      </div>
+
+      {showing === "papers" ? (
+        <div className="px-4 pt-4">
           {ALL_EXAMS.map((e) => {
             const active = filter === e;
             const c = e === "ALL" ? colors.primary : examColor(e);
@@ -221,91 +237,35 @@ export default function PreviousYearPapers() {
           })}
         </div>
 
-        {/* Free / paid banner */}
+        {/* Free trial banner */}
         {!subscribed && (
-          <>
+          <div
+            className="rounded-2xl p-4 mb-4 border flex items-center gap-3"
+            style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderColor: "#fcd34d" }}
+          >
             <div
-              className="rounded-2xl p-3.5 border mb-4 flex items-center gap-3"
-              style={{ background: "#fffbeb", borderColor: "#fde68a" }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "#fff" }}
             >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "#fef3c7" }}
-              >
-                <Icon name="zap" size={16} color="#d97706" />
+              <Icon name="gift" size={20} color="#d97706" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[14px] font-bold" style={{ color: "#7c2d12" }}>
+                Free Trial: 7 Days
               </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold" style={{ color: "#92400e" }}>
-                  Free preview: first 5 papers
-                </div>
-                <div className="text-[11px]" style={{ color: "#b45309" }}>
-                  Unlock the full catalogue from ₹29.
-                </div>
+              <div className="text-[12px]" style={{ color: "#92400e" }}>
+                Try Super App completely free • AI Chat • Papers & Mocks
               </div>
             </div>
-
-            {paywall && (
-              <div
-                className="rounded-2xl p-3.5 mb-4 border bg-[#f9fafb]"
-                style={{ borderColor: colors.border }}
-              >
-                <div className="text-[13px] font-medium" style={{ color: colors.foreground }}>
-                  {paywall.message}
-                </div>
-              </div>
-            )}
-
-            <div
-              className="rounded-2xl p-4 mb-6 border bg-white shadow-sm"
-              style={{ borderColor: colors.border }}
+            <button
+              onClick={handleUpgradeNow}
+              disabled={paying}
+              className="px-4 py-2 rounded-lg text-white text-[13px] font-semibold disabled:opacity-60 shrink-0"
+              style={{ background: "#d97706" }}
             >
-              <div className="mb-4">
-                <div className="text-[15px] font-semibold" style={{ color: colors.foreground }}>
-                  Choose your plan
-                </div>
-                <div className="text-[12px]" style={{ color: colors.mutedForeground }}>
-                  Unlock Super App from ₹29.
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {SUBSCRIPTION_PLANS.map((plan) => {
-                  const active = plan.id === selectedPlanId;
-                  return (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setSelectedPlanId(plan.id)}
-                      className="rounded-2xl border p-3 text-left"
-                      style={{
-                        background: active ? colors.primary : "#fff",
-                        borderColor: active ? colors.primary : colors.border,
-                        color: active ? "#fff" : colors.foreground,
-                      }}
-                    >
-                      <div className="text-[13px] font-semibold">{plan.label}</div>
-                      <div className="text-[20px] font-bold">₹{plan.amount}</div>
-                      <div
-                        className="text-[11px] mt-1"
-                        style={{ color: active ? "rgba(255,255,255,0.85)" : colors.mutedForeground }}
-                      >
-                        {plan.subtitle}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={handlePay}
-                disabled={paying}
-                className="w-full py-3 rounded-2xl text-white font-bold disabled:opacity-60"
-                style={{ background: "#d97706" }}
-              >
-                {paying ? "Opening Razorpay…" : `Pay ₹${selectedPlan.amount}`}
-              </button>
-            </div>
-          </>
+              {paying ? "…" : "Upgrade Now"}
+            </button>
+          </div>
         )}
 
         {/* List */}
@@ -432,8 +392,12 @@ export default function PreviousYearPapers() {
             })}
           </div>
         )}
-      </div>
-
+        </div>
+      ) : (
+        <div className="flex-1 p-4">
+          <AIChat />
+        </div>
+      )}
     </div>
   );
 }
