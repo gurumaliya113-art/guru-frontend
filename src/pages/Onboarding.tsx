@@ -61,7 +61,7 @@ function InputRow({
 export default function Onboarding() {
   const { login, signup } = useAuth();
   const nav = useNavigate();
-  const [role, setRole] = useState<"student" | "teacher" | "admin">("student");
+  const [role, setRole] = useState<"student" | "teacher">("student");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -78,32 +78,6 @@ export default function Onboarding() {
     const email = identifier.trim();
     if (!email || !password) {
       setError("Enter your Gmail and password.");
-      return;
-    }
-
-    if (role === "admin") {
-      try {
-        const res = await adminApi.login(email, password);
-        if ((res as any)?.token) {
-          setAdminToken((res as any).token);
-          nav("/admin", { replace: true });
-          return;
-        }
-        setError("Admin login failed.");
-      } catch (err: any) {
-        const msg = err?.message || "Admin login failed.";
-        const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
-        const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
-        const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
-        if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
-          if (email.toLowerCase() === be.toLowerCase() && password === bp) {
-            setAdminToken("LOCAL-BYPASS");
-            nav("/admin", { replace: true });
-            return;
-          }
-        }
-        setError(msg);
-      }
       return;
     }
 
@@ -204,16 +178,7 @@ export default function Onboarding() {
                 <button type="button" onClick={() => setRole('teacher')} className={role === 'teacher' ? 'active' : ''}>
                   <Icon name="user" size={16} color={role === 'teacher' ? BG : '#8b95b0'} /> <span style={{ marginLeft: 8 }}>Teacher</span>
                 </button>
-                <button type="button" onClick={() => setRole('admin')} className={role === 'admin' ? 'active' : ''}>
-                  <Icon name="shield" size={16} color={role === 'admin' ? BG : '#8b95b0'} /> <span style={{ marginLeft: 8 }}>Admin</span>
-                </button>
               </div>
-
-              {role === 'admin' ? (
-                <div style={{ color: '#8b95b0', fontSize: 13, marginTop: 10 }}>
-                  Admins can sign in here to access the admin panel.
-                </div>
-              ) : null}
 
               {error ? <div style={{ background: 'rgba(248,113,113,0.12)', padding: 10, borderRadius: 12, marginBottom: 12, color: '#fff' }}>{error}</div> : null}
 
