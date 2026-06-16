@@ -26,6 +26,10 @@ import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminFlashcards from "@/pages/admin/AdminFlashcards";
 import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
+import Landing from "@/pages/Landing";
+import Teachers from "@/pages/Teachers";
+import Schools from "@/pages/Schools";
+import Exams from "@/pages/Exams";
 
 // Tab bar entries differ by role:
 //   - Students see "Prev. Papers" (the paid PYP catalogue at /pyp)
@@ -130,8 +134,13 @@ export default function App() {
     return (
       <Routes>
         {adminRoutes}
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/teachers" element={<Teachers />} />
+        <Route path="/schools" element={<Schools />} />
+        <Route path="/exams" element={<Exams />} />
         <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/" element={<Schools />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
@@ -167,6 +176,7 @@ export default function App() {
     <>
       <Routes>
         {adminRoutes}
+        <Route path="/landing" element={<Landing />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/class/create" element={<ClassCreate />} />

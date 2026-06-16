@@ -1,17 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
-import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import type { ExamType, Role } from "@/lib/types";
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
-type Step = "role" | "details";
 
 // Dark theme palette inspired by the "GURTRON" mockup (deep navy + amber accent).
 const T: {
@@ -73,80 +63,43 @@ function InputRow({
 }
 
 export default function Onboarding() {
-  const { completeOnboarding } = useApp();
-  const { isAuthenticated, signup, user } = useAuth();
+  const { login, signup } = useAuth();
   const nav = useNavigate();
-  const [step, setStep] = useState<Step>("role");
-  const [role, setRole] = useState<Role | null>(null);
-  // Inline sign-in modal for already-registered users. Replaces the old
-  // standalone /login screen which the user found confusing.
   const [showSignIn, setShowSignIn] = useState(false);
-
-  // Common fields
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [schoolName, setSchoolName] = useState("");
-  const [username, setUsername] = useState("");
-
-  // Account credentials. Email is only collected when the user is NOT already
-  // signed in (e.g. fresh registration). Password is collected for both new
-  // signups and authenticated Google users who want to set a password so they
-  // can later sign in with email/phone/username.
-  const [email, setEmail] = useState(user?.email || "");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-
-  // Teacher-only
-  const [inviteCode, setInviteCode] = useState("");
-
-  // Student-only
-  const [exam, setExam] = useState<ExamType>("NEET");
-  const [classLevel, setClassLevel] = useState<string>("12");
-
-  const [submitting, setSubmitting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validate = (): string | null => {
-    if (!name.trim()) return "Please enter your full name";
-    if (!phone.trim() || phone.replace(/\D/g, "").length < 7) return "Please enter a valid phone number";
-    if (!schoolName.trim()) return role === "teacher" ? "Please enter your school / coaching name" : "Please enter your school name";
-    if (!username.trim() || username.includes(" ")) return "Username cannot be empty or contain spaces";
-    if (!isAuthenticated) {
-      if (!email.trim() || !/.+@.+\..+/.test(email.trim())) return "Please enter a valid email";
-      if (!password || password.length < 6) return "Password must be at least 6 characters";
-    }
-    // Authenticated users (e.g. Google) may leave password blank to keep their
-    // existing credentials, but if they fill it in, enforce the min length.
-    if (isAuthenticated && password && password.length < 6) {
-      return "Password must be at least 6 characters";
-    }
-    if (role === "teacher" && !inviteCode.trim()) return "Teacher invite code is required";
-    return null;
-  };
-
-  const handleFinish = async () => {
-    const v = validate();
-    if (v) { setError(v); return; }
-    if (!role) return;
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
-    setSubmitting(true);
+    if (!identifier.trim() || !password) {
+      setError("Enter your Gmail and password.");
+      return;
+    }
+
+    setBusy(true);
     try {
-      // Create the auth account first if the user isn't logged in yet.
-      if (!isAuthenticated) {
-        await signup(email.trim().toLowerCase(), password);
-      }
-      await completeOnboarding(name.trim(), role, exam, {
-        username: username.trim().toLowerCase(),
-        phone: phone.trim(),
-        schoolName: schoolName.trim(),
-        classLevel: role === "student" ? classLevel : undefined,
-        teacherInviteCode: role === "teacher" ? inviteCode.trim() : undefined,
-        password: password || undefined,
-      });
+      await login(identifier.trim(), password);
       nav("/", { replace: true });
-    } catch (e) {
-      setError((e as Error)?.message || "Could not save your profile. Try again.");
+    } catch (loginErr) {
+      const message = (loginErr as Error)?.message || "Login failed.";
+      const shouldSignup = /not found|not exist|404|user.*not|no user|not registered/i.test(message);
+      const email = identifier.trim();
+      if (shouldSignup && /\S+@\S+\.\S+/.test(email)) {
+        try {
+          await signup(email, password);
+          nav("/", { replace: true });
+          return;
+        } catch (signupErr) {
+          setError((signupErr as Error)?.message || "Signup failed. Please try again.");
+          return;
+        }
+      }
+      setError(message);
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   };
 
@@ -155,15 +108,15 @@ export default function Onboarding() {
       className="min-h-full px-6 py-12 relative overflow-hidden"
       style={{ background: T.bgGradient, color: T.text }}
     >
-      {/* Ambient blobs */}
       <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }} />
+        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }}
+      />
       <div className="absolute bottom-10 -left-20 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }} />
+        style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }}
+      />
 
-      {/* Top banner: prominent jump to sign-in for users who already have an account. */}
-      {!isAuthenticated && (
-        <div className="relative z-10 max-w-md mx-auto mb-4">
+      <div className="relative z-10 max-w-5xl mx-auto">
+        <div className="relative z-20 max-w-md mx-auto mb-4">
           <button
             type="button"
             onClick={() => setShowSignIn(true)}
@@ -177,7 +130,7 @@ export default function Onboarding() {
           >
             <span className="flex items-center gap-2">
               <Icon name="log-in" size={16} color={T.accent} />
-              <span>Already have an account?</span>
+              Already have an account?
             </span>
             <span className="flex items-center gap-1.5" style={{ color: T.accent }}>
               Sign in
@@ -185,11 +138,8 @@ export default function Onboarding() {
             </span>
           </button>
         </div>
-      )}
 
-      <div className="relative z-10 max-w-md mx-auto">
-        {/* Logo */}
-        <div className="text-center mb-9">
+        <div className="text-center mb-10">
           <div
             className="w-[72px] h-[72px] rounded-2xl mx-auto mb-3.5 flex items-center justify-center border"
             style={{ background: T.surfaceHi, borderColor: T.border, boxShadow: `0 8px 30px ${T.accentSoft}` }}
@@ -197,456 +147,140 @@ export default function Onboarding() {
             <Icon name="book-open" size={32} color={T.accent} />
           </div>
           <div className="text-[28px] font-bold tracking-tight">Gurutron</div>
-          <div className="text-sm" style={{ color: T.muted }}>Master NEET &amp; JEE with AI</div>
+          <div className="text-sm" style={{ color: T.muted }}>Master NEET & JEE with AI</div>
         </div>
 
-        {step === "role" ? (
-          <div className="mb-8">
-            <div className="text-[26px] font-bold mb-1.5 tracking-tight">Who are you?</div>
-            <div className="text-sm mb-7" style={{ color: T.muted }}>
-              We'll personalise your experience
+        <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr]">
+          <div className="space-y-8">
+            <div className="space-y-5">
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Smart prep for students and teachers.</h1>
+              <p className="max-w-2xl text-slate-300 text-base sm:text-lg">
+                One platform to practice quizzes, generate papers, track performance, and run classes without friction.
+              </p>
             </div>
 
-            {([
-              { r: "student" as Role, icon: "user", title: "Student",
-                desc: "Practice quizzes, generate papers, track your weak areas" },
-              { r: "teacher" as Role, icon: "users", title: "Teacher",
-                desc: "Create tests, assign to students, track class performance" },
-            ]).map(({ r, icon, title, desc }) => (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-3">
+                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300">Student</div>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Practice quizzes, generate papers, and pinpoint weak areas with smart analytics.
+                </p>
+                <div className="text-2xl font-bold text-white">Study with confidence</div>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-3">
+                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Teacher</div>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Create tests, assign them to students, and monitor class progress from one dashboard.
+                </p>
+                <div className="text-2xl font-bold text-white">Teach smarter</div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 grid gap-3 sm:grid-cols-3 text-sm text-slate-400">
+              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">AI Paper Generator</div>
+              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">Smart Analytics</div>
+              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">10,000+ PYQs</div>
+            </div>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
-                key={r}
-                onClick={() => { setRole(r); setError(null); setStep("details"); }}
-                className="w-full text-left mb-3.5 rounded-2xl border overflow-hidden p-5 transition active:scale-[0.97] hover:border-[color:var(--bh)]"
-                style={{ background: T.surface, borderColor: T.border, ["--bh" as any]: T.borderHi }}
+                type="button"
+                onClick={() => setShowSignIn(true)}
+                className="rounded-3xl bg-white px-8 py-4 text-slate-950 font-semibold shadow-xl shadow-slate-950/10 transition hover:bg-slate-100"
               >
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
-                  >
-                    <Icon name={icon} size={26} color={T.accent} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-lg font-bold">{title}</div>
-                    <div className="text-xs leading-relaxed" style={{ color: T.muted }}>{desc}</div>
-                  </div>
-                  <Icon name="arrow-right" size={20} color={T.muted} />
-                </div>
+                Get Started
               </button>
-            ))}
+              <div className="text-sm text-slate-400">
+                Click to open the sign-in form. If the email is new, Gurutron creates your account automatically.
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="mb-8">
-            <button
-              onClick={() => { setStep("role"); setError(null); }}
-              className="flex items-center gap-1.5 mb-4 text-sm"
-              style={{ color: T.muted }}
-            >
-              <Icon name="arrow-left" size={16} color={T.muted} /> Change role
-            </button>
 
-            <div
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-5"
-              style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
-            >
-              <Icon name={role === "student" ? "user" : "users"} size={14} color={T.accent} />
-              <span className="text-xs font-semibold" style={{ color: T.accent }}>
-                {role === "student" ? "Student Registration" : "Teacher Registration"}
-              </span>
-            </div>
-
-            <div className="text-[26px] font-bold mb-1.5 tracking-tight">
-              {role === "teacher" ? "Set up your account" : "Create your profile"}
-            </div>
-            <div className="text-sm mb-6" style={{ color: T.muted }}>
-              Fill in a few quick details to continue.
-            </div>
-
-            {error ? (
-              <div
-                className="text-sm rounded-xl px-3.5 py-2.5 mb-4"
-                style={{ background: T.dangerSoft, color: T.danger, border: `1px solid rgba(248,113,113,0.25)` }}
-              >
-                {error}
-              </div>
-            ) : null}
-
-            <InputRow
-              icon="user"
-              placeholder={role === "teacher" ? "Full name (e.g. Mr. Sharma)" : "Full name"}
-              value={name}
-              onChange={setName}
-              autoComplete="name"
-              autoFocus
-            />
-
-            <InputRow
-              icon="phone"
-              placeholder="Phone number"
-              value={phone}
-              onChange={(v) => setPhone(v.replace(/[^\d+\-\s]/g, ""))}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-            />
-
-            <InputRow
-              icon="book-open"
-              placeholder={role === "teacher" ? "School / Coaching name" : "School name"}
-              value={schoolName}
-              onChange={setSchoolName}
-              autoComplete="organization"
-            />
-
-            <InputRow
-              icon="at-sign"
-              placeholder="Username"
-              value={username}
-              onChange={(v) => setUsername(v.replace(/\s/g, "").toLowerCase())}
-              autoComplete="username"
-              hint="No spaces. This is how others will see you."
-            />
-
-            {!isAuthenticated && (
-              <InputRow
-                icon="mail"
-                placeholder="Email address"
-                value={email}
-                onChange={setEmail}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-              />
-            )}
-
-            <InputRow
-              icon="lock"
-              placeholder={isAuthenticated ? "Set a password (optional)" : "Password (min 6 chars)"}
-              value={password}
-              onChange={setPassword}
-              type="password"
-              autoComplete={isAuthenticated ? "new-password" : "new-password"}
-              hint={
-                isAuthenticated
-                  ? "Set a password to also sign in with email / phone / username later."
-                  : "You'll use this with email, phone or username to sign in."
-              }
-            />
-
-            {role === "teacher" && (
-              <InputRow
-                icon="key"
-                placeholder="Teacher invite code"
-                value={inviteCode}
-                onChange={setInviteCode}
-                autoComplete="off"
-                hint="Ask your admin for the invite code. Students cannot register as teachers."
-              />
-            )}
-
-            {role === "student" && (
-              <>
-                <div className="mt-5 mb-2.5 text-[11px] uppercase tracking-wider font-medium" style={{ color: T.muted }}>
-                  Class
-                </div>
-                <div className="flex gap-2.5 mb-5">
-                  {(["9", "10", "11", "12"]).map((c) => {
-                    const active = classLevel === c;
-                    return (
-                      <button
-                        key={c}
-                        onClick={() => setClassLevel(c)}
-                        className="flex-1 py-3 rounded-xl text-sm font-bold transition"
-                        style={{
-                          background: active ? T.accentSoft : T.surface,
-                          border: `1px solid ${active ? T.accent : T.border}`,
-                          color: active ? T.accent : T.muted,
-                        }}
-                      >
-                        Class {c}
-                      </button>
-                    );
-                  })}
+          <div className="rounded-[32px] border border-white/10 bg-slate-950/80 p-8 min-h-[420px] flex flex-col justify-center">
+            {showSignIn ? (
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm uppercase tracking-[0.22em] text-slate-400">Single sign in</div>
+                  <h2 className="mt-3 text-3xl font-bold text-white">Use Gmail + password</h2>
+                  <p className="mt-3 text-slate-400">If your account already exists, you’ll log in. If not, we’ll create it for you.</p>
                 </div>
 
-                <div className="text-[11px] uppercase tracking-wider mb-2.5 font-medium" style={{ color: T.muted }}>
-                  Target Exam
-                </div>
-                <div className="flex gap-2.5 mb-6">
-                  {(["NEET", "JEE", "BOARD"] as ExamType[]).map((e) => {
-                    const active = exam === e;
-                    return (
-                      <button
-                        key={e}
-                        onClick={() => setExam(e)}
-                        className="flex-1 py-3.5 rounded-2xl text-sm font-bold transition"
-                        style={{
-                          background: active ? T.accentSoft : T.surface,
-                          border: `1px solid ${active ? T.accent : T.border}`,
-                          color: active ? T.accent : T.muted,
-                        }}
-                      >
-                        {e}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+                {error ? (
+                  <div className="rounded-3xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-100">
+                    {error}
+                  </div>
+                ) : null}
 
-            <div className="text-[11px] mt-1 mb-5" style={{ color: T.mutedSoft }}>
-              <Icon name="lock" size={11} color={T.mutedSoft} />
-              <span className="ml-1.5">
-                You'll be able to sign in with your email, phone, or username — plus the password set above.
-              </span>
-            </div>
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <InputRow
+                    icon="mail"
+                    placeholder="Gmail address"
+                    value={identifier}
+                    onChange={setIdentifier}
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoFocus
+                  />
+                  <InputRow
+                    icon="lock"
+                    placeholder="Password"
+                    value={password}
+                    onChange={setPassword}
+                    type="password"
+                    autoComplete="current-password"
+                  />
 
-            <button
-              onClick={handleFinish}
-              disabled={submitting}
-              className="w-full rounded-2xl overflow-hidden transition active:scale-[0.97] disabled:opacity-50"
-              style={{
-                background: `linear-gradient(135deg, ${T.accent} 0%, #ffd27a 100%)`,
-                boxShadow: `0 10px 30px ${T.accentSoft}`,
-              }}
-            >
-              <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#0a0e16" }}>
-                {submitting ? "Saving…" : role === "teacher" ? "Create Teacher Account" : "Create Student Account"}
-                {!submitting && <Icon name="arrow-right" size={18} color="#0a0e16" />}
-              </div>
-            </button>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="w-full rounded-3xl bg-emerald-400 py-4 text-slate-950 font-semibold transition hover:bg-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {busy ? "Please wait…" : "Sign in"}
+                  </button>
+                </form>
 
-            {!isAuthenticated && (
-              <div className="text-center mt-4 text-sm" style={{ color: T.muted }}>
-                Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setShowSignIn(true)}
-                  className="font-bold underline-offset-2 hover:underline"
-                  style={{ color: T.accent }}
+                  onClick={() => { setShowSignIn(false); setError(null); }}
+                  className="w-full text-center text-sm text-slate-400 underline-offset-4 hover:text-slate-200"
                 >
-                  Sign in here
+                  Back to landing
                 </button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <div className="text-sm uppercase tracking-[0.22em] text-slate-400">Ready to begin</div>
+                  <h2 className="mt-3 text-3xl font-bold text-white">Quick access to Gurutron</h2>
+                  <p className="mt-3 text-slate-400">Hit Get Started to open the sign-in form in one click.</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">
+                  <div className="font-semibold text-white mb-3">What you get</div>
+                  <ul className="space-y-3 text-sm">
+                    <li>• Adaptive quizzes and AI-powered paper generation</li>
+                    <li>• Teacher assignment and class performance tracking</li>
+                    <li>• Instant sign in with email and password</li>
+                  </ul>
+                </div>
+                <div className="text-sm text-slate-400">Click Get Started and enter your Gmail + password to continue.</div>
               </div>
             )}
           </div>
-        )}
+        </div>
 
-        <div className="flex justify-center gap-5 flex-wrap">
-          {[
-            { icon: "cpu", label: "AI Paper Generator" },
-            { icon: "target", label: "Smart Analytics" },
-            { icon: "book-open", label: "10,000+ PYQs" },
-          ].map(({ icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: T.mutedSoft }}>
-              <Icon name={icon} size={16} color={T.accent} />
-              {label}
-            </div>
-          ))}
+        <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-slate-400">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">AI Paper Generator</div>
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">Smart Analytics</div>
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">10,000+ PYQs</div>
         </div>
 
         <button
           onClick={() => nav("/admin/login")}
-          className="mt-5 mx-auto flex items-center justify-center gap-2 text-[11px]"
-          style={{ color: T.mutedSoft }}
+          className="mt-6 mx-auto block text-[11px] text-slate-400"
         >
-          <Icon name="shield" size={12} color={T.mutedSoft} />
           Admin Login
         </button>
-      </div>
-
-      {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
-    </div>
-  );
-}
-
-// =============================================================================
-// SignInModal — inline sign-in popup shown over the registration page so
-// already-registered users can log in without leaving the page.
-// Supports email / phone / username + password, and Google.
-// =============================================================================
-function SignInModal({ onClose }: { onClose: () => void }) {
-  const { login, loginWithGoogle } = useAuth();
-  const nav = useNavigate();
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const googleBtnRef = useRef<HTMLDivElement | null>(null);
-
-  // Close on Escape for a snappier feel.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  // Initialize the Google Identity Services button inside the modal.
-  useEffect(() => {
-    let mounted = true;
-    let timer: ReturnType<typeof setInterval> | null = null;
-
-    const init = () => {
-      if (!mounted) return false;
-      if (!window.google?.accounts?.id) return false;
-      if (!googleBtnRef.current) return false;
-      try {
-        window.google.accounts.id.initialize({
-          client_id: "624499359248-r1sga1d1r2eq4g7jj124eumuoqrdj08i.apps.googleusercontent.com",
-          callback: async (response: any) => {
-            setError(null);
-            setBusy(true);
-            try {
-              await loginWithGoogle({ credential: response.credential });
-              onClose();
-              nav("/", { replace: true });
-            } catch (err) {
-              setError((err as Error)?.message || "Google sign-in failed.");
-              setBusy(false);
-            }
-          },
-        });
-        window.google.accounts.id.renderButton(googleBtnRef.current, {
-          theme: "filled_black",
-          size: "large",
-          shape: "pill",
-          text: "continue_with",
-          width: 320,
-        });
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    if (!init()) {
-      timer = setInterval(() => { if (init() && timer) { clearInterval(timer); timer = null; } }, 200);
-    }
-    return () => { mounted = false; if (timer) clearInterval(timer); };
-  }, [loginWithGoogle, nav, onClose]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!identifier.trim() || !password) {
-      setError("Enter your login ID and password.");
-      return;
-    }
-    setError(null);
-    setBusy(true);
-    try {
-      await login(identifier.trim(), password);
-      onClose();
-      nav("/", { replace: true });
-    } catch (err) {
-      setError((err as Error)?.message || "Sign-in failed. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
-      style={{ background: "rgba(2,6,15,0.78)", backdropFilter: "blur(6px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm rounded-3xl border p-6 relative"
-        style={{
-          background: T.surface,
-          borderColor: T.border,
-          boxShadow: `0 30px 80px ${T.accentSoft}`,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90"
-          style={{ background: T.surfaceHi, border: `1px solid ${T.border}`, color: T.muted }}
-        >
-          <Icon name="x" size={16} color={T.muted} />
-        </button>
-
-        <div className="text-center mb-5">
-          <div
-            className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-            style={{ background: T.accentSoft, border: `1px solid ${T.accentRing}` }}
-          >
-            <Icon name="log-in" size={26} color={T.accent} />
-          </div>
-          <div className="text-xl font-bold tracking-tight">Welcome back</div>
-          <div className="text-xs mt-1" style={{ color: T.muted }}>
-            Sign in with your email, phone, or username.
-          </div>
-        </div>
-
-        {error ? (
-          <div
-            className="text-xs rounded-xl px-3 py-2 mb-3"
-            style={{ background: T.dangerSoft, color: T.danger, border: `1px solid rgba(248,113,113,0.25)` }}
-          >
-            {error}
-          </div>
-        ) : null}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <InputRow
-            icon="at-sign"
-            placeholder="Email / phone / username"
-            value={identifier}
-            onChange={setIdentifier}
-            autoComplete="username"
-            autoFocus
-          />
-          <InputRow
-            icon="lock"
-            placeholder="Password"
-            value={password}
-            onChange={setPassword}
-            type="password"
-            autoComplete="current-password"
-          />
-
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-2xl py-3 font-bold transition active:scale-[0.98] disabled:opacity-60"
-            style={{
-              background: `linear-gradient(135deg, ${T.accent} 0%, #ffd27a 100%)`,
-              color: "#0a0e16",
-              boxShadow: `0 10px 30px ${T.accentSoft}`,
-            }}
-          >
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full h-px" style={{ background: T.border }} />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="px-3 text-[11px] uppercase tracking-wider" style={{ background: T.surface, color: T.mutedSoft }}>
-              or
-            </span>
-          </div>
-        </div>
-
-        <div ref={googleBtnRef} className="flex justify-center" />
-
-        <div className="mt-4 text-center text-xs" style={{ color: T.muted }}>
-          New here?{" "}
-          <button
-            type="button"
-            onClick={onClose}
-            className="font-semibold"
-            style={{ color: T.accent }}
-          >
-            Create an account
-          </button>
-        </div>
       </div>
     </div>
   );

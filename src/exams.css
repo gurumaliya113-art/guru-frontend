@@ -1,0 +1,25 @@
+/* Exams page specific styles using Gurtron theme tokens */
+.exams-root { font-family: 'Nunito Sans', sans-serif; }
+.exams-header { background: rgba(4,7,24,0.95); border-bottom: 1px solid rgba(238,179,43,0.18); }
+.logo-mark { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; }
+.nav-link { color: #8b95b0; font-weight:700; }
+.nav-link.active { color: var(--gold, #EEB32B); border-bottom:3px solid rgba(238,179,43,0.12); padding-bottom:6px; }
+.btn-outline { border:1.5px solid rgba(238,179,43,0.12); color: #fff; padding:8px 12px; border-radius:8px; }
+.btn-primary { background: var(--gold, #EEB32B); color:#040718; padding:8px 14px; border-radius:10px; font-weight:800; }
+.eyebrow { display:inline-block; background: rgba(238,179,43,0.08); padding:8px 14px; border-radius:24px; color: var(--gold, #EEB32B); font-weight:800; font-size:12px; }
+.hero-title { font-size:48px; line-height:1.02; font-weight:900; margin-top:18px; color:#ffffff; font-family:'Outfit',sans-serif; }
+.hero-sub { color:#8b95b0; margin-top:16px; }
+.accent-blue { color:#4fa6e1; }
+.accent-brown { color:#b56b50; }
+.section-label { font-weight:800; color:#0f0a2e; letter-spacing:1px; }
+.pill { display:inline-block; margin-left:8px; background:#fff; padding:4px 8px; border-radius:12px; color: var(--gold, #EEB32B); font-weight:800; }
+.exam-card { background: #0c1129; border-radius:18px; padding:18px; display:flex; align-items:center; justify-content:space-between; box-shadow: 0 12px 40px rgba(4,7,24,0.6); border:1px solid rgba(238,179,43,0.06); }
+.exam-left { display:flex; gap:12px; align-items:center; }
+.exam-icon { width:56px; height:56px; border-radius:14px; background: linear-gradient(180deg, rgba(238,179,43,0.08), rgba(255,255,255,0.03)); border:1px solid rgba(238,179,43,0.06); display:flex; align-items:center; justify-content:center; }
+.exam-title { font-weight:800; color:#fff; font-family:'Outfit',sans-serif; }
+.exam-sub { color:#8b95b0; font-size:13px; }
+.exam-cta { color: rgba(238,179,43,0.9); }
+
+@media (min-width:1024px) {
+  .hero-title { font-size:64px; }
+}
