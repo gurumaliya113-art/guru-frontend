@@ -75,9 +75,7 @@ export default function AIChat() {
     setInput("");
     setLoading(true);
 
-    const rawBase = (import.meta as any).env?.VITE_API_BASE_URL || "";
-    const baseUrl = rawBase.trim().replace(/\/$/, "");
-    const url = baseUrl ? `${baseUrl}/api/ai/chat` : "/api/ai/chat";
+    const url = "/api/ai/chat";
 
     try {
       const response = await fetch(url, {

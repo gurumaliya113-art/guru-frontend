@@ -31,28 +31,6 @@ export function clearAdminTokenAndNotify() {
   }
 }
 
-/**
- * Base URL for all API requests.
- * - In local dev: empty (Vite proxy or same-origin) so `/api/...` hits the local backend.
- * - In production on Vercel: set `VITE_API_BASE_URL=https://your-backend.example.com`
- *   in Vercel project env vars so the frontend can reach the deployed backend.
- * Trailing slash is stripped so we can safely concatenate with paths that start with "/".
- */
-function normalizeBaseUrl(raw: string): string {
-  let v = (raw || "").trim().replace(/\/$/, "");
-  if (!v) return "";
-  // If user forgot the scheme (e.g. "api.example.com"), default to https://
-  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
-  return v;
-}
-// Compute API base URL correctly. If `VITE_API_BASE_URL` is provided use it,
-// otherwise when in dev mode default to localhost backend. Previous code had
-// an operator-precedence bug so DEV was being evaluated incorrectly.
-const rawBase = (import.meta as any).env?.VITE_API_BASE_URL;
-const API_BASE_URL: string = normalizeBaseUrl(
-  rawBase ? rawBase : ((import.meta as any).env?.DEV ? "http://localhost:4000" : "")
-);
-
 async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -62,8 +40,7 @@ async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: 
     const t = getAdminToken();
     if (t) headers["x-admin-token"] = t;
   }
-  const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
-  const res = await fetch(url, {
+  const res = await fetch(path, {
     ...init,
     headers,
     credentials: "include" // Include cookies for session authentication
@@ -265,13 +242,11 @@ export const api = {
 export const adminApi = {
   login: (email: string, password: string) =>
     (async () => {
-      const url = `/api/admin/login`;
-      const body = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-      const res = await fetch(url.startsWith("http") ? url : `${API_BASE_URL}${url}`, {
+      const res = await fetch(`/api/admin/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body,
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
         let detail = "";

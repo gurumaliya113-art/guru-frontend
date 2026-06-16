@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
-import { adminApi, setAdminToken } from "@/lib/api";
 import "@/onboarding.css";
 import { useAuth } from "@/context/AuthContext";
 
@@ -67,8 +66,6 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Read admin emails from Vite env. Support single VITE_ADMIN_EMAIL or comma list VITE_ADMIN_EMAILS
   const ADMIN_RAW = String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "");
   const ADMIN_EMAILS = ADMIN_RAW.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
@@ -81,19 +78,9 @@ export default function Onboarding() {
       return;
     }
 
-    // If email matches admin list, attempt admin login immediately (one-step)
     if (ADMIN_EMAILS.includes(email.toLowerCase())) {
-      try {
-        const res = await adminApi.login(email, password);
-        if ((res as any)?.token) {
-          setAdminToken((res as any).token);
-          nav("/admin", { replace: true });
-          return;
-        }
-      } catch (err: any) {
-        setError(err?.message || "Admin login failed.");
-        return;
-      }
+      setError("This is an admin account. Use /admin/login for admin access.");
+      return;
     }
 
     setBusy(true);
@@ -102,14 +89,20 @@ export default function Onboarding() {
       nav("/", { replace: true });
     } catch (loginErr) {
       const message = (loginErr as Error)?.message || "Login failed.";
-      const shouldSignup = /not found|not exist|404|user.*not|no user|not registered/i.test(message);
-      if (shouldSignup && /\S+@\S+\.\S+/.test(email)) {
+      const looksLikeEmail = /\S+@\S+\.\S+/.test(email);
+      const shouldSignup = looksLikeEmail && !/invalid credentials|already in use/i.test(message);
+      if (shouldSignup) {
         try {
           await signup(email, password);
           nav("/", { replace: true });
           return;
         } catch (signupErr) {
-          setError((signupErr as Error)?.message || "Signup failed. Please try again.");
+          const signupMessage = (signupErr as Error)?.message || "Signup failed. Please try again.";
+          if (/already in use/i.test(signupMessage)) {
+            setError(message);
+            return;
+          }
+          setError(signupMessage);
           return;
         }
       }
