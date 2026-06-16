@@ -91,18 +91,8 @@ export default function Onboarding() {
           return;
         }
       } catch (err: any) {
-        const msg = err?.message || "";
-        const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
-        const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
-        const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
-        if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
-          if (email.toLowerCase() === be.toLowerCase() && password === bp) {
-            setAdminToken("LOCAL-BYPASS");
-            nav("/admin", { replace: true });
-            return;
-          }
-        }
-        // fall through to normal user flow
+        setError(err?.message || "Admin login failed.");
+        return;
       }
     }
 

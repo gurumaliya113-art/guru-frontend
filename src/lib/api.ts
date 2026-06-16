@@ -14,6 +14,7 @@ import type {
 } from "./types";
 
 const ADMIN_TOKEN_KEY = "gurutron.adminToken";
+const ADMIN_AUTH_EXPIRED_EVENT = "gurutron:admin-auth-expired";
 
 export function getAdminToken(): string | null {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -21,6 +22,13 @@ export function getAdminToken(): string | null {
 export function setAdminToken(token: string | null) {
   if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token);
   else localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
+
+export function clearAdminTokenAndNotify() {
+  setAdminToken(null);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ADMIN_AUTH_EXPIRED_EVENT));
+  }
 }
 
 /**
@@ -61,6 +69,9 @@ async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: 
     credentials: "include" // Include cookies for session authentication
   });
   if (!res.ok) {
+    if (opts.admin && res.status === 401) {
+      clearAdminTokenAndNotify();
+    }
     let detail = "";
     try { detail = (await res.json()).error || ""; } catch {}
     throw new Error(`API ${res.status}: ${detail || res.statusText}`);
@@ -272,8 +283,7 @@ export const adminApi = {
   logout: () => request<{ ok: true }>("/api/admin/logout", { method: "POST" }, { admin: true }),
   me: async () => {
     const t = getAdminToken();
-    const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
-    if (t === "LOCAL-BYPASS" && (bypass === "true" || (import.meta as any).env?.DEV)) {
+    if (t === "LOCAL-BYPASS" && (import.meta as any).env?.DEV) {
       return { ok: true, geminiAvailable: false, groqAvailable: false };
     }
     return request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true });

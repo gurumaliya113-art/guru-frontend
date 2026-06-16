@@ -36,20 +36,7 @@ export default function AdminLogin() {
       setAdminToken(token);
       nav("/admin", { replace: true });
     } catch (err: any) {
-      const msg = err?.message || "";
-      // Attempt local bypass if enabled in frontend env and credentials match
-      const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
-      const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
-      const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
-      if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
-        if (email.trim().toLowerCase() === be.toLowerCase() && password === bp) {
-          // Grant a local bypass token so admin area can be used in dev
-          setAdminToken("LOCAL-BYPASS");
-          nav("/admin", { replace: true });
-          return;
-        }
-      }
-      setError(msg || "Login failed");
+      setError(err?.message || "Login failed");
     } finally {
       setBusy(false);
     }

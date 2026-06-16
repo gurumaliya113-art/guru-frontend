@@ -20,6 +20,13 @@ export default function AdminShell() {
   const [groqAvailable, setGroqAvailable] = useState(false);
 
   useEffect(() => {
+    const handleAuthExpired = () => {
+      setReady(false);
+      nav("/admin/login", { replace: true });
+    };
+
+    window.addEventListener("gurutron:admin-auth-expired", handleAuthExpired);
+
     (async () => {
       if (!getAdminToken()) {
         nav("/admin/login", { replace: true });
@@ -35,6 +42,10 @@ export default function AdminShell() {
         nav("/admin/login", { replace: true });
       }
     })();
+
+    return () => {
+      window.removeEventListener("gurutron:admin-auth-expired", handleAuthExpired);
+    };
   }, [nav]);
 
   const handleLogout = async () => {
