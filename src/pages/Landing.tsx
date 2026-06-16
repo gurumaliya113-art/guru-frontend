@@ -27,7 +27,7 @@ import Onboarding from "./Onboarding";
 const NAV_LINKS = [
   { label: "For Students", href: "#students" },
   { label: "For Teachers", href: "/teachers" },
-  { label: "For Schools", href: "#schools" },
+  { label: "For Schools", href: "/schools" },
   { label: "Exams", href: "#exams" },
   { label: "Features", href: "#features" },
   { label: "FAQ", href: "#faq" },
@@ -187,13 +187,13 @@ export default function Landing() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => setShowSignIn(true)}
-              className="text-sm font-semibold transition-colors bg-transparent"
-              style={{ color: GOLD }}
-            >
-              Web Login
-            </button>
+              <a
+                href="/onboarding"
+                className="text-sm font-semibold transition-colors bg-transparent"
+                style={{ color: GOLD }}
+              >
+                Web Login
+              </a>
             <a
               href="#"
               className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-full shadow hover:scale-105 transition-transform"

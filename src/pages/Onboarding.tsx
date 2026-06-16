@@ -1,29 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
+import { adminApi, setAdminToken } from "@/lib/api";
+import "@/onboarding.css";
 import { useAuth } from "@/context/AuthContext";
 
-// Dark theme palette inspired by the "GURTRON" mockup (deep navy + amber accent).
-const T: {
-  bg: string; bgGradient: string; surface: string; surfaceHi: string;
-  border: string; borderHi: string; text: string; muted: string; mutedSoft: string;
-  accent: string; accentSoft: string; accentRing: string; danger: string; dangerSoft: string;
-} = {
-  bg: "#0a0e16",
-  bgGradient: "linear-gradient(160deg,#0a0e16 0%,#0f1622 55%,#101826 100%)",
-  surface: "#111a28",
-  surfaceHi: "#172238",
-  border: "rgba(255,255,255,0.08)",
-  borderHi: "rgba(245,179,51,0.45)",
-  text: "#f5f7fb",
-  muted: "rgba(255,255,255,0.55)",
-  mutedSoft: "rgba(255,255,255,0.4)",
-  accent: "#f5b133", // amber
-  accentSoft: "rgba(245,179,51,0.15)",
-  accentRing: "rgba(245,179,51,0.35)",
-  danger: "#f87171",
-  dangerSoft: "rgba(248,113,113,0.12)",
-};
+// Gurtron theme tokens
+const GOLD = "#EEB32B";
+const BG = "#040718";
+const CARD = "#0c1129";
+const BORDER = "rgba(238,179,43,0.18)";
+const CREAM = "#f7f4ee";
+const DARK2 = "#080e22";
+
 
 // IMPORTANT: defined OUTSIDE the page component. Previously this lived inside
 // Onboarding, so every keystroke recreated the component type, React unmounted
@@ -31,20 +20,22 @@ const T: {
 // which is what caused typed digits to land in the wrong field.
 function InputRow({
   icon, placeholder, value, onChange, type = "text", autoFocus = false, hint,
-  inputMode, autoComplete,
+  inputMode, autoComplete, trailingIcon, onTrailingClick,
 }: {
   icon: string; placeholder: string; value: string;
   onChange: (v: string) => void; type?: string; autoFocus?: boolean; hint?: string;
   inputMode?: "text" | "tel" | "email" | "numeric" | "decimal" | "search" | "url" | "none";
   autoComplete?: string;
+  trailingIcon?: string;
+  onTrailingClick?: () => void;
 }) {
   return (
     <div className="mb-3.5">
       <div
-        className="flex items-center rounded-2xl border px-4 h-14 transition focus-within:border-[var(--accent)]"
-        style={{ background: T.surface, borderColor: T.border, ["--accent" as any]: T.accent }}
+        className="flex items-center rounded-2xl border px-4 h-14 transition relative"
+        style={{ background: CARD, borderColor: BORDER }}
       >
-        <Icon name={icon} size={18} color={T.mutedSoft} />
+        <Icon name={icon} size={18} color="#8b95b0" />
         <input
           autoFocus={autoFocus}
           type={type}
@@ -53,11 +44,16 @@ function InputRow({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="ml-3 flex-1 bg-transparent outline-none placeholder:text-white/30"
-          style={{ color: T.text }}
+          className="ml-3 flex-1 bg-transparent outline-none placeholder:text-white/30 pr-8"
+          style={{ color: '#ffffff' }}
         />
+        {trailingIcon ? (
+          <button type="button" onClick={onTrailingClick} className="absolute right-3">
+            <Icon name={trailingIcon} size={16} color="#8b95b0" />
+          </button>
+        ) : null}
       </div>
-      {hint ? <div className="text-[11px] mt-1.5 ml-1" style={{ color: T.mutedSoft }}>{hint}</div> : null}
+      {hint ? <div className="text-[11px] mt-1.5 ml-1" style={{ color: "#8b95b0" }}>{hint}</div> : null}
     </div>
   );
 }
@@ -65,28 +61,84 @@ function InputRow({
 export default function Onboarding() {
   const { login, signup } = useAuth();
   const nav = useNavigate();
-  const [showSignIn, setShowSignIn] = useState(false);
+  const [role, setRole] = useState<"student" | "teacher" | "admin">("student");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Read admin emails from Vite env. Support single VITE_ADMIN_EMAIL or comma list VITE_ADMIN_EMAILS
+  const ADMIN_RAW = String(import.meta.env.VITE_ADMIN_EMAILS || import.meta.env.VITE_ADMIN_EMAIL || "");
+  const ADMIN_EMAILS = ADMIN_RAW.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    if (!identifier.trim() || !password) {
+    const email = identifier.trim();
+    if (!email || !password) {
       setError("Enter your Gmail and password.");
       return;
     }
 
+    if (role === "admin") {
+      try {
+        const res = await adminApi.login(email, password);
+        if ((res as any)?.token) {
+          setAdminToken((res as any).token);
+          nav("/admin", { replace: true });
+          return;
+        }
+        setError("Admin login failed.");
+      } catch (err: any) {
+        const msg = err?.message || "Admin login failed.";
+        const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
+        const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
+        const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
+        if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
+          if (email.toLowerCase() === be.toLowerCase() && password === bp) {
+            setAdminToken("LOCAL-BYPASS");
+            nav("/admin", { replace: true });
+            return;
+          }
+        }
+        setError(msg);
+      }
+      return;
+    }
+
+    // If email matches admin list, attempt admin login immediately (one-step)
+    if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+      try {
+        const res = await adminApi.login(email, password);
+        if ((res as any)?.token) {
+          setAdminToken((res as any).token);
+          nav("/admin", { replace: true });
+          return;
+        }
+      } catch (err: any) {
+        const msg = err?.message || "";
+        const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
+        const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
+        const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
+        if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
+          if (email.toLowerCase() === be.toLowerCase() && password === bp) {
+            setAdminToken("LOCAL-BYPASS");
+            nav("/admin", { replace: true });
+            return;
+          }
+        }
+        // fall through to normal user flow
+      }
+    }
+
     setBusy(true);
     try {
-      await login(identifier.trim(), password);
+      await login(email, password);
       nav("/", { replace: true });
     } catch (loginErr) {
       const message = (loginErr as Error)?.message || "Login failed.";
       const shouldSignup = /not found|not exist|404|user.*not|no user|not registered/i.test(message);
-      const email = identifier.trim();
       if (shouldSignup && /\S+@\S+\.\S+/.test(email)) {
         try {
           await signup(email, password);
@@ -104,184 +156,100 @@ export default function Onboarding() {
   };
 
   return (
-    <div
-      className="min-h-full px-6 py-12 relative overflow-hidden"
-      style={{ background: T.bgGradient, color: T.text }}
-    >
-      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }}
-      />
-      <div className="absolute bottom-10 -left-20 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.10), transparent 70%)" }}
-      />
-
-      <div className="relative z-10 max-w-5xl mx-auto">
-        <div className="relative z-20 max-w-md mx-auto mb-4">
-          <button
-            type="button"
-            onClick={() => setShowSignIn(true)}
-            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition active:scale-[0.98]"
-            style={{
-              background: T.surfaceHi,
-              border: `1px solid ${T.accentRing}`,
-              color: T.text,
-              boxShadow: `0 4px 18px ${T.accentSoft}`,
-            }}
-          >
-            <span className="flex items-center gap-2">
-              <Icon name="log-in" size={16} color={T.accent} />
-              Already have an account?
-            </span>
-            <span className="flex items-center gap-1.5" style={{ color: T.accent }}>
-              Sign in
-              <Icon name="arrow-right" size={14} color={T.accent} />
-            </span>
-          </button>
-        </div>
-
-        <div className="text-center mb-10">
-          <div
-            className="w-[72px] h-[72px] rounded-2xl mx-auto mb-3.5 flex items-center justify-center border"
-            style={{ background: T.surfaceHi, borderColor: T.border, boxShadow: `0 8px 30px ${T.accentSoft}` }}
-          >
-            <Icon name="book-open" size={32} color={T.accent} />
+    <div className="onboarding-root">
+      <header className="onboarding-header">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="logo-mark" style={{ background: GOLD, color: BG }}><Icon name="zap" size={20} color={BG} /></div>
+            <div style={{ fontFamily: "'Outfit',sans-serif", fontWeight: 900 }}>Gurtron</div>
           </div>
-          <div className="text-[28px] font-bold tracking-tight">Gurutron</div>
-          <div className="text-sm" style={{ color: T.muted }}>Master NEET & JEE with AI</div>
+          <div>
+            <a href="/" className="text-sm mr-4" style={{ color: '#8b95b0' }}>Back to site</a>
+          </div>
         </div>
+      </header>
 
-        <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr]">
-          <div className="space-y-8">
-            <div className="space-y-5">
-              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Smart prep for students and teachers.</h1>
-              <p className="max-w-2xl text-slate-300 text-base sm:text-lg">
-                One platform to practice quizzes, generate papers, track performance, and run classes without friction.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-3">
-                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-300">Student</div>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  Practice quizzes, generate papers, and pinpoint weak areas with smart analytics.
-                </p>
-                <div className="text-2xl font-bold text-white">Study with confidence</div>
+      <main>
+        <div className="onboarding-container">
+          <div className="onboarding-hero">
+            <div className="eyebrow">Gurtron · ONE PLATFORM. EVERY GOAL.</div>
+            <h1 className="hero-title">Smart prep for <br /><span style={{ color: GOLD }}>students</span> and<br /><span style={{ color: '#ffffff' }}>teachers.</span></h1>
+            <p className="hero-sub">One platform to practice quizzes, generate papers, track performance, and run classes — without friction.</p>
+            <div className="onboarding-features">
+              <div className="feature-card">
+                <div className="label">Student</div>
+                <div className="title">Study with confidence</div>
+                <div className="text-sm" style={{ color: '#8b95b0', marginTop:8 }}>Practice quizzes, generate papers, and pinpoint weak areas with smart analytics.</div>
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-3">
-                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Teacher</div>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  Create tests, assign them to students, and monitor class progress from one dashboard.
-                </p>
-                <div className="text-2xl font-bold text-white">Teach smarter</div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 grid gap-3 sm:grid-cols-3 text-sm text-slate-400">
-              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">AI Paper Generator</div>
-              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">Smart Analytics</div>
-              <div className="rounded-3xl bg-slate-950/60 p-4 text-center">10,000+ PYQs</div>
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => setShowSignIn(true)}
-                className="rounded-3xl bg-white px-8 py-4 text-slate-950 font-semibold shadow-xl shadow-slate-950/10 transition hover:bg-slate-100"
-              >
-                Get Started
-              </button>
-              <div className="text-sm text-slate-400">
-                Click to open the sign-in form. If the email is new, Gurutron creates your account automatically.
+              <div className="feature-card">
+                <div className="label">Teacher</div>
+                <div className="title">Teach smarter</div>
+                <div className="text-sm" style={{ color: '#8b95b0', marginTop:8 }}>Create tests, assign them to students, and monitor class progress from one dashboard.</div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-white/10 bg-slate-950/80 p-8 min-h-[420px] flex flex-col justify-center">
-            {showSignIn ? (
-              <div className="space-y-6">
-                <div>
-                  <div className="text-sm uppercase tracking-[0.22em] text-slate-400">Single sign in</div>
-                  <h2 className="mt-3 text-3xl font-bold text-white">Use Gmail + password</h2>
-                  <p className="mt-3 text-slate-400">If your account already exists, you’ll log in. If not, we’ll create it for you.</p>
-                </div>
+          <div>
+            <div className="onboarding-card">
+              <div>
+                <div className="card-eyebrow">WELCOME BACK</div>
+                <div className="card-title">Sign in to Gurtron</div>
+                <div className="card-sub">New here? Your account is created automatically on first sign-in.</div>
+              </div>
 
-                {error ? (
-                  <div className="rounded-3xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-100">
-                    {error}
-                  </div>
-                ) : null}
-
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                  <InputRow
-                    icon="mail"
-                    placeholder="Gmail address"
-                    value={identifier}
-                    onChange={setIdentifier}
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    autoFocus
-                  />
-                  <InputRow
-                    icon="lock"
-                    placeholder="Password"
-                    value={password}
-                    onChange={setPassword}
-                    type="password"
-                    autoComplete="current-password"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="w-full rounded-3xl bg-emerald-400 py-4 text-slate-950 font-semibold transition hover:bg-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {busy ? "Please wait…" : "Sign in"}
-                  </button>
-                </form>
-
-                <button
-                  type="button"
-                  onClick={() => { setShowSignIn(false); setError(null); }}
-                  className="w-full text-center text-sm text-slate-400 underline-offset-4 hover:text-slate-200"
-                >
-                  Back to landing
+              <div className="role-toggle">
+                <button type="button" onClick={() => setRole('student')} className={role === 'student' ? 'active' : ''}>
+                  <Icon name="users" size={16} color={role === 'student' ? BG : '#8b95b0'} /> <span style={{ marginLeft: 8 }}>Student</span>
+                </button>
+                <button type="button" onClick={() => setRole('teacher')} className={role === 'teacher' ? 'active' : ''}>
+                  <Icon name="user" size={16} color={role === 'teacher' ? BG : '#8b95b0'} /> <span style={{ marginLeft: 8 }}>Teacher</span>
+                </button>
+                <button type="button" onClick={() => setRole('admin')} className={role === 'admin' ? 'active' : ''}>
+                  <Icon name="shield" size={16} color={role === 'admin' ? BG : '#8b95b0'} /> <span style={{ marginLeft: 8 }}>Admin</span>
                 </button>
               </div>
-            ) : (
-              <div className="space-y-5">
-                <div>
-                  <div className="text-sm uppercase tracking-[0.22em] text-slate-400">Ready to begin</div>
-                  <h2 className="mt-3 text-3xl font-bold text-white">Quick access to Gurutron</h2>
-                  <p className="mt-3 text-slate-400">Hit Get Started to open the sign-in form in one click.</p>
+
+              {role === 'admin' ? (
+                <div style={{ color: '#8b95b0', fontSize: 13, marginTop: 10 }}>
+                  Admins can sign in here to access the admin panel.
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-300">
-                  <div className="font-semibold text-white mb-3">What you get</div>
-                  <ul className="space-y-3 text-sm">
-                    <li>• Adaptive quizzes and AI-powered paper generation</li>
-                    <li>• Teacher assignment and class performance tracking</li>
-                    <li>• Instant sign in with email and password</li>
-                  </ul>
+              ) : null}
+
+              {error ? <div style={{ background: 'rgba(248,113,113,0.12)', padding: 10, borderRadius: 12, marginBottom: 12, color: '#fff' }}>{error}</div> : null}
+
+              <form onSubmit={handleSubmit} className="onboarding-form">
+                <div className="input-row">
+                  <div className="input">
+                    <Icon name="mail" size={18} color="#8b95b0" />
+                    <input placeholder="you@example.com" value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoFocus type="email" inputMode="email" autoComplete="email" />
+                  </div>
                 </div>
-                <div className="text-sm text-slate-400">Click Get Started and enter your Gmail + password to continue.</div>
+
+                <div className="input-row">
+                  <div className="input">
+                    <Icon name="lock" size={18} color="#8b95b0" />
+                    <input placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} autoComplete="current-password" />
+                    <button type="button" onClick={() => setShowPassword((s) => !s)}><Icon name={showPassword ? 'eye-off' : 'eye'} size={16} color="#8b95b0" /></button>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={busy} className="btn-signin">{busy ? 'Please wait…' : 'Sign In'}</button>
+              </form>
+
+              <div className="divider"><div className="line" /><div style={{ color: '#8b95b0', fontSize: 13 }}>or use email</div><div className="line" /></div>
+
+              <button type="button" onClick={() => { window.location.href = '/auth/google'; }} className="btn-google">
+                <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M44.5 20H24v8.5h11.9C34.2 32 30 36 24 36c-7 0-12.6-5.6-12.6-12.5S17 11 24 11c3.3 0 6.2 1.1 8.5 3.2l6-6C34 4.2 29.4 2 24 2 12.9 2 4.3 10.6 4.3 21.7S12.9 41.3 24 41.3c10.6 0 19-7.6 20.5-17.3 0-.6.0-1.1 0-1.4z" fill="#4285F4"/></svg>
+                Continue with Google
+              </button>
+
+              <div>
+                <a href="/" className="back-link">← Back to landing</a>
               </div>
-            )}
+            </div>
           </div>
         </div>
-
-        <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-slate-400">
-          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">AI Paper Generator</div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">Smart Analytics</div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3">10,000+ PYQs</div>
-        </div>
-
-        <button
-          onClick={() => nav("/admin/login")}
-          className="mt-6 mx-auto block text-[11px] text-slate-400"
-        >
-          Admin Login
-        </button>
-      </div>
+      </main>
     </div>
   );
 }

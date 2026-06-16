@@ -37,11 +37,12 @@ function normalizeBaseUrl(raw: string): string {
   if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
   return v;
 }
+// Compute API base URL correctly. If `VITE_API_BASE_URL` is provided use it,
+// otherwise when in dev mode default to localhost backend. Previous code had
+// an operator-precedence bug so DEV was being evaluated incorrectly.
+const rawBase = (import.meta as any).env?.VITE_API_BASE_URL;
 const API_BASE_URL: string = normalizeBaseUrl(
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-    (import.meta as any).env?.DEV
-      ? "http://localhost:4000"
-      : ""
+  rawBase ? rawBase : ((import.meta as any).env?.DEV ? "http://localhost:4000" : "")
 );
 
 async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
@@ -252,12 +253,31 @@ export const api = {
 // ---- Admin API ----
 export const adminApi = {
   login: (email: string, password: string) =>
-    request<{ token: string }>("/api/admin/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
+    (async () => {
+      const url = `/api/admin/login`;
+      const body = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+      const res = await fetch(url.startsWith("http") ? url : `${API_BASE_URL}${url}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        credentials: "include",
+        body,
+      });
+      if (!res.ok) {
+        let detail = "";
+        try { detail = (await res.json()).error || ""; } catch {}
+        throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+      }
+      return res.json();
+    })(),
   logout: () => request<{ ok: true }>("/api/admin/logout", { method: "POST" }, { admin: true }),
-  me: () => request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true }),
+  me: async () => {
+    const t = getAdminToken();
+    const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
+    if (t === "LOCAL-BYPASS" && (bypass === "true" || (import.meta as any).env?.DEV)) {
+      return { ok: true, geminiAvailable: false, groqAvailable: false };
+    }
+    return request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true });
+  },
   stats: () => request<AdminStats>("/api/admin/stats", {}, { admin: true }),
 
   listQuestions: () => request<{ questions: Question[] }>("/api/admin/questions", {}, { admin: true }),

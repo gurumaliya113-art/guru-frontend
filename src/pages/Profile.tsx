@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { colors, examColor, examLight } from "@/lib/colors";
 import type { ExamType } from "@/lib/types";
 
@@ -8,6 +9,7 @@ const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BOARD"];
 
 export default function Profile() {
   const { profile, updateProfile, attempts, papers, resetProgress } = useApp();
+  const { logout } = useAuth();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
 
@@ -137,6 +139,14 @@ export default function Profile() {
       >
         <Icon name="trash-2" size={16} color={colors.destructive} />
         <span className="text-sm font-semibold" style={{ color: colors.destructive }}>Reset Progress</span>
+      </button>
+      <button
+        onClick={() => logout()}
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-[1.5px] bg-white"
+        style={{ borderColor: colors.primary, color: colors.foreground }}
+      >
+        <Icon name="log-out" size={16} color={colors.primary} />
+        <span className="text-sm font-semibold">Logout</span>
       </button>
     </div>
   );

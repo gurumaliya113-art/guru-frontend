@@ -1,5 +1,6 @@
 import React from "react";
 import { ArrowRight, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
 import "../exams.css";
 
 const GOLD = "#EEB32B";
@@ -29,13 +30,13 @@ export default function Exams() {
           <nav className="hidden md:flex items-center gap-6">
             <a href="#" className="nav-link">For Students</a>
             <a href="#" className="nav-link">For Teachers</a>
-            <a href="#" className="nav-link">For Schools</a>
+            <a href="/schools" className="nav-link">For Schools</a>
             <a href="/exams" className="nav-link active">Exams</a>
             <a href="#" className="nav-link">Features</a>
             <a href="#" className="nav-link">FAQ</a>
           </nav>
           <div className="hidden md:flex gap-3">
-            <button className="btn-outline">Web Login</button>
+            <Link to="/onboarding" className="btn-outline">Web Login</Link>
             <button className="btn-primary">Download App</button>
           </div>
         </div>

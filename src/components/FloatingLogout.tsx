@@ -1,37 +1,35 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui";
+import { adminApi, setAdminToken } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 /**
  * Global floating logout button.
- * - Visible on every screen when authenticated.
- * - On click: logs the session out and jumps to /admin/login.
- * - Hidden when already on /admin/login or /login.
+ * - Visible only on admin screens when authenticated.
+ * - On click: logs the admin token out and jumps to /admin/login.
+ * - Hidden when already on /admin/login.
  */
 export default function FloatingLogout() {
-  const { logout, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [busy, setBusy] = useState(false);
 
   if (!isAuthenticated) return null;
   if (typeof window !== "undefined") {
     const p = window.location.pathname;
-    if (p === "/login" || p.startsWith("/admin/login")) return null;
+    if (!p.startsWith("/admin") || p.startsWith("/admin/login")) return null;
   }
 
   const handle = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      // Clear cookie/session, then go to admin login (instead of default /login).
-      const base = ((import.meta as any).env?.VITE_API_BASE_URL || "").replace(/\/$/, "");
-      await fetch(`${base}/auth/logout`, { method: "POST", credentials: "include" });
+      await adminApi.logout();
     } catch {
       /* ignore */
+    } finally {
+      setAdminToken(null);
     }
-    // Hard navigate so all in-memory state is dropped.
     window.location.href = "/admin/login";
-    // logout from context is also fine but we want guaranteed redirect target
-    void logout;
   };
 
   return (

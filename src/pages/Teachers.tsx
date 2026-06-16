@@ -35,7 +35,7 @@ const CREAM = "#f7f4ee";
 const NAV_LINKS = [
   { label: "For Students", href: "/landing" },
   { label: "For Teachers", href: "/teachers" },
-  { label: "For Schools", href: "#schools" },
+  { label: "For Schools", href: "/schools" },
   { label: "Exams", href: "#exams" },
   { label: "Features", href: "#features" },
   { label: "FAQ", href: "#faq" },
@@ -291,7 +291,7 @@ export default function Teachers() {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <a href="#" className="text-sm font-semibold transition-colors" style={{ color: GOLD }}>
+              <a href="/onboarding" className="text-sm font-semibold transition-colors" style={{ color: GOLD }}>
               Web Login
             </a>
             <a
@@ -320,7 +320,7 @@ export default function Teachers() {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
-              <a href="#" className="text-sm font-semibold text-center py-2" style={{ color: GOLD }}>Web Login</a>
+              <a href="/onboarding" className="text-sm font-semibold text-center py-2" style={{ color: GOLD }}>Web Login</a>
               <a href="#" className="flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-full" style={{ background: GOLD, color: BG }}>
                 <Smartphone className="w-4 h-4" /> Get on Play Store
               </a>

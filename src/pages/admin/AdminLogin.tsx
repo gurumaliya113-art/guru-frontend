@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { adminApi, getAdminToken, setAdminToken } from "@/lib/api";
 
@@ -10,7 +10,16 @@ export default function AdminLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const loc = useLocation();
+
   useEffect(() => {
+    // Prefill email if provided as query param ?e=...
+    try {
+      const qp = new URLSearchParams(loc.search);
+      const e = qp.get("e");
+      if (e) setEmail(e);
+    } catch {}
+
     if (getAdminToken()) {
       (async () => {
         try { await adminApi.me(); nav("/admin", { replace: true }); }
@@ -27,7 +36,20 @@ export default function AdminLogin() {
       setAdminToken(token);
       nav("/admin", { replace: true });
     } catch (err: any) {
-      setError(err?.message || "Login failed");
+      const msg = err?.message || "";
+      // Attempt local bypass if enabled in frontend env and credentials match
+      const bypass = String((import.meta as any).env?.VITE_ADMIN_BYPASS || "false");
+      const be = String((import.meta as any).env?.VITE_ADMIN_EMAIL || "");
+      const bp = String((import.meta as any).env?.VITE_ADMIN_PASSWORD || "");
+      if ((msg.includes("401") || msg.toLowerCase().includes("invalid")) && bypass === "true" && be && bp) {
+        if (email.trim().toLowerCase() === be.toLowerCase() && password === bp) {
+          // Grant a local bypass token so admin area can be used in dev
+          setAdminToken("LOCAL-BYPASS");
+          nav("/admin", { replace: true });
+          return;
+        }
+      }
+      setError(msg || "Login failed");
     } finally {
       setBusy(false);
     }

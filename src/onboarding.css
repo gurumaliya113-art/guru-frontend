@@ -1,0 +1,31 @@
+/* Onboarding page styles using Gurtron theme tokens */
+.onboarding-root { font-family: 'Nunito Sans', sans-serif; min-height:100vh; background: radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.02), transparent 20%), linear-gradient(160deg, #040718 0%, #0f1630 60%, #040718 100%); color:#fff; }
+.onboarding-header { background: transparent; border-bottom: 1px solid rgba(255,255,255,0.02); }
+.onboarding-container { max-width:1120px; margin:0 auto; padding:5rem 1.5rem; display:grid; grid-template-columns: 1fr 420px; gap:32px; align-items:center; }
+.onboarding-hero .eyebrow { display:inline-block; background: rgba(238,179,43,0.08); padding:8px 14px; border-radius:24px; color: #EEB32B; font-weight:800; font-size:12px; border:1px solid rgba(238,179,43,0.12); }
+.onboarding-hero .hero-title { font-size: clamp(28px,6vw,56px); line-height:1.02; font-weight:900; margin-top:18px; color:#fff; font-family:'Outfit',sans-serif; }
+.onboarding-hero .hero-sub { color:#8b95b0; margin-top:16px; max-width:560px; }
+.onboarding-features { display:flex; gap:16px; margin-top:24px; }
+.feature-card { flex:1; background: rgba(255,255,255,0.02); border-radius:14px; padding:16px; border:1px solid rgba(238,179,43,0.06); }
+.feature-card .label { color:#EEB32B; font-weight:800; font-size:12px; text-transform:uppercase; }
+.feature-card .title { color:#fff; font-weight:800; margin-top:8px; }
+
+.onboarding-card { background:#0c1129; border-radius:24px; padding:28px; box-shadow: 0 12px 40px rgba(4,7,24,0.6); border:1px solid rgba(238,179,43,0.06); }
+.card-eyebrow { font-size:12px; font-weight:800; color:#EEB32B; }
+.card-title { font-size:22px; font-weight:800; color:#fff; margin-top:6px; }
+.card-sub { color:#8b95b0; margin-top:6px; }
+.role-toggle { display:flex; gap:8px; margin:12px 0 18px 0; }
+.role-toggle button { flex:1; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.03); font-weight:700; color:#8b95b0; background:transparent; }
+.role-toggle button.active { background:#EEB32B; color:#040718; border-color:transparent; }
+.onboarding-form .input-row { margin-bottom:14px; }
+.onboarding-form .input { display:flex; align-items:center; gap:12px; height:56px; padding:0 14px; border-radius:12px; background:#071028; border:1px solid rgba(255,255,255,0.03); }
+.onboarding-form input { background:transparent; border:0; outline:none; color:#fff; flex:1; }
+.divider { display:flex; align-items:center; gap:12px; margin:18px 0; }
+.divider .line { flex:1; height:1px; background:rgba(255,255,255,0.04); }
+.btn-google { width:100%; padding:12px 14px; border-radius:14px; background:#fff; color:#000; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; }
+.btn-signin { width:100%; padding:14px 18px; border-radius:14px; background:#EEB32B; color:#040718; font-weight:900; box-shadow:0 12px 30px rgba(238,179,43,0.18); }
+.back-link { margin-top:12px; text-align:center; color:#8b95b0; display:block; }
+
+@media (max-width:1024px) {
+  .onboarding-container { grid-template-columns: 1fr; padding:3rem 1rem; }
+}
