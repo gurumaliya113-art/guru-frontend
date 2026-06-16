@@ -139,7 +139,7 @@ export default function App() {
         <Route path="/schools" element={<Schools />} />
         <Route path="/exams" element={<Exams />} />
         <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/" element={<Schools />} />
+        <Route path="/" element={<Landing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
