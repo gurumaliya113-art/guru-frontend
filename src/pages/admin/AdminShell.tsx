@@ -10,7 +10,16 @@ const NAV = [
   { to: "/admin/questions", label: "Questions", icon: "book-open" },
   { to: "/admin/questions/new", label: "Add Question", icon: "plus" },
   { to: "/admin/flashcards", label: "Flashcards", icon: "layers" },
+  { to: "/admin/notes", label: "Notes", icon: "notebook" },
   { to: "/admin/pyp", label: "Super App", icon: "award" },
+  // New top-level sections for scalable admin
+  { to: "/admin/assessments/tests", label: "Tests", icon: "clipboard" },
+  { to: "/admin/assessments/quizzes", label: "Quizzes", icon: "clock" },
+  { to: "/admin/classes", label: "Classes", icon: "users" },
+  { to: "/admin/users/teachers", label: "Teachers", icon: "user-check" },
+  { to: "/admin/users/students", label: "Students", icon: "user" },
+  { to: "/admin/analytics", label: "Analytics", icon: "activity" },
+  { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 
 export default function AdminShell() {
@@ -20,13 +29,6 @@ export default function AdminShell() {
   const [groqAvailable, setGroqAvailable] = useState(false);
 
   useEffect(() => {
-    const handleAuthExpired = () => {
-      setReady(false);
-      nav("/admin/login", { replace: true });
-    };
-
-    window.addEventListener("gurutron:admin-auth-expired", handleAuthExpired);
-
     (async () => {
       if (!getAdminToken()) {
         nav("/admin/login", { replace: true });
@@ -42,10 +44,6 @@ export default function AdminShell() {
         nav("/admin/login", { replace: true });
       }
     })();
-
-    return () => {
-      window.removeEventListener("gurutron:admin-auth-expired", handleAuthExpired);
-    };
   }, [nav]);
 
   const handleLogout = async () => {

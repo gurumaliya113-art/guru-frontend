@@ -14,7 +14,10 @@
 .card-eyebrow { font-size:12px; font-weight:800; color:#EEB32B; }
 .card-title { font-size:22px; font-weight:800; color:#fff; margin-top:6px; }
 .card-sub { color:#8b95b0; margin-top:6px; }
-.role-toggle { display:flex; gap:8px; margin:12px 0 18px 0; }
+.auth-switch { display:flex; gap:8px; margin:14px 0 18px 0; }
+.auth-switch button { flex:1; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); font-weight:700; color:#8b95b0; background:transparent; transition: all 150ms ease; }
+.auth-switch button.active { background:#EEB32B; color:#040718; border-color:transparent; }
+.role-toggle { display:flex; gap:8px; margin:0 0 18px 0; }
 .role-toggle button { flex:1; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.03); font-weight:700; color:#8b95b0; background:transparent; }
 .role-toggle button.active { background:#EEB32B; color:#040718; border-color:transparent; }
 .onboarding-form .input-row { margin-bottom:14px; }

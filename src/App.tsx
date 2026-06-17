@@ -16,6 +16,7 @@ import PaperGenerate from "@/pages/PaperGenerate";
 import PaperCapture from "@/pages/PaperCapture";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
+import Notes from "@/pages/Notes";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -25,6 +26,7 @@ import AdminUpload from "@/pages/admin/AdminUpload";
 import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminFlashcards from "@/pages/admin/AdminFlashcards";
+import AdminNotes from "@/pages/admin/AdminNotes";
 import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
 import Landing from "@/pages/Landing";
 import Teachers from "@/pages/Teachers";
@@ -32,12 +34,13 @@ import Schools from "@/pages/Schools";
 import Exams from "@/pages/Exams";
 
 // Tab bar entries differ by role:
-//   - Students see "Prev. Papers" (the paid PYP catalogue at /pyp)
+//   - Students see "Notes", "Prev. Papers" (the paid PYP catalogue at /pyp)
 //   - Teachers see "Papers" (their own generated paper bank at /papers, used
 //     to assign work to their classes). Teachers should never see PYP/paywall.
 const STUDENT_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
+  { path: "/notes", label: "Notes", icon: "book-open" },
   { path: "/pyp", label: "Super App", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
@@ -46,6 +49,7 @@ const TEACHER_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
   { path: "/papers", label: "Papers", icon: "file-text" },
+  { path: "/notes", label: "Notes", icon: "book-open" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];
@@ -125,6 +129,7 @@ export default function App() {
         <Route path="questions/new" element={<AdminQuestionForm />} />
         <Route path="questions/:id" element={<AdminQuestionForm />} />
         <Route path="flashcards" element={<AdminFlashcards />} />
+        <Route path="notes" element={<AdminNotes />} />
         <Route path="pyp" element={<AdminAddPYPForm />} />
       </Route>
     </>
@@ -176,7 +181,6 @@ export default function App() {
     <>
       <Routes>
         {adminRoutes}
-        <Route path="/landing" element={<Landing />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/class/create" element={<ClassCreate />} />
@@ -186,6 +190,7 @@ export default function App() {
           element={needsClass ? <Navigate to={classRedirect} replace /> : <Shell role={role}><Home /></Shell>}
         />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
+        <Route path="/notes" element={<Shell role={role}><Notes /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
         {/* /papers is the teacher's generated paper bank. Students arriving
             here (e.g. via stale links) get redirected to /pyp. */}
@@ -201,7 +206,6 @@ export default function App() {
         <Route path="/profile" element={<Shell role={role}><Profile /></Shell>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <FloatingLogout />
     </>
   );
 }

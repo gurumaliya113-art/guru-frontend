@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import "@/onboarding.css";
 import { useAuth } from "@/context/AuthContext";
@@ -61,6 +61,7 @@ export default function Onboarding() {
   const { login, signup } = useAuth();
   const nav = useNavigate();
   const [role, setRole] = useState<"student" | "teacher">("student");
+  const [isSignup, setIsSignup] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,13 +86,16 @@ export default function Onboarding() {
 
     setBusy(true);
     try {
-      await login(email, password);
+      if (isSignup) {
+        await signup(email, password);
+      } else {
+        await login(email, password);
+      }
       nav("/", { replace: true });
     } catch (loginErr) {
       const message = (loginErr as Error)?.message || "Login failed.";
       const looksLikeEmail = /\S+@\S+\.\S+/.test(email);
-      const shouldSignup = looksLikeEmail && !/invalid credentials|already in use/i.test(message);
-      if (shouldSignup) {
+      if (!isSignup && looksLikeEmail) {
         try {
           await signup(email, password);
           nav("/", { replace: true });
@@ -150,8 +154,17 @@ export default function Onboarding() {
             <div className="onboarding-card">
               <div>
                 <div className="card-eyebrow">WELCOME BACK</div>
-                <div className="card-title">Sign in to Gurtron</div>
-                <div className="card-sub">New here? Your account is created automatically on first sign-in.</div>
+                <div className="card-title">{isSignup ? "Create your Gurtron account" : "Sign in to Gurtron"}</div>
+                <div className="card-sub">New here? You can create an account or sign in with your existing credentials.</div>
+              </div>
+
+              <div className="auth-switch">
+                <button type="button" onClick={() => setIsSignup(false)} className={isSignup ? "" : "active"}>
+                  Sign in
+                </button>
+                <button type="button" onClick={() => setIsSignup(true)} className={isSignup ? "active" : ""}>
+                  Create account
+                </button>
               </div>
 
               <div className="role-toggle">
@@ -163,7 +176,18 @@ export default function Onboarding() {
                 </button>
               </div>
 
-              {error ? <div style={{ background: 'rgba(248,113,113,0.12)', padding: 10, borderRadius: 12, marginBottom: 12, color: '#fff' }}>{error}</div> : null}
+              {error ? (
+                <div style={{ background: 'rgba(248,113,113,0.12)', padding: 10, borderRadius: 12, marginBottom: 12, color: '#fff' }}>
+                  {error}
+                  {error.includes('admin account') ? (
+                    <div style={{ marginTop: 8 }}>
+                      <Link to="/admin/login" style={{ color: '#fff', textDecoration: 'underline' }}>
+                        Go to admin login
+                      </Link>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <form onSubmit={handleSubmit} className="onboarding-form">
                 <div className="input-row">
@@ -181,7 +205,7 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <button type="submit" disabled={busy} className="btn-signin">{busy ? 'Please wait…' : 'Sign In'}</button>
+                <button type="submit" disabled={busy} className="btn-signin">{busy ? 'Please wait…' : isSignup ? 'Create account' : 'Sign In'}</button>
               </form>
 
               <div className="divider"><div className="line" /><div style={{ color: '#8b95b0', fontSize: 13 }}>or use email</div><div className="line" /></div>
