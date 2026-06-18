@@ -412,4 +412,25 @@ export const adminApi = {
     request<{ ok: true }>(`/api/admin/notes/${encodeURIComponent(id)}`, {
       method: "DELETE",
     }, { admin: true }),
+
+  // Admin: replace a saved page image (crop result)
+  cropPageImage: async (docId: string, pageNumber: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file, file.name || `crop-${pageNumber}.png`);
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/documents/${encodeURIComponent(docId)}/pages/${encodeURIComponent(String(pageNumber))}/crop`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
 };

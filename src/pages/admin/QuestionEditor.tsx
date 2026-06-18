@@ -1,7 +1,8 @@
 // Reusable form for editing a single Question. Used both in the standalone
 // new/edit page and inline in the PDF review screen.
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/ui";
+import { adminApi } from "@/lib/api";
 import { TOPICS_BY_SUBJECT } from "@/data/questions";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
 import type { Difficulty, Question, Topic } from "@/lib/types";
@@ -105,6 +106,9 @@ export function QuestionEditor({
   const [extraClasses, setExtraClasses] = useState<string[]>([]);
   const [extraBoards, setExtraBoards] = useState<string[]>([]);
   const [extraExams, setExtraExams] = useState<string[]>([]);
+  
+  // Crop modal state
+  const [editing, setEditing] = useState(false);
 
   const subjects = mergeUnique(SUBJECTS, extraSubjects, value.subject);
   const topics = mergeUnique(baseTopics, extraTopics, value.topic);
@@ -161,23 +165,45 @@ export function QuestionEditor({
               <Icon name="image" size={12} color={colors.mutedForeground} />
               Source page {value.pageNumber} — verify diagram & labels
             </div>
-            <a
-              href={value.pageImageUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[11px] font-semibold underline"
-              style={{ color: colors.primary }}
-            >
-              Open image →
-            </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={value.pageImageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-semibold underline"
+                    style={{ color: colors.primary }}
+                  >
+                    Open image →
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    className="text-[11px] font-semibold p-1 rounded hover:bg-gray-50"
+                    style={{ color: colors.primary }}
+                  >
+                    Edit
+                  </button>
+                </div>
           </div>
-          <img
-            src={value.pageImageUrl}
-            alt={`PDF page ${value.pageNumber}`}
-            className="w-full block"
-            style={{ background: "#fff", maxHeight: 480, objectFit: "contain" }}
-            loading="lazy"
-          />
+              <img
+                src={value.pageImageUrl}
+                alt={`PDF page ${value.pageNumber}`}
+                className="w-full block"
+                style={{ background: "#fff", maxHeight: 480, objectFit: "contain" }}
+                loading="lazy"
+              />
+              {editing && value.documentId && value.pageNumber && (
+                <CropModal
+                  imageUrl={value.pageImageUrl!}
+                  docId={value.documentId}
+                  pageNumber={value.pageNumber}
+                  onClose={() => setEditing(false)}
+                  onSaved={(newUrl: string) => {
+                    update({ pageImageUrl: newUrl });
+                    setEditing(false);
+                  }}
+                />
+              )}
         </div>
       )}
 
@@ -398,6 +424,138 @@ export function QuestionEditor({
               />
             </Field>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
+  imageUrl: string;
+  docId: string;
+  pageNumber: number;
+  onClose: () => void;
+  onSaved: (newUrl: string) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [start, setStart] = useState<{ x: number; y: number } | null>(null);
+  const [rect, setRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imgRef.current = img;
+      const canvas = canvasRef.current!;
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.naturalWidth);
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = imageUrl;
+    return () => {
+      imgRef.current = null;
+    };
+  }, [imageUrl]);
+
+  const redraw = () => {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (rect) {
+      ctx.strokeStyle = "#00aaff";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h);
+      ctx.fillStyle = "rgba(0,170,255,0.12)";
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    }
+  };
+
+  useEffect(() => { redraw(); }, [rect]);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current!;
+    const rectB = canvas.getBoundingClientRect();
+    const x = e.clientX - rectB.left;
+    const y = e.clientY - rectB.top;
+    setStart({ x, y });
+    setDragging(true);
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging || !start) return;
+    const canvas = canvasRef.current!;
+    const rectB = canvas.getBoundingClientRect();
+    const x = e.clientX - rectB.left;
+    const y = e.clientY - rectB.top;
+    const rx = Math.min(start.x, x);
+    const ry = Math.min(start.y, y);
+    const rw = Math.abs(x - start.x);
+    const rh = Math.abs(y - start.y);
+    setRect({ x: rx, y: ry, w: rw, h: rh });
+  };
+  const onMouseUp = () => {
+    setDragging(false);
+    setStart(null);
+  };
+
+  const doCropAndSave = async () => {
+    if (!rect || !imgRef.current || !canvasRef.current) return;
+    setSaving(true);
+    try {
+      const canvas = canvasRef.current;
+      const img = imgRef.current;
+      // compute scale from canvas -> natural image
+      const sx = rect.x * (img.naturalWidth / canvas.width);
+      const sy = rect.y * (img.naturalHeight / canvas.height);
+      const sw = rect.w * (img.naturalWidth / canvas.width);
+      const sh = rect.h * (img.naturalHeight / canvas.height);
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.round(sw));
+      out.height = Math.max(1, Math.round(sh));
+      const ctx = out.getContext("2d")!;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, out.width, out.height);
+      const blob: Blob = await new Promise((resolve) => out.toBlob(resolve as any, "image/png"));
+      const f = new File([blob], `crop-${pageNumber}.png`, { type: "image/png" });
+      const res = await adminApi.cropPageImage(docId, pageNumber, f);
+      if (res && res.url) onSaved(res.url);
+      else if (res && res.ok && res.url) onSaved(res.url);
+      else if (res && res.ok) onSaved(`/api/documents/${docId}/pages/${pageNumber}.png`);
+    } catch (e) {
+      alert(String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded p-4 max-w-[95vw] max-h-[95vh] overflow-auto w-[920px]">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-semibold">Crop image — draw box and click Save</div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="px-3 py-1 rounded border">Close</button>
+            <button onClick={doCropAndSave} disabled={saving || !rect} className="px-3 py-1 rounded bg-blue-600 text-white">
+              {saving ? "Saving…" : "Crop & Save"}
+            </button>
+          </div>
+        </div>
+        <div>
+          <canvas
+            ref={canvasRef}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            style={{ width: "100%", height: "auto", border: "1px solid #e5e7eb", cursor: "crosshair" }}
+          />
         </div>
       </div>
     </div>

@@ -109,7 +109,7 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 pt-4 text-[11px] text-white/40 leading-5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          Default credentials are set in <code className="text-white/60">server/.env</code> (<code className="text-white/60">ADMIN_EMAIL</code> / <code className="text-white/60">ADMIN_PASSWORD</code>). Change them before deploying.
+          Default credentials are set in <code className="text-white/60">guru-backend/.env</code> (<code className="text-white/60">ADMIN_EMAIL</code> / <code className="text-white/60">ADMIN_PASSWORD</code>). Change them before deploying.
         </div>
       </div>
     </div>

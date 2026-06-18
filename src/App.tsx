@@ -27,7 +27,8 @@ import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminFlashcards from "@/pages/admin/AdminFlashcards";
 import AdminNotes from "@/pages/admin/AdminNotes";
-import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
+import AdminPYPUpload from "@/pages/admin/AdminPYPUpload";
+import AdminSectionPage from "@/pages/admin/AdminSectionPage";
 import Landing from "@/pages/Landing";
 import Teachers from "@/pages/Teachers";
 import Schools from "@/pages/Schools";
@@ -130,7 +131,39 @@ export default function App() {
         <Route path="questions/:id" element={<AdminQuestionForm />} />
         <Route path="flashcards" element={<AdminFlashcards />} />
         <Route path="notes" element={<AdminNotes />} />
-        <Route path="pyp" element={<AdminAddPYPForm />} />
+        <Route path="pyp" element={<AdminPYPUpload />} />
+        <Route
+          path="assessments/tests"
+          element={<AdminSectionPage title="Tests" description="Manage tests and assessments from here." />}
+        />
+        <Route
+          path="assessments/quizzes"
+          element={<AdminSectionPage title="Quizzes" description="Manage quizzes and practice tests here." />}
+        />
+        <Route
+          path="classes"
+          element={<AdminSectionPage title="Classes" description="Create, view, and manage classes here." />}
+        />
+        <Route
+          path="users/teachers"
+          element={<AdminSectionPage title="Teachers" description="Teacher management is coming soon." />}
+        />
+        <Route
+          path="users/students"
+          element={<AdminSectionPage title="Students" description="Student management is coming soon." />}
+        />
+        <Route
+          path="analytics"
+          element={<AdminSectionPage title="Analytics" description="View admin analytics and reports here." />}
+        />
+        <Route
+          path="settings"
+          element={<AdminSectionPage title="Settings" description="Manage admin settings here." />}
+        />
+        <Route
+          path="*"
+          element={<AdminSectionPage title="Admin area" description="Select one of the menu items to continue." help="If a section is under construction, use Notes, Upload PDF, Questions, Flashcards, or Super App for now." />}
+        />
       </Route>
     </>
   );
