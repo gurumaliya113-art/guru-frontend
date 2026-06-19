@@ -16,6 +16,7 @@ import PaperGenerate from "@/pages/PaperGenerate";
 import PaperCapture from "@/pages/PaperCapture";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
+import Notes from "@/pages/Notes";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -37,6 +38,8 @@ import Exams from "@/pages/Exams";
 //     to assign work to their classes). Teachers should never see PYP/paywall.
 const STUDENT_TABS = [
   { path: "/", label: "Home", icon: "activity" },
+  { path: "/quiz", label: "Quiz", icon: "play-circle" },
+  { path: "/notes", label: "Notes", icon: "book-open" },
   { path: "/pyp", label: "Super App", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
@@ -45,6 +48,7 @@ const TEACHER_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/quiz", label: "Quiz", icon: "play-circle" },
   { path: "/papers", label: "Papers", icon: "file-text" },
+  { path: "/notes", label: "Notes", icon: "book-open" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];
@@ -185,6 +189,7 @@ export default function App() {
         />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
+        <Route path="/notes" element={<Shell role={role}><Notes /></Shell>} />
         {/* /papers is the teacher's generated paper bank. Students arriving
             here (e.g. via stale links) get redirected to /pyp. */}
         <Route

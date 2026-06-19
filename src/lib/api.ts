@@ -201,6 +201,26 @@ export const api = {
   getAssignmentsForMe: () =>
     request<{ assignments: Assignment[] }>("/api/assignments/for-me"),
 
+  // ---- Notes ----
+  getNotes: (query?: { subject?: string; chapter?: string; examType?: string; classLevel?: string; board?: string; q?: string }) =>
+    request<{ notes: any[] }>(`/api/notes${query && Object.keys(query).length > 0 ? `?${new URLSearchParams(Object.entries(query).filter(([, v]) => v) as any).toString()}` : ""}`),
+  getNote: (id: string) =>
+    request<{ note: any }>(`/api/notes/${encodeURIComponent(id)}`),
+  createNote: (note: { title: string; subject?: string; chapter?: string; examType?: string; classLevel?: string; board?: string; description?: string; fileUrl?: string }) =>
+    request<{ note: any }>("/api/notes", {
+      method: "POST",
+      body: JSON.stringify(note),
+    }),
+  updateNote: (id: string, updates: any) =>
+    request<{ note: any }>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }),
+  deleteNote: (id: string) =>
+    request<{ success: true }>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+
   // ---- Previous Year Papers / Mocks ----
   // Listing is public (no auth). Detail requires auth and enforces the
   // 5-free-then-₹49 paywall server-side (HTTP 402 with code "PAYWALL").
@@ -353,6 +373,54 @@ export const adminApi = {
     if (t) headers["x-admin-token"] = t;
 
     const res = await fetch("/api/admin/parse-pdf", {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // ---- Notes management (admin) ----
+  listNotes: () =>
+    request<{ notes: any[] }>("/api/admin/notes", {}, { admin: true }),
+  addNote: (payload: {
+    title: string;
+    subject: string;
+    chapter?: string | null;
+    examType?: string | null;
+    classLevel?: string | null;
+    board?: string | null;
+    description?: string;
+    fileUrl?: string | null;
+  }) =>
+    request<{ note: any }>("/api/admin/notes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  updateNote: (id: string, updates: any) =>
+    request<{ note: any }>(`/api/admin/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }, { admin: true }),
+  deleteNote: (id: string) =>
+    request<{ ok: true }>(`/api/admin/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // Admin: replace a saved page image (crop result)
+  cropPageImage: async (docId: string, pageNumber: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file, file.name || `crop-${pageNumber}.png`);
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/documents/${encodeURIComponent(docId)}/pages/${encodeURIComponent(String(pageNumber))}/crop`, {
       method: "POST",
       headers,
       credentials: "include",
