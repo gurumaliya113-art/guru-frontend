@@ -22,7 +22,6 @@ import {
   Target,
 } from "lucide-react";
 import "../landing.css";
-import Onboarding from "./Onboarding";
 
 const NAV_LINKS = [
   { label: "For Students", href: "#students" },
@@ -140,7 +139,6 @@ export default function Landing() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activeExam, setActiveExam] = useState<string | null>(null);
-  const [showSignIn, setShowSignIn] = useState(false);
 
   return (
     <div
@@ -232,9 +230,9 @@ export default function Landing() {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
-              <button onClick={() => { setShowSignIn(true); setMobileOpen(false); }} className="text-sm font-semibold text-center py-2" style={{ color: GOLD }}>
-                  Web Login
-                </button>
+              <a href="/onboarding" className="text-sm font-semibold text-center py-2" style={{ color: GOLD }} onClick={() => setMobileOpen(false)}>
+                Web Login
+              </a>
               <a
                 href="#"
                 className="flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-full"
@@ -922,26 +920,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* Sign-in modal (mounts Onboarding) */}
-      {showSignIn && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center" style={{ background: "rgba(2,6,23,0.6)" }}>
-          <div className="max-w-4xl w-full mx-4">
-            <div className="relative rounded-3xl overflow-hidden">
-              <button
-                onClick={() => setShowSignIn(false)}
-                className="absolute right-4 top-4 z-50 p-2 rounded-lg bg-black/30"
-                style={{ color: "#fff" }}
-              >
-                Close
-              </button>
-              <div className="bg-transparent">
-                <Onboarding />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── FOOTER ── */}
       <footer style={{ background: CARD, borderTop: `1px solid ${BORDER}` }} className="py-12">

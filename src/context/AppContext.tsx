@@ -85,6 +85,7 @@ interface AppContextType {
   attachPaper: (paper: GeneratedPaper) => void;
   deletePaper: (id: string) => Promise<void>;
   completeOnboarding: (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => Promise<void>;
+  upgradeToTeacher: () => Promise<void>;
   resetProgress: () => Promise<void>;
   isLoading: boolean;
   /** True once the initial authenticated fetch has completed. */
@@ -340,8 +341,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const resetProgress = useCallback(async () => {
     setAttempts([]);
     setPapers([]);
+    setMyMemberships([]);
     try { await api.reset(); } catch (e) { console.error(e); }
     const next: UserProfile = { ...profile, streak: 0, totalPoints: 0, lastQuizDate: "" };
+    await persistProfile(next);
+  }, [profile, persistProfile]);
+
+  const upgradeToTeacher = useCallback(async () => {
+    setAttempts([]);
+    setPapers([]);
+    setMyMemberships([]);
+    try { await api.reset(); } catch (e) { console.error(e); }
+    const next: UserProfile = {
+      ...profile,
+      role: "teacher",
+      isOnboarded: true,
+      streak: 0,
+      totalPoints: 0,
+      lastQuizDate: "",
+      skipClassJoin: false,
+    };
     await persistProfile(next);
   }, [profile, persistProfile]);
 
@@ -371,6 +390,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         attachPaper,
         deletePaper,
         completeOnboarding,
+        upgradeToTeacher,
         resetProgress,
         isLoading,
         dataLoaded,

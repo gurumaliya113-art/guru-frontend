@@ -37,7 +37,6 @@ import Exams from "@/pages/Exams";
 //     to assign work to their classes). Teachers should never see PYP/paywall.
 const STUDENT_TABS = [
   { path: "/", label: "Home", icon: "activity" },
-  { path: "/quiz", label: "Quiz", icon: "play-circle" },
   { path: "/pyp", label: "Super App", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
@@ -106,10 +105,9 @@ export default function App() {
     );
   }
 
-  // Unauthenticated users see the registration (Onboarding) page only. The
-  // legacy /login page has been retired in favour of an inline sign-in modal
-  // launched from Onboarding ("Already have an account? Sign in"). Any direct
-  // /login hit is redirected to /onboarding to avoid breaking old links.
+  // Unauthenticated users see the Google-only onboarding page. New users
+  // complete a one-time role choice after Google sign-in. Any direct /login
+  // hit is redirected to /onboarding to avoid breaking old links.
   // Admin routes are independent of regular user auth/onboarding state — the
   // admin shell is gated separately by its own JWT token. We register the same
   // route group for both unauthenticated and authenticated users so that an

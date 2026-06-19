@@ -286,6 +286,16 @@ export default function PreviousYearPapers() {
           📚 Papers
         </button>
         <button
+          onClick={() => nav("/quiz")}
+          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          style={{
+            background: colors.secondary,
+            color: colors.foreground,
+          }}
+        >
+          📝 Quiz
+        </button>
+        <button
           onClick={() => setShowing("chat")}
           className="px-4 py-2 rounded-lg font-semibold text-[13px]"
           style={{
@@ -303,7 +313,7 @@ export default function PreviousYearPapers() {
             color: showing === "flashcards" ? "#fff" : colors.foreground,
           }}
         >
-          🃏 Flashcards
+          🗒️ Notes
         </button>
       </div>
 
@@ -503,10 +513,10 @@ export default function PreviousYearPapers() {
         <div className="px-4 pt-4 pb-20 space-y-4">
           <div className="rounded-2xl border p-4" style={{ background: "#fff", borderColor: colors.border }}>
             <div className="text-[14px] font-semibold" style={{ color: colors.foreground }}>
-              Quick Flashcards
+              Quick Notes
             </div>
             <div className="text-[12px] mt-1" style={{ color: colors.mutedForeground }}>
-              Pick a topic, then flip one card at a time. Free users get 7 flashcard views per day.
+              Pick a topic, then flip one card at a time. Free users get 7 note views per day.
             </div>
             {!subscribed && (
               <button
@@ -514,7 +524,7 @@ export default function PreviousYearPapers() {
                 className="mt-2 rounded-full px-3 py-1.5 text-[11px] font-semibold"
                 style={{ background: "#fff7ed", color: "#9a5b00", border: "1px solid #fed7aa" }}
               >
-                Upgrade for more access
+                Upgrade for more notes
               </button>
             )}
           </div>
