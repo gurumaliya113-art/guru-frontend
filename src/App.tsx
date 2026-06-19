@@ -9,11 +9,14 @@ import Onboarding from "@/pages/Onboarding";
 import ClassCreate from "@/pages/ClassCreate";
 import ClassJoin from "@/pages/ClassJoin";
 import Home from "@/pages/Home";
+import Quiz from "@/pages/Quiz";
+import QuizSession from "@/pages/QuizSession";
 import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperCapture from "@/pages/PaperCapture";
 import PaperView from "@/pages/PaperView";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
+import Notes from "@/pages/Notes";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -161,6 +164,8 @@ export default function App() {
         <Route path="/class/create" element={<ClassCreate />} />
         <Route path="/class/join" element={<ClassJoin />} />
         <Route path="/" element={<Shell role={role}><Home /></Shell>} />
+        <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
+        <Route path="/quiz/:id" element={<QuizSession />} />
         {/* /papers is the teacher's generated paper bank. Students arriving
             here (e.g. via stale links) get redirected to /pyp. */}
         <Route
@@ -170,6 +175,7 @@ export default function App() {
         <Route path="/paper/generate" element={<PaperGenerate />} />
         <Route path="/paper/capture" element={<PaperCapture />} />
         <Route path="/paper/:id" element={<PaperView />} />
+        <Route path="/notes" element={<Shell role={role}><Notes /></Shell>} />
         <Route path="/pyp" element={<Shell role={role}><PreviousYearPapers /></Shell>} />
         <Route path="/progress" element={<Shell role={role}><Progress /></Shell>} />
         <Route path="/profile" element={<Shell role={role}><Profile /></Shell>} />

@@ -312,6 +312,26 @@ export default function PreviousYearPapers() {
         >
           🗒️ Flashcards
         </button>
+        <button
+          onClick={() => nav("/quiz")}
+          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          style={{
+            background: colors.secondary,
+            color: colors.foreground,
+          }}
+        >
+          📝 Quiz
+        </button>
+        <button
+          onClick={() => nav("/notes")}
+          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          style={{
+            background: colors.secondary,
+            color: colors.foreground,
+          }}
+        >
+          📒 Notes
+        </button>
       </div>
 
       {showing === "papers" ? (
