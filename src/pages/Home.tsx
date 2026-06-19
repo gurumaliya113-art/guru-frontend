@@ -118,18 +118,18 @@ export default function Home() {
         <div className="px-4 pt-5">
           <div className="flex gap-2.5 mb-6">
             <button
-              onClick={() => nav("/quiz")}
+              onClick={() => nav("/pyp?section=chat")}
               className="flex-[1.4] flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold shadow-md active:opacity-90"
               style={{ background: colors.primary }}
             >
-              <Icon name="play-circle" size={22} color="#fff" /> Start Quiz
+              <Icon name="message-circle" size={22} color="#fff" /> AI Chat
             </button>
             <button
-              onClick={() => nav("/pyp")}
+              onClick={() => nav("/pyp?section=flashcards")}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
-              <Icon name="award" size={20} color="#d97706" /> Prev. Papers
+              <Icon name="layers" size={20} color="#d97706" /> Flashcards
             </button>
           </div>
 
