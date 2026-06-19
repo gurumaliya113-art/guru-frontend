@@ -157,23 +157,6 @@ export default function App() {
     );
   }
 
-  // Class-onboarding guard:
-  //  - Teachers must have created at least one class.
-  //  - Students must have an approved or pending membership (pending = waiting screen).
-  const onClassRoute =
-    loc.pathname.startsWith("/class/") || loc.pathname.startsWith("/admin");
-  // Only redirect once we've actually fetched the user's classes/memberships,
-  // otherwise the brief empty-array state right after login would push the
-  // teacher into /class/create even though they already have classes.
-  const needsClass =
-    dataLoaded &&
-    !onClassRoute &&
-    ((profile.role === "teacher" && classes.length === 0) ||
-      (profile.role === "student" &&
-        !profile.skipClassJoin &&
-        !myMemberships.some((m) => m.status === "approved" || m.status === "pending")));
-  const classRedirect = profile.role === "teacher" ? "/class/create" : "/class/join";
-
   return (
     <>
       <Routes>
@@ -183,10 +166,7 @@ export default function App() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/class/create" element={<ClassCreate />} />
         <Route path="/class/join" element={<ClassJoin />} />
-        <Route
-          path="/"
-          element={needsClass ? <Navigate to={classRedirect} replace /> : <Shell role={role}><Home /></Shell>}
-        />
+        <Route path="/" element={<Shell role={role}><Home /></Shell>} />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
         <Route path="/notes" element={<Shell role={role}><Notes /></Shell>} />
