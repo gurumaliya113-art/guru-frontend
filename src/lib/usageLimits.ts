@@ -1,17 +1,19 @@
 const STORAGE_KEY = "gurutron_usage_limits_v1";
 
-export type UsageFeature = "doubts" | "flashcards" | "papers";
+export type UsageFeature = "doubts" | "flashcards" | "dpp" | "papers";
 
 interface UsageSnapshot {
   dayKey: string;
   doubtsUsed: number;
   flashcardsViewed: number;
+  dppViewed: number;
   papersAttempted: number;
 }
 
 const LIMITS: Record<UsageFeature, number> = {
   doubts: 5,
   flashcards: 7,
+  dpp: 9,
   papers: 3,
 };
 
@@ -25,6 +27,7 @@ function readSnapshot(): UsageSnapshot {
       dayKey: getTodayKey(),
       doubtsUsed: 0,
       flashcardsViewed: 0,
+      dppViewed: 0,
       papersAttempted: 0,
     };
   }
@@ -36,6 +39,7 @@ function readSnapshot(): UsageSnapshot {
         dayKey: getTodayKey(),
         doubtsUsed: 0,
         flashcardsViewed: 0,
+        dppViewed: 0,
         papersAttempted: 0,
       };
     }
@@ -48,6 +52,7 @@ function readSnapshot(): UsageSnapshot {
         dayKey,
         doubtsUsed: 0,
         flashcardsViewed: 0,
+        dppViewed: 0,
         papersAttempted: 0,
       };
     }
@@ -56,6 +61,7 @@ function readSnapshot(): UsageSnapshot {
       dayKey,
       doubtsUsed: Number(parsed.doubtsUsed || 0),
       flashcardsViewed: Number(parsed.flashcardsViewed || 0),
+      dppViewed: Number(parsed.dppViewed || 0),
       papersAttempted: Number(parsed.papersAttempted || 0),
     };
   } catch {
@@ -63,6 +69,7 @@ function readSnapshot(): UsageSnapshot {
       dayKey: getTodayKey(),
       doubtsUsed: 0,
       flashcardsViewed: 0,
+      dppViewed: 0,
       papersAttempted: 0,
     };
   }
@@ -74,12 +81,12 @@ export function getUsageStats() {
 
 export function canUseFeature(feature: UsageFeature, subscribed: boolean) {
   if (subscribed) return true;
-  return getUsageStats()[feature === "doubts" ? "doubtsUsed" : feature === "flashcards" ? "flashcardsViewed" : "papersAttempted"] < LIMITS[feature];
+  return getUsageStats()[feature === "doubts" ? "doubtsUsed" : feature === "flashcards" ? "flashcardsViewed" : feature === "dpp" ? "dppViewed" : "papersAttempted"] < LIMITS[feature];
 }
 
 export function getRemaining(feature: UsageFeature, subscribed: boolean) {
   if (subscribed) return "Unlimited";
-  const used = getUsageStats()[feature === "doubts" ? "doubtsUsed" : feature === "flashcards" ? "flashcardsViewed" : "papersAttempted"];
+  const used = getUsageStats()[feature === "doubts" ? "doubtsUsed" : feature === "flashcards" ? "flashcardsViewed" : feature === "dpp" ? "dppViewed" : "papersAttempted"];
   return Math.max(LIMITS[feature] - used, 0);
 }
 
@@ -90,6 +97,7 @@ export function recordFeatureUse(feature: UsageFeature) {
     dayKey: getTodayKey(),
     doubtsUsed: snapshot.doubtsUsed + (feature === "doubts" ? 1 : 0),
     flashcardsViewed: snapshot.flashcardsViewed + (feature === "flashcards" ? 1 : 0),
+    dppViewed: snapshot.dppViewed + (feature === "dpp" ? 1 : 0),
     papersAttempted: snapshot.papersAttempted + (feature === "papers" ? 1 : 0),
   };
 

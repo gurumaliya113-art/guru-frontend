@@ -80,7 +80,7 @@ export default function Home() {
       <div>
         {/* Hero */}
         <div className="relative overflow-hidden px-5 pt-16 pb-7 text-white"
-          style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)" }}>
+          style={{ background: "radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.02), transparent 20%), linear-gradient(160deg, #040718 0%, #0f1630 60%, #040718 100%)" }}>
           <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
           <div className="absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
           <div className="flex items-start justify-between mb-5 relative">
@@ -125,11 +125,11 @@ export default function Home() {
               <Icon name="message-circle" size={22} color="#fff" /> AI Chat
             </button>
             <button
-              onClick={() => nav("/pyp?section=flashcards")}
+              onClick={() => nav("/pyp?section=dpp")}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
-              <Icon name="layers" size={20} color="#d97706" /> Flashcards
+              <Icon name="file-text" size={20} color="#d97706" /> DPP
             </button>
           </div>
 

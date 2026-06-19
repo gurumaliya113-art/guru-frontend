@@ -6,10 +6,13 @@ interface UpgradeModalProps {
   onClose: () => void;
   onUpgrade: () => void;
   loading?: boolean;
+  mode?: "papers" | "dpp";
 }
 
-export default function UpgradeModal({ open, onClose, onUpgrade, loading = false }: UpgradeModalProps) {
+export default function UpgradeModal({ open, onClose, onUpgrade, loading = false, mode = "papers" }: UpgradeModalProps) {
   if (!open) return null;
+
+  const isDpp = mode === "dpp";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-3 sm:items-center">
@@ -31,7 +34,7 @@ export default function UpgradeModal({ open, onClose, onUpgrade, loading = false
             <div className="font-semibold">What you unlock</div>
             <ul className="mt-1 list-disc pl-4 space-y-1">
               <li>5 AI doubt solves per day on the free plan</li>
-              <li>7 flashcards to browse per day</li>
+              <li>{isDpp ? "9 DPP views per day" : "7 flashcards to browse per day"}</li>
               <li>3 previous-paper attempts per day</li>
             </ul>
           </div>

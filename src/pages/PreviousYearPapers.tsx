@@ -65,9 +65,9 @@ export default function PreviousYearPapers() {
     (profile.targetExam as ExamType) || "ALL",
   );
   const [opening, setOpening] = useState<string | null>(null);
-  const [showing, setShowing] = useState<"papers" | "chat" | "flashcards">(() => {
+  const [showing, setShowing] = useState<"papers" | "chat" | "dpp">(() => {
     const section = new URLSearchParams(location.search).get("section");
-    if (section === "chat" || section === "flashcards" || section === "papers") {
+    if (section === "chat" || section === "dpp" || section === "papers") {
       return section;
     }
     return "papers";
@@ -80,7 +80,7 @@ export default function PreviousYearPapers() {
   const [paywall, setPaywall] = useState<{ message: string } | null>(null);
   const [paying, setPaying] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<"papers" | "flashcards">("papers");
+  const [upgradeReason, setUpgradeReason] = useState<"papers" | "dpp">("papers");
 
   const handleUpgradeNow = () => {
     setPaying(true);
@@ -99,7 +99,7 @@ export default function PreviousYearPapers() {
     );
   };
 
-  const openUpgradeModal = (reason: "papers" | "flashcards") => {
+  const openUpgradeModal = (reason: "papers" | "dpp") => {
     setUpgradeReason(reason);
     setUpgradeOpen(true);
   };
@@ -303,14 +303,14 @@ export default function PreviousYearPapers() {
           🤖 AI Chat
         </button>
         <button
-          onClick={() => setShowing("flashcards")}
+          onClick={() => setShowing("dpp")}
           className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
-            background: showing === "flashcards" ? colors.primary : colors.secondary,
-            color: showing === "flashcards" ? "#fff" : colors.foreground,
+            background: showing === "dpp" ? colors.primary : colors.secondary,
+            color: showing === "dpp" ? "#fff" : colors.foreground,
           }}
         >
-          🗒️ Flashcards
+          🧠 DPP
         </button>
         <button
           onClick={() => nav("/quiz")}
@@ -530,18 +530,18 @@ export default function PreviousYearPapers() {
         <div className="px-4 pt-4 pb-20 space-y-4">
           <div className="rounded-2xl border p-4" style={{ background: "#fff", borderColor: colors.border }}>
             <div className="text-[14px] font-semibold" style={{ color: colors.foreground }}>
-              Quick Flashcards
+              Quick DPP
             </div>
             <div className="text-[12px] mt-1" style={{ color: colors.mutedForeground }}>
-              Pick a topic, then flip one card at a time. Free users get 7 flashcard views per day.
+              Pick a topic, then flip one card at a time. Free users get 9 DPP views per day.
             </div>
             {!subscribed && (
               <button
-                onClick={() => openUpgradeModal("flashcards")}
+                onClick={() => openUpgradeModal("dpp")}
                 className="mt-2 rounded-full px-3 py-1.5 text-[11px] font-semibold"
                 style={{ background: "#fff7ed", color: "#9a5b00", border: "1px solid #fed7aa" }}
               >
-                Upgrade for more flashcards
+                Upgrade for more DPP
               </button>
             )}
           </div>
@@ -584,11 +584,11 @@ export default function PreviousYearPapers() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!subscribed && !canUseFeature("flashcards", false)) {
-                      openUpgradeModal("flashcards");
+                    if (!subscribed && !canUseFeature("dpp", false)) {
+                      openUpgradeModal("dpp");
                       return;
                     }
-                    recordFeatureUse("flashcards");
+                    recordFeatureUse("dpp");
                     const nextIndex = currentCardIndex === 0 ? Math.max(currentDeck.length - 1, 0) : currentCardIndex - 1;
                     setFlipped((prev) => ({ ...prev, [currentDeck[currentCardIndex]?.id || ""]: false }));
                     setCurrentCardIndex(nextIndex);
@@ -601,11 +601,11 @@ export default function PreviousYearPapers() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!subscribed && !canUseFeature("flashcards", false)) {
-                      openUpgradeModal("flashcards");
+                    if (!subscribed && !canUseFeature("dpp", false)) {
+                      openUpgradeModal("dpp");
                       return;
                     }
-                    recordFeatureUse("flashcards");
+                    recordFeatureUse("dpp");
                     const nextIndex = (currentCardIndex + 1) % Math.max(currentDeck.length, 1);
                     setFlipped((prev) => ({ ...prev, [currentDeck[currentCardIndex]?.id || ""]: false }));
                     setCurrentCardIndex(nextIndex);
@@ -704,6 +704,7 @@ export default function PreviousYearPapers() {
         onClose={() => setUpgradeOpen(false)}
         onUpgrade={handleUpgradeNow}
         loading={paying}
+        mode={upgradeReason}
       />
     </div>
   );
