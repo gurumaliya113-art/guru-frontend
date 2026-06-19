@@ -281,10 +281,10 @@ export default function PreviousYearPapers() {
       </div>
 
       {/* Tab buttons */}
-      <div className="px-4 pt-4 pb-2 flex gap-2 border-b" style={{ borderColor: colors.border }}>
+      <div className="px-4 pt-4 pb-2 flex flex-wrap gap-2 border-b" style={{ borderColor: colors.border }}>
         <button
           onClick={() => setShowing("papers")}
-          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
             background: showing === "papers" ? colors.primary : colors.secondary,
             color: showing === "papers" ? "#fff" : colors.foreground,
@@ -294,7 +294,7 @@ export default function PreviousYearPapers() {
         </button>
         <button
           onClick={() => setShowing("chat")}
-          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
             background: showing === "chat" ? colors.primary : colors.secondary,
             color: showing === "chat" ? "#fff" : colors.foreground,
@@ -304,7 +304,7 @@ export default function PreviousYearPapers() {
         </button>
         <button
           onClick={() => setShowing("flashcards")}
-          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
             background: showing === "flashcards" ? colors.primary : colors.secondary,
             color: showing === "flashcards" ? "#fff" : colors.foreground,
@@ -314,7 +314,7 @@ export default function PreviousYearPapers() {
         </button>
         <button
           onClick={() => nav("/quiz")}
-          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
             background: colors.secondary,
             color: colors.foreground,
@@ -324,7 +324,7 @@ export default function PreviousYearPapers() {
         </button>
         <button
           onClick={() => nav("/notes")}
-          className="px-4 py-2 rounded-lg font-semibold text-[13px]"
+          className="px-3.5 py-2 rounded-lg font-semibold text-[13px]"
           style={{
             background: colors.secondary,
             color: colors.foreground,
