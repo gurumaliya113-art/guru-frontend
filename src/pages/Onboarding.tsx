@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import type { ExamType, Role } from "@/lib/types";
 import "@/onboarding.css";
 
 declare global {
@@ -14,19 +15,28 @@ declare global {
 const GOLD = "#EEB32B";
 const BG = "#040718";
 
+type OnboardingStage = "role" | "student-path" | "class" | "exam";
+
+const CLASS_LEVELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const;
+type ClassLevelChoice = (typeof CLASS_LEVELS)[number];
+const EXAM_OPTIONS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
+
 export default function Onboarding() {
   const { user, isAuthenticated, loginWithGoogle } = useAuth();
   const { profile, completeOnboarding } = useApp();
   const nav = useNavigate();
   const buttonRef = useRef<HTMLDivElement | null>(null);
-  const [selectedRole, setSelectedRole] = useState<"student" | "teacher">("student");
+  const [stage, setStage] = useState<OnboardingStage>("role");
+  const [selectedRole, setSelectedRole] = useState<Role>("student");
+  const [selectedClassLevel, setSelectedClassLevel] = useState<ClassLevelChoice | null>(null);
+  const [selectedExam, setSelectedExam] = useState<ExamType>("NEET");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const showRolePicker = isAuthenticated && !profile.isOnboarded;
+  const showOnboarding = isAuthenticated && !profile.isOnboarded;
 
   useEffect(() => {
-    if (showRolePicker) return;
+    if (showOnboarding) return;
 
     let mounted = true;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -64,7 +74,7 @@ export default function Onboarding() {
       mounted = false;
       if (pollTimer) clearInterval(pollTimer);
     };
-  }, [showRolePicker]);
+  }, [showOnboarding]);
 
   const handleGoogleResponse = async (response: any) => {
     setError(null);
@@ -84,7 +94,18 @@ export default function Onboarding() {
     setError(null);
     setBusy(true);
     try {
-      await completeOnboarding(user.name || "Student", selectedRole, profile.targetExam);
+      if (selectedRole === "teacher") {
+        await completeOnboarding(user.name || "Teacher", "teacher", profile.targetExam);
+      } else if (stage === "class") {
+        await completeOnboarding(user.name || "Student", "student", "BOARD", {
+          classLevel: selectedClassLevel || undefined,
+          skipClassJoin: true,
+        });
+      } else if (stage === "exam") {
+        await completeOnboarding(user.name || "Student", "student", selectedExam, {
+          skipClassJoin: true,
+        });
+      }
       nav("/", { replace: true });
     } catch (err) {
       setError((err as Error)?.message || "Could not save your role. Please try again.");
@@ -97,11 +118,29 @@ export default function Onboarding() {
     <div className="onboarding-root">
       <main className="onboarding-screen">
         <div className="onboarding-card onboarding-card--compact">
-          {!showRolePicker ? (
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-5">
-                <div className="logo-mark" style={{ background: GOLD, color: BG }}>
-                  <Icon name="zap" size={20} color={BG} />
+          {!showOnboarding ? (
+            <div className="brand-hero text-center">
+              <div className="brand-orb brand-orb--left" />
+              <div className="brand-orb brand-orb--right" />
+              <div className="hero-frame">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="logo-mark logo-mark--large" style={{ background: GOLD, color: BG }}>
+                    <Icon name="zap" size={24} color={BG} />
+                  </div>
+                </div>
+                <div className="brand-name">Gurtron</div>
+                <div className="brand-tagline">Built for 1 % Who refuses average</div>
+                <div className="brand-graphic" aria-hidden="true">
+                  <div className="brand-arc brand-arc--one" />
+                  <div className="brand-arc brand-arc--two" />
+                  <div className="brand-card brand-card--one">
+                    <span className="brand-card-label">Focus</span>
+                    <span className="brand-card-value">99%</span>
+                  </div>
+                  <div className="brand-card brand-card--two">
+                    <span className="brand-card-label">Edge</span>
+                    <span className="brand-card-value">Elite</span>
+                  </div>
                 </div>
               </div>
               {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#fff" }}>{error}</div> : null}
@@ -110,45 +149,175 @@ export default function Onboarding() {
             </div>
           ) : (
             <div>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="logo-mark" style={{ background: GOLD, color: BG }}>
-                  <Icon name="zap" size={20} color={BG} />
-                </div>
-                <div>
-                  <div className="card-title" style={{ marginTop: 0 }}>Who are you?</div>
-                  <div className="card-sub">Choose your role once</div>
-                </div>
-              </div>
+              {stage === "role" && (
+                <>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="logo-mark" style={{ background: GOLD, color: BG }}>
+                      <Icon name="zap" size={20} color={BG} />
+                    </div>
+                    <div>
+                      <div className="card-title" style={{ marginTop: 0 }}>Who are you?</div>
+                      <div className="card-sub">Choose student or teacher</div>
+                    </div>
+                  </div>
 
-              {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#fff" }}>{error}</div> : null}
+                  {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#fff" }}>{error}</div> : null}
 
-              <div className="grid gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole("student")}
-                  className="rounded-2xl border px-4 py-4 text-left"
-                  style={{ borderColor: selectedRole === "student" ? GOLD : "rgba(255,255,255,0.08)", background: selectedRole === "student" ? "rgba(238,179,43,0.12)" : "#071028" }}
-                >
-                  <div className="font-bold">Student</div>
-                  <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Practice quizzes, papers, and progress tracking.</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole("teacher")}
-                  className="rounded-2xl border px-4 py-4 text-left"
-                  style={{ borderColor: selectedRole === "teacher" ? GOLD : "rgba(255,255,255,0.08)", background: selectedRole === "teacher" ? "rgba(238,179,43,0.12)" : "#071028" }}
-                >
-                  <div className="font-bold">Teacher</div>
-                  <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Create classes and manage student access.</div>
-                </button>
-              </div>
+                  <div className="grid gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole("student");
+                        setStage("student-path");
+                      }}
+                      className="onboarding-choice-card onboarding-choice-card--active"
+                    >
+                      <div className="font-bold">Student</div>
+                      <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Class 1-12 or exam prep like NEET, JEE, BITS.</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("teacher")}
+                      className="onboarding-choice-card"
+                      style={{ borderColor: selectedRole === "teacher" ? GOLD : "rgba(255,255,255,0.08)", background: selectedRole === "teacher" ? "rgba(238,179,43,0.12)" : "#071028" }}
+                    >
+                      <div className="font-bold">Teacher</div>
+                      <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Create classes and manage student access.</div>
+                    </button>
+                  </div>
 
-              <button onClick={handleContinue} disabled={busy} className="btn-signin mt-5">
-                {busy ? "Please wait…" : "Continue"}
-              </button>
-              <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
-                Switching to teacher later will clear your student progress.
-              </div>
+                  <button
+                    onClick={handleContinue}
+                    disabled={busy || selectedRole !== "teacher"}
+                    className="btn-signin mt-5"
+                  >
+                    {busy ? "Please wait…" : selectedRole === "teacher" ? "Continue as teacher" : "Choose Student to continue"}
+                  </button>
+                </>
+              )}
+
+              {stage === "student-path" && (
+                <>
+                  <div className="onboarding-modal">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <button type="button" onClick={() => setStage("role")} className="back-button">
+                        <Icon name="arrow-left" size={16} color={GOLD} /> Back
+                      </button>
+                      <div className="card-title" style={{ marginTop: 0 }}>Pick your path</div>
+                      <div style={{ width: 54 }} />
+                    </div>
+
+                    <div className="card-sub mb-4" style={{ marginTop: 0 }}>
+                      Choose school classes or exam prep. The next popup will ask for the exact class or exam.
+                    </div>
+
+                    <div className="grid gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setStage("class")}
+                        className="onboarding-choice-card onboarding-choice-card--active"
+                      >
+                        <div className="font-bold">Class 1-12</div>
+                        <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Open the class picker with 12 boxes.</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStage("exam")}
+                        className="onboarding-choice-card onboarding-choice-card--active"
+                      >
+                        <div className="font-bold">JEE / NEET / BITS / Board</div>
+                        <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Open the exam picker and continue.</div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {stage === "class" && (
+                <>
+                  <div className="onboarding-modal">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <button type="button" onClick={() => setStage("student-path")} className="back-button">
+                        <Icon name="arrow-left" size={16} color={GOLD} /> Back
+                      </button>
+                      <div className="card-title" style={{ marginTop: 0 }}>Select class</div>
+                      <div style={{ width: 54 }} />
+                    </div>
+
+                    <div className="card-sub mb-4" style={{ marginTop: 0 }}>
+                      Pick one class and we’ll open the same app for that level.
+                    </div>
+
+                    <div className="class-grid class-grid--wide">
+                      {CLASS_LEVELS.map((level) => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => setSelectedClassLevel(level)}
+                          className="class-pill"
+                          style={{
+                            borderColor: selectedClassLevel === level ? GOLD : "rgba(255,255,255,0.08)",
+                            background: selectedClassLevel === level ? "rgba(238,179,43,0.18)" : "#071028",
+                            color: selectedClassLevel === level ? GOLD : "#fff",
+                          }}
+                        >
+                          Class {level}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button onClick={handleContinue} disabled={busy || !selectedClassLevel} className="btn-signin mt-5">
+                      {busy ? "Please wait…" : "Enter"}
+                    </button>
+                    <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
+                      Choose any class from 1 to 12 to continue.
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {stage === "exam" && (
+                <>
+                  <div className="onboarding-modal">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <button type="button" onClick={() => setStage("student-path")} className="back-button">
+                        <Icon name="arrow-left" size={16} color={GOLD} /> Back
+                      </button>
+                      <div className="card-title" style={{ marginTop: 0 }}>Choose exam</div>
+                      <div style={{ width: 54 }} />
+                    </div>
+
+                    <div className="card-sub mb-4" style={{ marginTop: 0 }}>
+                      Tap the exam track you want and we’ll set the app for that prep mode.
+                    </div>
+
+                    <div className="exam-grid">
+                      {EXAM_OPTIONS.map((exam) => (
+                        <button
+                          key={exam}
+                          type="button"
+                          onClick={() => setSelectedExam(exam)}
+                          className="class-pill exam-pill"
+                          style={{
+                            borderColor: selectedExam === exam ? GOLD : "rgba(255,255,255,0.08)",
+                            background: selectedExam === exam ? "rgba(238,179,43,0.18)" : "#071028",
+                            color: selectedExam === exam ? GOLD : "#fff",
+                          }}
+                        >
+                          {exam}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button onClick={handleContinue} disabled={busy} className="btn-signin mt-5">
+                      {busy ? "Please wait…" : "Enter"}
+                    </button>
+                    <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
+                      We’ll open the same app, but tuned for your exam.
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
