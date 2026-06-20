@@ -34,7 +34,7 @@ type Step = "exam" | "class" | "subject" | "topic" | "mode" | "details";
 
 const STEPS: Step[] = ["exam", "class", "subject", "topic", "mode", "details"];
 const ALL_EXAMS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
-const ALL_CLASSES = ["9", "10", "11", "12"];
+const ALL_CLASSES = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const QUESTION_TYPES: QuestionType[] = [
   "MCQ",
   "Assertion-Reason",
@@ -101,7 +101,30 @@ export default function PaperGenerate() {
     })();
   }, []);
 
-  const subjects = examType ? subjectsFor(examType) : [];
+  const subjects = useMemo(() => {
+    if (!examType) return [] as string[];
+    const base = subjectsFor(examType);
+    const examLower = examType.toLowerCase();
+    // Pull any subjects that actually exist in the question pool for this
+    // exam + class (so primary-class subjects like English/Hindi/EVS/GK show up).
+    const fromPool = new Set<string>();
+    for (const q of pool) {
+      const ets = (q.examType || []).map((e) => String(e).toLowerCase());
+      if (!ets.includes(examLower)) continue;
+      if (classLevel && q.classLevel && q.classLevel !== classLevel) continue;
+      if (q.subject) fromPool.add(q.subject);
+    }
+    // If the pool has subjects for this combo, prefer them; otherwise fall back
+    // to the static science/maths list (for 9-12 boards with no data yet).
+    if (fromPool.size > 0) {
+      const ordered = [...fromPool].sort();
+      // keep any base subject that also has data first, then the rest
+      const withData = ordered.filter((s) => base.includes(s));
+      const extra = ordered.filter((s) => !base.includes(s));
+      return [...withData, ...extra];
+    }
+    return base;
+  }, [examType, classLevel, pool]);
 
   // Topic cards for the selected subject + class + exam combo, with counts
   // pulled from the actual question pool so teachers can see at a glance
