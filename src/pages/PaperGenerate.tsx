@@ -111,7 +111,7 @@ export default function PaperGenerate() {
     for (const q of pool) {
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) continue;
-      if (classLevel && q.classLevel && q.classLevel !== classLevel) continue;
+      if (classLevel && q.classLevel !== classLevel) continue;
       if (q.subject) fromPool.add(q.subject);
     }
     // If the pool has subjects for this combo, prefer them; otherwise fall back
@@ -137,7 +137,9 @@ export default function PaperGenerate() {
     const countMap = new Map<string, number>();
     for (const q of pool) {
       if ((q.subject || "").toLowerCase() !== subjLower) continue;
-      if (classLevel && q.classLevel && q.classLevel !== classLevel) continue;
+      // Strict class match: when a class is chosen, ONLY include questions
+      // tagged with that exact class. Untagged questions must not leak in.
+      if (classLevel && q.classLevel !== classLevel) continue;
       if (examLower) {
         const ets = (q.examType || []).map((e) => String(e).toLowerCase());
         if (!ets.includes(examLower)) continue;
@@ -170,7 +172,7 @@ export default function PaperGenerate() {
     const examLower = examType.toLowerCase();
     return pool.filter((q) => {
       if ((q.subject || "").toLowerCase() !== subjLower) return false;
-      if (classLevel && q.classLevel && q.classLevel !== classLevel) return false;
+      if (classLevel && q.classLevel !== classLevel) return false;
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) return false;
       if (topic && topic !== "All" && (q.topic || "").trim() !== topic) return false;
