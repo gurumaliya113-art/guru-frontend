@@ -15,10 +15,12 @@ import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperCapture from "@/pages/PaperCapture";
 import PaperView from "@/pages/PaperView";
+import Dpp from "@/pages/Dpp";
 import PreviousYearPapers from "@/pages/PreviousYearPapers";
 import Notes from "@/pages/Notes";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
+import Referral from "@/pages/Referral";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminShell from "@/pages/admin/AdminShell";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -27,6 +29,7 @@ import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminFlashcards from "@/pages/admin/AdminFlashcards";
 import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
+import AdminReferral from "@/pages/admin/AdminReferral";
 import Landing from "@/pages/Landing";
 import Teachers from "@/pages/Teachers";
 import Schools from "@/pages/Schools";
@@ -125,6 +128,7 @@ export default function App() {
         <Route path="questions/:id" element={<AdminQuestionForm />} />
         <Route path="flashcards" element={<AdminFlashcards />} />
         <Route path="pyp" element={<AdminAddPYPForm />} />
+        <Route path="referral" element={<AdminReferral />} />
       </Route>
     </>
   );
@@ -176,8 +180,10 @@ export default function App() {
         <Route path="/paper/capture" element={<PaperCapture />} />
         <Route path="/paper/:id" element={<PaperView />} />
         <Route path="/notes" element={<Shell role={role}><Notes /></Shell>} />
+        <Route path="/dpp" element={<Shell role={role}><Dpp /></Shell>} />
         <Route path="/pyp" element={<Shell role={role}><PreviousYearPapers /></Shell>} />
         <Route path="/progress" element={<Shell role={role}><Progress /></Shell>} />
+        <Route path="/referral" element={<Shell role={role}><Referral /></Shell>} />
         <Route path="/profile" element={<Shell role={role}><Profile /></Shell>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

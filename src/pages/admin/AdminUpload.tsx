@@ -6,7 +6,17 @@ import { adminApi, getAdminToken } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { EditableQuestion, QuestionEditor } from "./QuestionEditor";
 
-type ParserMode = "heuristic" | "groq" | "gemini" | "raw";
+type ParserMode = "heuristic" | "groq" | "gemini" | "dpp" | "raw";
+
+const SUBJECT_OPTIONS = ["Physics", "Chemistry", "Biology", "Mathematics"];
+const DIFFICULTY_OPTIONS = ["Easy", "Moderate", "Hard"];
+const CLASS_OPTIONS = ["9", "10", "11", "12"];
+const BOARD_OPTIONS = ["CBSE", "ICSE", "State", "Other"];
+const EXAM_OPTIONS = ["NEET", "JEE", "BOARD"];
+
+function mergeUniqueOptions(...groups: Array<Array<string | undefined | null>>) {
+  return Array.from(new Set(groups.flat().map((value) => String(value || "").trim()).filter(Boolean)));
+}
 
 export default function AdminUpload() {
   const nav = useNavigate();
@@ -36,6 +46,9 @@ export default function AdminUpload() {
   const [bulkSubject, setBulkSubject] = useState("Biology");
   const [bulkTopic, setBulkTopic] = useState("");
   const [bulkDifficulty, setBulkDifficulty] = useState("Moderate");
+  const [bulkClassLevel, setBulkClassLevel] = useState("12");
+  const [bulkBoard, setBulkBoard] = useState("CBSE");
+  const [bulkExamType, setBulkExamType] = useState("NEET");
 
   const onPick = (f: File | null) => {
     setFile(f);
@@ -44,6 +57,9 @@ export default function AdminUpload() {
     setMeta(null);
     setDocumentId(null);
     setSavedCount(null);
+    if (f?.type.startsWith("image/")) {
+      setMode("dpp");
+    }
   };
 
   const getDraftProblem = (q: EditableQuestion) => {
@@ -70,8 +86,10 @@ export default function AdminUpload() {
         ? "pdf-heuristic"
         : result.parser === "groq"
         ? "pdf-groq"
-        : result.parser === "gemini"
+        : result.parser === "gemini" || String(result.parser).startsWith("gemini-")
         ? "pdf-gemini"
+        : result.parser === "dpp-ai"
+        ? "dpp-ai"
         : "pdf";
       // Normalise into EditableQuestion shape so the editor can mutate freely.
       const ds: EditableQuestion[] = result.questions.map((q: any) => ({
@@ -105,6 +123,12 @@ export default function AdminUpload() {
     : drafts;
   const problemCount = drafts.filter((d) => !!getDraftProblem(d)).length;
 
+  const availableSubjects = mergeUniqueOptions(SUBJECT_OPTIONS, drafts.map((q) => q.subject));
+  const availableTopics = mergeUniqueOptions(drafts.map((q) => q.topic));
+  const availableClassLevels = mergeUniqueOptions(CLASS_OPTIONS, drafts.map((q) => q.classLevel));
+  const availableBoards = mergeUniqueOptions(BOARD_OPTIONS, drafts.map((q) => q.board));
+  const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, drafts.flatMap((q) => q.examType || []));
+
   const applyBulkAssignment = () => {
     const start = Number(bulkStart);
     const end = Number(bulkEnd);
@@ -120,6 +144,9 @@ export default function AdminUpload() {
         subject: bulkSubject || q.subject,
         topic: bulkTopic || q.topic,
         difficulty: bulkDifficulty || q.difficulty,
+        classLevel: bulkClassLevel || q.classLevel,
+        board: bulkBoard || q.board,
+        examType: bulkExamType ? [bulkExamType] : q.examType,
       };
     }));
     setError("");
@@ -180,16 +207,17 @@ export default function AdminUpload() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="application/pdf,.pdf,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
+                accept="application/pdf,.pdf,image/*,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
+                capture="environment"
                 onChange={(e) => onPick(e.target.files?.[0] || null)}
                 className="hidden"
               />
               <Icon name="file-text" size={32} color={file ? colors.primary : colors.mutedForeground} />
               <div className="text-sm font-medium mt-2" style={{ color: colors.foreground }}>
-                {file ? file.name : "Click to choose a PDF or Word document"}
+                {file ? file.name : "Click to choose a PDF, image, or Word document"}
               </div>
               <div className="text-xs mt-1" style={{ color: colors.mutedForeground }}>
-                {file ? `${(file.size / 1024).toFixed(0)} KB` : "Max 25 MB · text-based PDFs only"}
+                {file ? `${(file.size / 1024).toFixed(0)} KB` : "Max 25 MB · PDFs, images, and DOC/DOCX"}
               </div>
             </label>
           </div>
@@ -275,7 +303,7 @@ export default function AdminUpload() {
                 <div className="flex items-center gap-2">
                   <input type="radio" checked={mode === "gemini"} readOnly disabled={!geminiAvailable} />
                   <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
-                    Gemini Flash (legacy fallback)
+                    Gemini Flash
                   </div>
                   {!geminiAvailable && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto"
@@ -288,6 +316,26 @@ export default function AdminUpload() {
                   {geminiAvailable
                     ? "Use only if Groq is unavailable"
                     : "Set GEMINI_API_KEY in backend/.env to enable"}
+                </div>
+              </button>
+
+              <button
+                onClick={() => geminiAvailable && setMode("dpp")}
+                disabled={!geminiAvailable}
+                className="text-left rounded-xl border p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  borderColor: mode === "dpp" ? colors.primary : colors.border,
+                  background: mode === "dpp" ? colors.primary + "10" : colors.card,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <input type="radio" checked={mode === "dpp"} readOnly disabled={!geminiAvailable} />
+                  <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
+                    DPP Mode (Gemini Vision)
+                  </div>
+                </div>
+                <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
+                  Best for camera photos, scanned pages, and DPP question generation
                 </div>
               </button>
             </div>
@@ -397,29 +445,66 @@ export default function AdminUpload() {
                     style={{ borderColor: colors.border, background: colors.card }}
                   />
                 </div>
-                <input
+                <select
                   value={bulkSubject}
                   onChange={(e) => setBulkSubject(e.target.value)}
-                  placeholder="Subject (e.g. Biology)"
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
                   style={{ borderColor: colors.border, background: colors.card }}
-                />
-                <input
+                >
+                  {availableSubjects.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <select
                   value={bulkTopic}
                   onChange={(e) => setBulkTopic(e.target.value)}
-                  placeholder="Topic (e.g. Zoology, Botany)"
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
                   style={{ borderColor: colors.border, background: colors.card }}
-                />
+                >
+                  <option value="">Topic (keep existing)</option>
+                  {availableTopics.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <select
+                  value={bulkClassLevel}
+                  onChange={(e) => setBulkClassLevel(e.target.value)}
+                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
+                  style={{ borderColor: colors.border, background: colors.card }}
+                >
+                  {availableClassLevels.map((option) => (
+                    <option key={option} value={option}>Class {option}</option>
+                  ))}
+                </select>
+                <select
+                  value={bulkBoard}
+                  onChange={(e) => setBulkBoard(e.target.value)}
+                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
+                  style={{ borderColor: colors.border, background: colors.card }}
+                >
+                  {availableBoards.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <select
+                  value={bulkExamType}
+                  onChange={(e) => setBulkExamType(e.target.value)}
+                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
+                  style={{ borderColor: colors.border, background: colors.card }}
+                >
+                  {availableExamTypes.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
                 <select
                   value={bulkDifficulty}
                   onChange={(e) => setBulkDifficulty(e.target.value)}
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-4"
                   style={{ borderColor: colors.border, background: colors.card }}
                 >
-                  <option>Easy</option>
-                  <option>Moderate</option>
-                  <option>Hard</option>
+                  {DIFFICULTY_OPTIONS.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
                 </select>
                 <button
                   type="button"

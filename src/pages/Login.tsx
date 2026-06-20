@@ -117,6 +117,8 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-6 py-10 relative overflow-hidden"
       style={{ background: T.bgGradient, color: T.text }}
     >
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.10), transparent 72%)" }} />
       <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(closest-side, rgba(245,179,51,0.18), transparent 70%)" }} />
       <div className="absolute bottom-0 -left-20 w-72 h-72 rounded-full pointer-events-none"
@@ -133,12 +135,32 @@ export default function Login() {
         <div className="text-center mb-6">
           <div
             className="w-[64px] h-[64px] rounded-2xl mx-auto mb-3 flex items-center justify-center border"
-            style={{ background: T.surfaceHi, borderColor: T.border, boxShadow: `0 8px 30px ${T.accentSoft}` }}
+            style={{ background: `linear-gradient(135deg, ${T.surfaceHi}, rgba(245,179,51,0.10))`, borderColor: T.accentRing, boxShadow: `0 12px 40px ${T.accentSoft}` }}
           >
             <span className="text-2xl" style={{ color: T.accent }}>📘</span>
           </div>
           <h2 className="text-[26px] font-bold tracking-tight">Welcome to Gurutron</h2>
           <p className="mt-1.5 text-sm" style={{ color: T.muted }}>Sign in or create your account</p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.18em]"
+            style={{ background: "rgba(245,179,51,0.12)", color: T.accent, border: `1px solid ${T.accentRing}` }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: T.accent }} />
+            Built for 1 % Who refuses average
+          </div>
+        </div>
+
+        <div className="mb-5 grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border px-3 py-3 text-center" style={{ background: T.surfaceHi, borderColor: T.border }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: T.mutedSoft }}>Focus</div>
+            <div className="mt-1 text-sm font-bold" style={{ color: T.text }}>Daily</div>
+          </div>
+          <div className="rounded-2xl border px-3 py-3 text-center" style={{ background: T.surfaceHi, borderColor: T.border }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: T.mutedSoft }}>Mode</div>
+            <div className="mt-1 text-sm font-bold" style={{ color: T.accent }}>Elite</div>
+          </div>
+          <div className="rounded-2xl border px-3 py-3 text-center" style={{ background: T.surfaceHi, borderColor: T.border }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: T.mutedSoft }}>Goal</div>
+            <div className="mt-1 text-sm font-bold" style={{ color: T.text }}>Top rank</div>
+          </div>
         </div>
 
         {error ? (

@@ -4,7 +4,7 @@ import { adminApi } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import type { Question, PreviousYearPaperSummary } from "@/lib/types";
 
-const EXAMS = ["NEET", "JEE", "BOARD"] as const;
+const EXAMS = ["NEET", "JEE", "BITS", "BOARD"] as const;
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Mathematics", "English", "History"];
 const CLASSES = ["10", "11", "12"];
 

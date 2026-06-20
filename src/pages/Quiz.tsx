@@ -4,7 +4,7 @@ import { Icon, QuizCard } from "@/components/ui";
 import { colors } from "@/lib/colors";
 import type { ExamType, Subject } from "@/lib/types";
 
-const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BOARD"];
+const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 const SUBJECTS: Subject[] = ["Physics", "Chemistry", "Biology", "Mathematics"];
 
 interface QuizDef {

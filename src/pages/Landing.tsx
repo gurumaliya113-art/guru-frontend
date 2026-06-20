@@ -20,6 +20,13 @@ import {
   Smartphone,
   Layers,
   Target,
+  Gift,
+  Crown,
+  Share2,
+  GraduationCap,
+  Coins,
+  Sparkles,
+  Wallet,
 } from "lucide-react";
 import "../landing.css";
 
@@ -28,7 +35,8 @@ const NAV_LINKS = [
   { label: "For Teachers", href: "/teachers" },
   { label: "For Schools", href: "/schools" },
   { label: "Exams", href: "#exams" },
-  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Refer & Earn", href: "#referral" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -135,10 +143,107 @@ const BG = "#040718";
 const CARD = "#0c1129";
 const BORDER = "rgba(238,179,43,0.18)";
 
+// ── Referral program tiers (dynamic — single source of truth) ──
+const REFERRAL_TIERS = [
+  {
+    icon: Wallet,
+    from: "Teacher",
+    to: "Student",
+    headline: "Earn 10% Cash",
+    desc: "Jab aapka refer kiya student koi bhi paid plan ya course kharide, aapko uski value ka 10% commission milega.",
+    example: "₹1,000 plan → ₹100 aapke",
+    badge: "10% Commission",
+    color: "#34d399",
+  },
+  {
+    icon: GraduationCap,
+    from: "Teacher",
+    to: "Teacher",
+    headline: "Earn 10% Cash",
+    desc: "Doosre teachers ko invite karo. Wo jab plan lenge, aapko har purchase pe 10% commission milega.",
+    example: "₹2,000 plan → ₹200 aapke",
+    badge: "10% Commission",
+    color: "#60a5fa",
+  },
+  {
+    icon: Coins,
+    from: "Student",
+    to: "Student",
+    headline: "Coins + Premium",
+    desc: "Har successful referral pe 100 coins. 10 friends invite karo aur paao 1 month Premium bilkul free.",
+    example: "10 referrals → 1 month Premium",
+    badge: "100 Coins / Refer",
+    color: GOLD,
+  },
+];
+
+const REFERRAL_STEPS = [
+  { icon: Share2, title: "Apna code share karo", desc: "Har user ko ek unique code milta hai (jaise GURU-MUKUL). WhatsApp, Email ya link se bhejo." },
+  { icon: Users, title: "Friend join kare", desc: "Aapke code se sign up karte hi referral permanently link ho jaata hai." },
+  { icon: Gift, title: "Reward paao", desc: "Teacher ko cash commission, student ko coins & premium — sab automatic track hota hai." },
+];
+
+// ── Pricing (matches the pricing screenshots) ──
+const PRICING_PLANS = [
+  {
+    name: "Free",
+    tagline: "Perfect to start",
+    monthly: 0,
+    yearly: 0,
+    note: "free forever · no card needed",
+    popular: false,
+    cta: "Start Free",
+    features: [
+      "Sample chapter summaries & notes",
+      "AI tutor & daily practice",
+      "2 practice tests / month",
+      "3 chapter unlocks / day",
+    ],
+  },
+  {
+    name: "Plus",
+    tagline: "Everyday syllabus mastery",
+    monthly: 249,
+    yearly: 2490,
+    note: "auto-renews · cancel anytime",
+    popular: true,
+    cta: "Choose Plus",
+    features: [
+      "Full-syllabus summaries & notes",
+      "8 practice tests / month",
+      "40 chapter unlocks / day",
+      "Basic progress analytics",
+    ],
+  },
+  {
+    name: "Pro",
+    tagline: "Going all-in for top marks",
+    monthly: 499,
+    yearly: 4990,
+    note: "auto-renews · cancel anytime",
+    popular: false,
+    cta: "Choose Pro",
+    features: [
+      "Everything in Plus, plus:",
+      "Unlimited practice tests",
+      "Board-pattern test series (10 & 12)",
+      "Full analytics + parent reports",
+      "Video lessons",
+      "Marks-improvement guarantee",
+    ],
+  },
+];
+
+const BUNDLES = [
+  { name: "Foundation — Class 9 & 10", desc: "Two-year board foundation, sorted in one go", price: 2999, was: 3998, save: "Save ₹999 · 2 yrs" },
+  { name: "Senior — Class 11 & 12", desc: "Class 11 to boards, two years sorted", price: 2999, was: 3998, save: "Save ₹999 · 2 yrs" },
+];
+
 export default function Landing() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activeExam, setActiveExam] = useState<string | null>(null);
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
   return (
     <div
@@ -875,6 +980,273 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── REFERRAL & EARN ── */}
+      <section id="referral" className="py-20 md:py-28 relative overflow-hidden" style={{ background: BG }}>
+        <div
+          className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[130px] opacity-15 pointer-events-none"
+          style={{ background: GOLD }}
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-14">
+            <span
+              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
+              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
+            >
+              💸 Refer & Earn
+            </span>
+            <h2
+              className="text-3xl md:text-5xl font-black mb-4"
+              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
+            >
+              Invite Friends, <span style={{ color: GOLD }}>Earn Rewards</span>
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "#8b95b0" }}>
+              Har user ko milta hai apna unique referral code. Teachers kamaate hain cash commission,
+              students kamaate hain coins aur free premium — sab fully automatic.
+            </p>
+          </div>
+
+          {/* Who gets what */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
+            {REFERRAL_TIERS.map((t) => (
+              <div
+                key={`${t.from}-${t.to}`}
+                className="rounded-3xl p-7 border transition-all hover:-translate-y-1"
+                style={{ background: CARD, borderColor: BORDER }}
+                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = `0 0 32px rgba(238,179,43,0.12)`)}
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: "rgba(238,179,43,0.12)", color: t.color }}
+                  >
+                    <t.icon className="w-6 h-6" />
+                  </div>
+                  <span
+                    className="text-xs font-bold px-2.5 py-1 rounded-full border"
+                    style={{ color: t.color, borderColor: BORDER, background: "rgba(255,255,255,0.04)" }}
+                  >
+                    {t.badge}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mb-2 text-sm font-bold" style={{ color: "#cbd5e1" }}>
+                  <span>{t.from}</span>
+                  <ArrowRight className="w-4 h-4" style={{ color: GOLD }} />
+                  <span>{t.to}</span>
+                </div>
+                <h3 className="text-xl font-black mb-2" style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}>
+                  {t.headline}
+                </h3>
+                <p className="text-sm leading-relaxed mb-4" style={{ color: "#8b95b0" }}>{t.desc}</p>
+                <div
+                  className="text-sm font-bold rounded-xl px-3 py-2"
+                  style={{ background: "rgba(238,179,43,0.08)", color: t.color, border: `1px solid ${BORDER}` }}
+                >
+                  {t.example}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* How it works */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+            {REFERRAL_STEPS.map((s, i) => (
+              <div key={s.title} className="rounded-2xl p-6 border" style={{ background: "rgba(255,255,255,0.03)", borderColor: BORDER }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm"
+                    style={{ background: GOLD, color: BG }}
+                  >
+                    {i + 1}
+                  </div>
+                  <s.icon className="w-5 h-5" style={{ color: GOLD }} />
+                </div>
+                <h4 className="font-bold text-base mb-1 text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>{s.title}</h4>
+                <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <a
+              href="/onboarding"
+              className="inline-flex items-center gap-2 font-bold px-8 py-4 rounded-full hover:scale-105 transition-transform shadow-xl"
+              style={{ background: GOLD, color: BG }}
+            >
+              <Gift className="w-5 h-5" /> Get Your Referral Code
+            </a>
+            <p className="text-xs mt-3" style={{ color: "#8b95b0" }}>
+              Self-referral allowed nahi · Commission sirf successful payment ke baad · Refund hone par commission cancel
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section id="pricing" className="py-20 md:py-28 relative overflow-hidden" style={{ background: CARD }}>
+        <div
+          className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[120px] opacity-10 pointer-events-none"
+          style={{ background: GOLD }}
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-10">
+            <span
+              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
+              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
+            >
+              Score Higher
+            </span>
+            <h2
+              className="text-3xl md:text-5xl font-black mb-4"
+              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
+            >
+              Pick the Plan that <span style={{ color: GOLD }}>Lifts Your Marks</span>
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto mb-6" style={{ color: "#8b95b0" }}>
+              Full-syllabus notes, AI tutor aur practice har plan me. Sirf zyada support ke liye zyada pay karo — basics ke liye kabhi nahi.
+            </p>
+
+            {/* Billing toggle */}
+            <div
+              className="inline-flex items-center gap-1 p-1 rounded-full border"
+              style={{ background: BG, borderColor: BORDER }}
+            >
+              {(["monthly", "yearly"] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBilling(b)}
+                  className="px-5 py-2 rounded-full text-sm font-bold transition-all capitalize"
+                  style={
+                    billing === b
+                      ? { background: GOLD, color: BG }
+                      : { background: "transparent", color: "#8b95b0" }
+                  }
+                >
+                  {b}{b === "yearly" ? " · 2 months free" : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Plan cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto mb-10 items-stretch">
+            {PRICING_PLANS.map((p) => {
+              const price = billing === "monthly" ? p.monthly : p.yearly;
+              const suffix = p.monthly === 0 ? "/mo" : billing === "monthly" ? "/mo" : "/yr";
+              return (
+                <div
+                  key={p.name}
+                  className="rounded-3xl p-7 border flex flex-col relative transition-all hover:-translate-y-1"
+                  style={{
+                    background: p.popular ? "rgba(238,179,43,0.06)" : BG,
+                    borderColor: p.popular ? GOLD : BORDER,
+                    boxShadow: p.popular ? `0 0 40px rgba(238,179,43,0.15)` : "none",
+                  }}
+                >
+                  {p.popular && (
+                    <span
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
+                      style={{ background: GOLD, color: BG }}
+                    >
+                      MOST POPULAR
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2 mb-1">
+                    {p.name === "Pro" && <Crown className="w-5 h-5" style={{ color: GOLD }} />}
+                    <h3 className="text-xl font-black text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>{p.name}</h3>
+                  </div>
+                  <p className="text-sm mb-5" style={{ color: "#8b95b0" }}>{p.tagline}</p>
+                  <div className="flex items-end gap-1 mb-1">
+                    <span className="text-4xl font-black" style={{ fontFamily: "'Outfit', sans-serif", color: GOLD }}>
+                      ₹{price.toLocaleString("en-IN")}
+                    </span>
+                    <span className="text-sm font-semibold mb-1.5" style={{ color: "#8b95b0" }}>{suffix}</span>
+                  </div>
+                  <p className="text-xs mb-5" style={{ color: "#8b95b0" }}>{p.note}</p>
+                  <ul className="space-y-2.5 mb-7 flex-1">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "#cbd5e1" }}>
+                        <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="/onboarding"
+                    className="text-center font-bold px-5 py-3 rounded-full transition-all hover:scale-105"
+                    style={
+                      p.popular
+                        ? { background: GOLD, color: BG }
+                        : { border: `1.5px solid ${BORDER}`, color: "#fff", background: "rgba(255,255,255,0.04)" }
+                    }
+                  >
+                    {p.cta}
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Try a week */}
+          <div
+            className="max-w-5xl mx-auto rounded-2xl p-5 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 border"
+            style={{ background: "rgba(255,255,255,0.03)", borderColor: BORDER }}
+          >
+            <div>
+              <div className="font-bold text-white mb-0.5">Plan ke liye ready nahi? — Try a week — ₹49</div>
+              <div className="text-sm" style={{ color: "#8b95b0" }}>
+                7 din full access, generous daily caps. Pay once — no auto-debit, cancel karne ki zaroorat nahi.
+              </div>
+            </div>
+            <a
+              href="/onboarding"
+              className="shrink-0 inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full border hover:scale-105 transition-transform"
+              style={{ borderColor: GOLD, color: GOLD, background: "rgba(238,179,43,0.08)" }}
+            >
+              Try a week — ₹49
+            </a>
+          </div>
+
+          {/* Bundles */}
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-black text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>Bundle &amp; Save</h3>
+            <p className="text-sm" style={{ color: "#8b95b0" }}>One simple payment — no loans, no EMIs, no auto-debit. Access poore term ke liye aapka.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+            {BUNDLES.map((b) => (
+              <div
+                key={b.name}
+                className="rounded-3xl p-6 border flex items-center justify-between gap-4"
+                style={{ background: BG, borderColor: BORDER }}
+              >
+                <div className="flex-1">
+                  <h4 className="font-black text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>{b.name}</h4>
+                  <p className="text-sm mb-2" style={{ color: "#8b95b0" }}>{b.desc}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-black" style={{ color: GOLD }}>₹{b.price.toLocaleString("en-IN")}</span>
+                    <span className="text-sm line-through" style={{ color: "#8b95b0" }}>₹{b.was.toLocaleString("en-IN")}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(52,211,153,0.15)", color: "#34d399" }}>{b.save}</span>
+                  </div>
+                </div>
+                <a
+                  href="/onboarding"
+                  className="shrink-0 font-bold px-5 py-2.5 rounded-full hover:scale-105 transition-transform"
+                  style={{ background: GOLD, color: BG }}
+                >
+                  Get bundle
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs mt-8" style={{ color: "#8b95b0" }}>
+            <Sparkles className="w-3.5 h-3.5 inline mr-1" style={{ color: GOLD }} />
+            GST included · Instant access after payment · Secure UPI &amp; cards · Cancel anytime
+          </p>
         </div>
       </section>
 

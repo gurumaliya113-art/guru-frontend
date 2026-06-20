@@ -75,11 +75,11 @@ export interface ParsePdfResult {
   saved?: boolean;
 }
 
-export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai" | "raw";
+export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai" | "dpp" | "raw";
 
 export const api = {
   getProfile: () => request<{ profile: UserProfile | null }>("/api/profile"),
-  saveProfile: (profile: UserProfile & { teacherInviteCode?: string; password?: string }) =>
+  saveProfile: (profile: UserProfile & { teacherInviteCode?: string; password?: string; referredByCode?: string }) =>
     request<{ profile: UserProfile }>("/api/profile", {
       method: "PUT",
       body: JSON.stringify(profile),
@@ -256,6 +256,38 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  // ---- Referral & Commission (user-facing) ----
+  validateReferralCode: (code: string) =>
+    request<{ valid: boolean; reason?: string; referrer?: { id: string; name: string | null; role: string | null; referralCode: string } }>(
+      "/api/referral/validate",
+      { method: "POST", body: JSON.stringify({ code }) }
+    ),
+  getReferralMe: () =>
+    request<{
+      referralCode: string;
+      shareLink: string;
+      role: string;
+      totals: {
+        totalReferrals: number;
+        teachersReferred: number;
+        studentsReferred: number;
+        pending: number;
+        approved: number;
+        paid: number;
+        cancelled: number;
+        lifetime: number;
+        coins: number;
+        premiumDays: number;
+      };
+    }>("/api/referral/me"),
+  getReferralHistory: () =>
+    request<{
+      referrals: { id: string; name: string; role: string; joinDate: string; status: string }[];
+      commissions: { id: string; orderId: string | null; purchaseAmount: number; commissionPercent: number; commissionAmount: number; status: string; date: string }[];
+      payouts: { id: string; amount: number; transactionNote: string; paidAt: string }[];
+      rewards: { id: string; coins: number; premiumDays: number; reason: string; createdAt: string }[];
+    }>("/api/referral/history"),
 };
 
 // ---- Admin API ----
@@ -433,4 +465,38 @@ export const adminApi = {
     }
     return res.json();
   },
+
+  // ---- Referral management (admin) ----
+  referralSummary: () =>
+    request<{
+      totalReferralUsers: number;
+      teachersReferred: number;
+      studentsReferred: number;
+      pendingCommission: number;
+      approvedCommission: number;
+      paidCommission: number;
+      totalCommissionAmount: number;
+    }>("/api/admin/referral/summary", {}, { admin: true }),
+  referralList: () =>
+    request<{ referrals: { id: string; referrerName: string; referralCode: string; referredUser: string; role: string; signupDate: string; status: string }[] }>(
+      "/api/admin/referral/list", {}, { admin: true }
+    ),
+  referralCommissions: () =>
+    request<{ commissions: { id: string; referrer: string; referrerId: string; buyer: string; orderId: string | null; purchaseAmount: number; commissionPercent: number; commissionAmount: number; status: string; date: string }[] }>(
+      "/api/admin/referral/commissions", {}, { admin: true }
+    ),
+  referralSetCommissionStatus: (id: string, status: string) =>
+    request<{ commission: any }>(`/api/admin/referral/commissions/${encodeURIComponent(id)}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }, { admin: true }),
+  referralPayouts: () =>
+    request<{ payouts: { id: string; userId: string; userName: string; amount: number; transactionNote: string; paidAt: string }[] }>(
+      "/api/admin/referral/payouts", {}, { admin: true }
+    ),
+  referralPayout: (userId: string, transactionNote?: string) =>
+    request<{ payout: any; paidCount: number; amount: number }>("/api/admin/referral/payout", {
+      method: "POST",
+      body: JSON.stringify({ userId, transactionNote }),
+    }, { admin: true }),
 };

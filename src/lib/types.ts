@@ -1,4 +1,4 @@
-export type ExamType = "NEET" | "JEE" | "BOARD";
+export type ExamType = "NEET" | "JEE" | "BITS" | "BOARD";
 export type Subject = "Physics" | "Chemistry" | "Biology" | "Mathematics";
 export type Difficulty = "Easy" | "Moderate" | "Hard";
 export type Role = "student" | "teacher";
@@ -214,6 +214,11 @@ export interface UserProfile {
     validUntil?: string;       // ISO date
     razorpayPaymentId?: string;
   };
+
+  /** This user's own unique referral code (e.g. "GURU-MUKUL"). Server-generated. */
+  referralCode?: string;
+  /** Referral code that brought this user in (immutable once set). */
+  referredBy?: string;
 }
 
 export interface OnboardingExtras {
@@ -221,8 +226,11 @@ export interface OnboardingExtras {
   phone?: string;
   schoolName?: string;
   classLevel?: string;
+  skipClassJoin?: boolean;
   /** Invite-only code required when registering as a teacher. */
   teacherInviteCode?: string;
   /** Optional password to set/update on the account. */
   password?: string;
+  /** Optional referral code the user was referred by. */
+  referredByCode?: string;
 }

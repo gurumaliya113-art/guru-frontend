@@ -18,6 +18,7 @@ const NAV = [
   { to: "/admin/classes", label: "Classes", icon: "users" },
   { to: "/admin/users/teachers", label: "Teachers", icon: "user-check" },
   { to: "/admin/users/students", label: "Students", icon: "user" },
+  { to: "/admin/referral", label: "Referrals", icon: "award" },
   { to: "/admin/analytics", label: "Analytics", icon: "activity" },
   { to: "/admin/settings", label: "Settings", icon: "settings" },
 ];

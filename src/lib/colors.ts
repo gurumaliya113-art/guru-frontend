@@ -23,6 +23,9 @@ export const colors = {
   board: "#7c3aed",
   boardLight: "#ede9fe",
   boardForeground: "#4c1d95",
+  bits: "#db2777",
+  bitsLight: "#fce7f3",
+  bitsForeground: "#9d174d",
   success: "#22c55e",
   warning: "#f59e0b",
   info: "#3b82f6",
@@ -41,10 +44,10 @@ export const subjectColor = (subj: string) =>
   }[subj] || colors.primary);
 
 export const examColor = (exam: string) =>
-  exam === "NEET" ? colors.neet : exam === "JEE" ? colors.jee : colors.board;
+  exam === "NEET" ? colors.neet : exam === "JEE" ? colors.jee : exam === "BITS" ? colors.bits : colors.board;
 
 export const examLight = (exam: string) =>
-  exam === "NEET" ? colors.neetLight : exam === "JEE" ? colors.jeeLight : colors.boardLight;
+  exam === "NEET" ? colors.neetLight : exam === "JEE" ? colors.jeeLight : exam === "BITS" ? colors.bitsLight : colors.boardLight;
 
 export const difficultyColor = (d: string) =>
   d === "Easy" ? colors.neet : d === "Moderate" ? colors.jee : colors.destructive;

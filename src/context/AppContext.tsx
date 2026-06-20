@@ -255,7 +255,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = useCallback(
     async (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => {
-      const { teacherInviteCode, password, ...profileExtras } = extras || {};
+      const { teacherInviteCode, password, referredByCode, ...profileExtras } = extras || {};
       const next: UserProfile = {
         ...DEFAULT_PROFILE,
         name,
@@ -265,12 +265,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         badges: DEFAULT_BADGES,
         ...profileExtras,
       };
-      // Send invite code + raw password to server. Neither is stored locally
-      // on the profile — the server hashes the password and strips both.
+      // Send invite code + raw password + referral code to server. None are
+      // stored locally on the profile — the server hashes the password,
+      // records the referral relationship, and strips them.
       setProfile(next);
       onboardingInProgress.current = true;
       try {
-        await api.saveProfile({ ...next, teacherInviteCode, password });
+        await api.saveProfile({ ...next, teacherInviteCode, password, referredByCode });
         // Re-assert the saved profile locally. This guards against a race
         // where the post-signup auto-fetch in this provider overwrites our
         // optimistic state with the pre-save server profile.

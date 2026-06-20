@@ -17,6 +17,7 @@ export default function Home() {
     const hasClass = myMemberships.some(
       (m) => m.status === "approved" || m.status === "pending"
     );
+    const showJoinClassCta = !profile.skipClassJoin && !hasClass;
 
     // Daily-updates feed. Right now we derive it from assignments the
     // student has via approved class memberships (teacher uploaded a paper /
@@ -125,7 +126,7 @@ export default function Home() {
               <Icon name="message-circle" size={22} color="#fff" /> AI Chat
             </button>
             <button
-              onClick={() => nav("/pyp?section=dpp")}
+              onClick={() => nav("/dpp")}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
@@ -134,7 +135,7 @@ export default function Home() {
           </div>
 
           {/* ---------- Join Class CTA (only for students without a class) ---------- */}
-          {!hasClass && (
+          {showJoinClassCta && (
             <button
               onClick={() => nav("/class/join")}
               className="w-full text-left rounded-2xl p-3.5 mb-6 border shadow-sm active:opacity-90 flex items-center gap-3"
@@ -309,6 +310,26 @@ export default function Home() {
                 : "Explore 5 papers now"}
             </button>
           </div>
+
+          {/* ---------- Invite & Earn (Referral program) ---------- */}
+          <button
+            onClick={() => nav("/referral")}
+            className="w-full text-left rounded-2xl p-4 mb-6 border shadow-sm active:opacity-90"
+            style={{ background: "linear-gradient(135deg,#ecfccb,#d9f99d)", borderColor: "#bef264" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#fff" }}>
+                <Icon name="award" size={22} color="#65a30d" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold" style={{ color: "#3f6212" }}>Invite &amp; Earn</div>
+                <div className="text-[12px]" style={{ color: "#4d7c0f" }}>
+                  Share your code, earn 100 coins per friend. 10 referrals = 1 month premium free.
+                </div>
+              </div>
+              <Icon name="chevron-right" size={18} color="#3f6212" />
+            </div>
+          </button>
 
           {/* ---------- Assigned Papers column ---------- */}
           {/* Same data source as the feed above (assignments for my classes),
@@ -559,6 +580,26 @@ export default function Home() {
               <span>Assign</span>
             </button>
           </div>
+
+          {/* ---------- Referral & Earnings (Referral program) ---------- */}
+          <button
+            onClick={() => nav("/referral")}
+            className="w-full text-left rounded-2xl p-4 mb-6 border shadow-sm active:opacity-90"
+            style={{ background: "linear-gradient(135deg,#1c1917,#292524)", borderColor: "rgba(251,191,36,0.3)" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(251,191,36,0.15)" }}>
+                <Icon name="award" size={22} color="#fbbf24" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold" style={{ color: "#fbbf24" }}>Referral &amp; Earnings</div>
+                <div className="text-[12px]" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  Earn 10% commission on every paid plan your referrals purchase.
+                </div>
+              </div>
+              <Icon name="chevron-right" size={18} color="#fbbf24" />
+            </div>
+          </button>
 
           {hasStudents ? (
             <>

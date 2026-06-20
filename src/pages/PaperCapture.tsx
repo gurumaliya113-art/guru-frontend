@@ -12,7 +12,7 @@ import type { ExamType } from "@/lib/types";
 // and returns a regular paper row whose questions are image-only — so
 // every downstream surface (assign-to-class, student daily feed,
 // PaperView, print/PDF) keeps working unchanged.
-const EXAMS: ExamType[] = ["NEET", "JEE", "BOARD"];
+const EXAMS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 const SUBJECTS = ["Physics", "Chemistry", "Biology", "Mathematics", "Other"];
 const MAX_IMAGES = 20;
 const MAX_SIZE_MB = 8;

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 import type { ExamType, Role } from "@/lib/types";
 import "@/onboarding.css";
 
@@ -30,6 +31,8 @@ export default function Onboarding() {
   const [selectedRole, setSelectedRole] = useState<Role>("student");
   const [selectedClassLevel, setSelectedClassLevel] = useState<ClassLevelChoice | null>(null);
   const [selectedExam, setSelectedExam] = useState<ExamType>("NEET");
+  const [referralCode, setReferralCode] = useState("");
+  const [refStatus, setRefStatus] = useState<null | { ok: boolean; msg: string }>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,17 +96,22 @@ export default function Onboarding() {
     if (!user) return;
     setError(null);
     setBusy(true);
+    const referredByCode = referralCode.trim() || undefined;
     try {
       if (selectedRole === "teacher") {
-        await completeOnboarding(user.name || "Teacher", "teacher", profile.targetExam);
+        await completeOnboarding(user.name || "Teacher", "teacher", profile.targetExam, {
+          referredByCode,
+        });
       } else if (stage === "class") {
         await completeOnboarding(user.name || "Student", "student", "BOARD", {
           classLevel: selectedClassLevel || undefined,
           skipClassJoin: true,
+          referredByCode,
         });
       } else if (stage === "exam") {
         await completeOnboarding(user.name || "Student", "student", selectedExam, {
           skipClassJoin: true,
+          referredByCode,
         });
       }
       nav("/", { replace: true });
@@ -113,6 +121,46 @@ export default function Onboarding() {
       setBusy(false);
     }
   };
+
+  const checkReferral = async () => {
+    const code = referralCode.trim();
+    if (!code) {
+      setRefStatus(null);
+      return;
+    }
+    try {
+      const r = await api.validateReferralCode(code);
+      if (r.valid) {
+        setRefStatus({ ok: true, msg: `Valid code from ${r.referrer?.name || "a Gurtron user"}` });
+      } else {
+        setRefStatus({ ok: false, msg: r.reason === "self" ? "You can't use your own code" : "Invalid referral code" });
+      }
+    } catch {
+      setRefStatus(null);
+    }
+  };
+
+  // Reusable optional referral input shown on the final onboarding steps.
+  const ReferralField = (
+    <div className="mt-4 text-left">
+      <div className="text-[13px] font-semibold mb-1" style={{ color: "#fff" }}>
+        Were you referred by someone?
+      </div>
+      <input
+        value={referralCode}
+        onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setRefStatus(null); }}
+        onBlur={checkReferral}
+        placeholder="Enter Referral Code (Optional)"
+        className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+        style={{ background: "#071028", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}
+      />
+      {refStatus ? (
+        <div className="mt-1 text-[12px]" style={{ color: refStatus.ok ? "#34d399" : "#f87171" }}>
+          {refStatus.msg}
+        </div>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className="onboarding-root">
@@ -193,6 +241,7 @@ export default function Onboarding() {
                   >
                     {busy ? "Please wait…" : selectedRole === "teacher" ? "Continue as teacher" : "Choose Student to continue"}
                   </button>
+                  {selectedRole === "teacher" ? ReferralField : null}
                 </>
               )}
 
@@ -269,6 +318,7 @@ export default function Onboarding() {
                     <button onClick={handleContinue} disabled={busy || !selectedClassLevel} className="btn-signin mt-5">
                       {busy ? "Please wait…" : "Enter"}
                     </button>
+                    {ReferralField}
                     <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
                       Choose any class from 1 to 12 to continue.
                     </div>
@@ -312,6 +362,7 @@ export default function Onboarding() {
                     <button onClick={handleContinue} disabled={busy} className="btn-signin mt-5">
                       {busy ? "Please wait…" : "Enter"}
                     </button>
+                    {ReferralField}
                     <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
                       We’ll open the same app, but tuned for your exam.
                     </div>

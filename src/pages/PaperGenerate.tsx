@@ -33,7 +33,7 @@ type Mode = "manual" | "ai";
 type Step = "exam" | "class" | "subject" | "topic" | "mode" | "details";
 
 const STEPS: Step[] = ["exam", "class", "subject", "topic", "mode", "details"];
-const ALL_EXAMS: ExamType[] = ["NEET", "JEE", "BOARD"];
+const ALL_EXAMS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 const ALL_CLASSES = ["9", "10", "11", "12"];
 const QUESTION_TYPES: QuestionType[] = [
   "MCQ",

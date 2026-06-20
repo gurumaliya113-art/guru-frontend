@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { colors, examColor, examLight } from "@/lib/colors";
 import type { ExamType } from "@/lib/types";
 
-const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BOARD"];
+const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 
 export default function Profile() {
   const { profile, updateProfile, attempts, papers, resetProgress, upgradeToTeacher } = useApp();
