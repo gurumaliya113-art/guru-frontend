@@ -7,8 +7,6 @@ import { colors } from "@/lib/colors";
 type Me = Awaited<ReturnType<typeof api.getReferralMe>>;
 type History = Awaited<ReturnType<typeof api.getReferralHistory>>;
 
-const SIGNUP_BASE = "https://gurtron.in/signup";
-
 function fmtINR(n: number) {
   return "₹" + (Number(n) || 0).toLocaleString("en-IN");
 }
@@ -72,7 +70,11 @@ export default function Referral() {
   }, []);
 
   const code = me?.referralCode || "";
-  const link = me?.shareLink || `${SIGNUP_BASE}?ref=${code}`;
+  // Build the share link from the CURRENT site origin + a real route (/onboarding)
+  // so it never 404s, regardless of domain. Falls back to backend shareLink.
+  const link = code
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://gurtron.in"}/onboarding?ref=${encodeURIComponent(code)}`
+    : me?.shareLink || "";
 
   const whatsappMsg = `🚀 Join Gurtron and learn smarter.\nUse my referral code:\n${code}\nRegister here:\n${link}`;
   const emailSubject = "Join Gurtron";

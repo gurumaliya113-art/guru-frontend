@@ -142,6 +142,7 @@ export default function App() {
         <Route path="/schools" element={<Schools />} />
         <Route path="/exams" element={<Exams />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/signup" element={<Onboarding />} />
         <Route path="/" element={<Landing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -153,6 +154,7 @@ export default function App() {
       <Routes>
         {adminRoutes}
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/signup" element={<Onboarding />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );

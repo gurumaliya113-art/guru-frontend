@@ -38,6 +38,24 @@ export default function Onboarding() {
 
   const showOnboarding = isAuthenticated && !profile.isOnboarded;
 
+  // Prefill referral code from the share link (?ref=GURU-XXXX) and validate it.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (!ref) return;
+    const code = ref.trim().toUpperCase();
+    setReferralCode(code);
+    api
+      .validateReferralCode(code)
+      .then((r) => {
+        if (r.valid) {
+          setRefStatus({ ok: true, msg: `Valid code from ${r.referrer?.name || "a Gurtron user"}` });
+        } else {
+          setRefStatus({ ok: false, msg: "Invalid referral code" });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (showOnboarding) return;
 
