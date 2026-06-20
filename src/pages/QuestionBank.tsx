@@ -26,7 +26,7 @@ export default function QuestionBank() {
 
   const [all, setAll] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<Step>("class");
+  const [step, setStep] = useState<Step>(profile.classLevel ? "subject" : "class");
   const [selClass, setSelClass] = useState<string>(profile.classLevel || "");
   const [selSubject, setSelSubject] = useState<string>("");
   const [selTopic, setSelTopic] = useState<string>("");
@@ -115,14 +115,26 @@ export default function QuestionBank() {
   }
 
   const Header = (
-    <div className="px-4 pt-5 pb-3 flex items-center gap-2">
-      <Icon name="book-open" size={22} color={colors.primary} />
-      <div className="flex-1">
-        <h1 className="text-lg font-bold" style={{ color: colors.foreground }}>Question Bank</h1>
-        <div className="text-[11px]" style={{ color: colors.mutedForeground }}>
-          {subscribed ? "Premium · unlimited solutions" : `${remaining} free solutions left`}
+    <div className="px-4 pt-5 pb-3">
+      <div className="flex items-center gap-2">
+        <Icon name="book-open" size={22} color={colors.primary} />
+        <div className="flex-1">
+          <h1 className="text-lg font-bold" style={{ color: colors.foreground }}>Question Bank</h1>
+          <div className="text-[11px]" style={{ color: colors.mutedForeground }}>
+            {subscribed ? "Premium · unlimited solutions" : `${remaining} free solutions left`}
+          </div>
         </div>
       </div>
+      {selClass && step !== "class" && (
+        <button
+          onClick={() => setStep("class")}
+          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold"
+          style={{ background: colors.primary + "15", color: colors.primary }}
+        >
+          <Icon name="refresh-cw" size={13} color={colors.primary} />
+          Class {selClass} · Change class
+        </button>
+      )}
     </div>
   );
 
