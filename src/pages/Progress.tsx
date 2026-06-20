@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Icon, ProgressBar, StatCard } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, subjectColor } from "@/lib/colors";
 import { startSubscriptionCheckout } from "@/lib/razorpay";
 
 export default function Progress() {
-  const { attempts, profile, updateProfile } = useApp();
+  const { attempts, profile, updateProfile, questions } = useApp();
   const subscribed = profile.subscription?.active === true;
   const [paying, setPaying] = useState(false);
 
@@ -33,7 +33,30 @@ export default function Progress() {
     ? Math.max(...attempts.map((a) => Math.round((a.score / a.totalQuestions) * 100)))
     : 0;
 
-  const subjectStats = ["Physics", "Chemistry", "Biology", "Mathematics"].map((subj) => {
+  // Subjects shown are REAL for the student: derived from the question bank
+  // for their class (e.g. Class 2 → Maths/English/Hindi/EVS/GK), plus any
+  // subject they've actually attempted. Falls back to exam-track subjects
+  // when no class is set (NEET/JEE aspirants).
+  const subjectNames = useMemo(() => {
+    const set = new Set<string>();
+    if (profile.classLevel) {
+      for (const q of questions) {
+        if (String(q.classLevel) === profile.classLevel && q.subject) set.add(q.subject);
+      }
+    }
+    if (set.size === 0) {
+      const fallback =
+        profile.targetExam === "NEET" ? ["Physics", "Chemistry", "Biology"]
+        : profile.targetExam === "JEE" ? ["Physics", "Chemistry", "Mathematics"]
+        : ["Physics", "Chemistry", "Biology", "Mathematics"];
+      fallback.forEach((s) => set.add(s));
+    }
+    // Include any subject the student actually attempted.
+    for (const a of attempts) if (a.subject) set.add(a.subject);
+    return [...set].sort();
+  }, [questions, attempts, profile.classLevel, profile.targetExam]);
+
+  const subjectStats = subjectNames.map((subj) => {
     const sub = attempts.filter((a) => a.subject === subj);
     const avg = sub.length > 0
       ? Math.round(sub.reduce((s, a) => s + (a.score / a.totalQuestions) * 100, 0) / sub.length)
@@ -101,8 +124,8 @@ export default function Progress() {
               <div className="text-[13px] font-medium" style={{ color: colors.foreground }}>{subject}</div>
               <div className="text-[11px]" style={{ color: colors.mutedForeground }}>{count} quizzes</div>
             </div>
-            <div className="flex-1"><ProgressBar progress={avg / 100} color={subjectColor(subject)} /></div>
-            <div className="w-9 text-right text-[13px] font-semibold" style={{ color: subjectColor(subject) }}>{avg}%</div>
+            <div className="flex-1"><ProgressBar progress={avg / 100} color={subjectColor(subject) || colors.primary} /></div>
+            <div className="w-9 text-right text-[13px] font-semibold" style={{ color: subjectColor(subject) || colors.primary }}>{avg}%</div>
           </div>
         ))}
         {total === 0 && <div className="text-center text-[13px] py-2" style={{ color: colors.mutedForeground }}>Take some quizzes to see your performance</div>}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -10,8 +11,9 @@ const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 const CLASS_LEVELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
 export default function Profile() {
-  const { profile, updateProfile, attempts, papers, resetProgress, upgradeToTeacher } = useApp();
+  const { profile, updateProfile, attempts, papers, resetProgress, upgradeToTeacher, myMemberships } = useApp();
   const { logout } = useAuth();
+  const nav = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [paying, setPaying] = useState(false);
@@ -19,6 +21,8 @@ export default function Profile() {
   const isTeacher = profile.role === "teacher";
   const subscribed = !!profile.subscription?.active;
   const ec = examColor(profile.targetExam);
+  const approvedClass = myMemberships.find((m) => m.status === "approved");
+  const pendingClass = myMemberships.find((m) => m.status === "pending");
 
   const handleSaveName = () => {
     if (nameInput.trim()) updateProfile({ name: nameInput.trim() });
@@ -144,6 +148,40 @@ export default function Profile() {
             })}
           </div>
         </div>
+      )}
+
+      {/* ---- Join / My class (students) ---- */}
+      {!isTeacher && (
+        <button
+          onClick={() => nav("/class/join")}
+          className="w-full rounded-2xl p-4 mb-3 border shadow-sm text-left active:scale-[0.99] transition"
+          style={{ background: "linear-gradient(135deg,#eff6ff,#dbeafe)", borderColor: "#bfdbfe" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#1e3a8a" }}>
+              <Icon name="qr-code" size={20} color="#fff" />
+            </div>
+            <div className="flex-1 min-w-0">
+              {approvedClass?.class ? (
+                <>
+                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>{approvedClass.class.name}</div>
+                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Joined · tap to switch or join another class</div>
+                </>
+              ) : pendingClass ? (
+                <>
+                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>Class join pending approval</div>
+                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Waiting for your teacher · tap to manage</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>Join your class</div>
+                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Enter the code your teacher shared</div>
+                </>
+              )}
+            </div>
+            <Icon name="chevron-right" size={18} color="#1e3a8a" />
+          </div>
+        </button>
       )}
 
       {/* ---- Target Exam ---- */}
