@@ -21,6 +21,7 @@ import Notes from "@/pages/Notes";
 import Progress from "@/pages/Progress";
 import Profile from "@/pages/Profile";
 import Referral from "@/pages/Referral";
+import QuestionBank from "@/pages/QuestionBank";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminShell from "@/pages/admin/AdminShell";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -186,6 +187,7 @@ export default function App() {
         <Route path="/pyp" element={<Shell role={role}><PreviousYearPapers /></Shell>} />
         <Route path="/progress" element={<Shell role={role}><Progress /></Shell>} />
         <Route path="/referral" element={<Shell role={role}><Referral /></Shell>} />
+        <Route path="/question-bank" element={<Shell role={role}><QuestionBank /></Shell>} />
         <Route path="/profile" element={<Shell role={role}><Profile /></Shell>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

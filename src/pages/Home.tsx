@@ -126,11 +126,11 @@ export default function Home() {
               <Icon name="message-circle" size={22} color="#fff" /> AI Chat
             </button>
             <button
-              onClick={() => nav("/dpp")}
+              onClick={() => nav("/question-bank")}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border bg-white font-semibold text-[13px]"
               style={{ borderColor: colors.border, color: colors.foreground }}
             >
-              <Icon name="file-text" size={20} color="#d97706" /> DPP
+              <Icon name="book-open" size={20} color="#d97706" /> Question Bank
             </button>
           </div>
 
