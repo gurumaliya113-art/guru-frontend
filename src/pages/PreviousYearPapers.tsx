@@ -170,15 +170,13 @@ export default function PreviousYearPapers() {
     try {
       const r = await api.getPyp(p.id);
       recordFeatureUse("papers");
-      nav(`/quiz/${r.pyp.id}`, {
+      nav(`/mock/${r.pyp.id}`, {
         state: {
           title: r.pyp.title,
           questions: r.pyp.questions,
           timeLimitMin: r.pyp.durationMinutes ?? 180,
           examType: r.pyp.examType,
           subject: r.pyp.subject || "All",
-          topic: "Previous Year",
-          difficulty: "Moderate",
         },
       });
     } catch (e: unknown) {

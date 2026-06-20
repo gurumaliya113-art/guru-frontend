@@ -11,6 +11,7 @@ import ClassJoin from "@/pages/ClassJoin";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
+import MockTest from "@/pages/MockTest";
 import Papers from "@/pages/Papers";
 import PaperGenerate from "@/pages/PaperGenerate";
 import PaperCapture from "@/pages/PaperCapture";
@@ -173,6 +174,7 @@ export default function App() {
         <Route path="/" element={<Shell role={role}><Home /></Shell>} />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
+        <Route path="/mock/:id" element={<MockTest />} />
         {/* /papers is the teacher's generated paper bank. Students arriving
             here (e.g. via stale links) get redirected to /pyp. */}
         <Route
