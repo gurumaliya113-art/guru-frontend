@@ -14,7 +14,7 @@ import type {
 } from "./types";
 
 const ADMIN_TOKEN_KEY = "gurutron.adminToken";
-const ADMIN_AUTH_EXPIRED_EVENT = "gurutron:admin-auth-expired";
+export const ADMIN_AUTH_EXPIRED_EVENT = "gurutron:admin-auth-expired";
 
 export function getAdminToken(): string | null {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -62,6 +62,49 @@ export interface AdminStats {
   byExam: Record<string, number>;
   byDifficulty: Record<string, number>;
   bySource: Record<string, number>;
+}
+
+export interface AdminSubscriptionRow {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  role: string;
+  plan: string | null;
+  active: boolean;
+  expired: boolean;
+  validUntil: string | null;
+  razorpayPaymentId: string | null;
+  lastOrderId: string | null;
+  lastAmount: number | null;
+  totalPaid: number;
+  paymentCount: number;
+  purchasedAt: string | null;
+}
+
+export interface AdminSubscriptionsResponse {
+  subscriptions: AdminSubscriptionRow[];
+  summary: { total: number; active: number; expired: number };
+}
+
+export interface AdminRevenueResponse {
+  currency: string;
+  totalRevenue: number;
+  thisMonthRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+  byPlan: Record<string, { count: number; amount: number }>;
+  byMonth: Record<string, number>;
+  recent: {
+    id: string;
+    email: string | null;
+    name: string | null;
+    plan: string | null;
+    amount: number;
+    currency: string;
+    paymentId: string | null;
+    orderId: string | null;
+    createdAt: string | null;
+  }[];
 }
 
 export interface ParsePdfResult {
@@ -316,6 +359,15 @@ export const adminApi = {
     return request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true });
   },
   stats: () => request<AdminStats>("/api/admin/stats", {}, { admin: true }),
+
+  // ---- Subscriptions & revenue ----
+  subscriptions: (q?: string) =>
+    request<AdminSubscriptionsResponse>(
+      `/api/admin/subscriptions${q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`,
+      {},
+      { admin: true },
+    ),
+  revenue: () => request<AdminRevenueResponse>("/api/admin/revenue", {}, { admin: true }),
 
   listQuestions: () => request<{ questions: Question[] }>("/api/admin/questions", {}, { admin: true }),
   addQuestions: (questions: Partial<Question>[]) =>

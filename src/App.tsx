@@ -30,8 +30,11 @@ import AdminUpload from "@/pages/admin/AdminUpload";
 import AdminQuestions from "@/pages/admin/AdminQuestions";
 import AdminQuestionForm from "@/pages/admin/AdminQuestionForm";
 import AdminFlashcards from "@/pages/admin/AdminFlashcards";
+import AdminNotes from "@/pages/admin/AdminNotes";
 import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
 import AdminReferral from "@/pages/admin/AdminReferral";
+import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
+import AdminRevenue from "@/pages/admin/AdminRevenue";
 import Landing from "@/pages/Landing";
 import Teachers from "@/pages/Teachers";
 import Schools from "@/pages/Schools";
@@ -124,13 +127,19 @@ export default function App() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminShell />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="subscriptions" element={<AdminSubscriptions />} />
+        <Route path="revenue" element={<AdminRevenue />} />
         <Route path="upload" element={<AdminUpload />} />
         <Route path="questions" element={<AdminQuestions />} />
         <Route path="questions/new" element={<AdminQuestionForm />} />
         <Route path="questions/:id" element={<AdminQuestionForm />} />
         <Route path="flashcards" element={<AdminFlashcards />} />
+        <Route path="notes" element={<AdminNotes />} />
         <Route path="pyp" element={<AdminAddPYPForm />} />
         <Route path="referral" element={<AdminReferral />} />
+        {/* Any unknown /admin/* path falls back to the dashboard so the panel
+            never renders a blank content area. */}
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </>
   );
