@@ -4,7 +4,6 @@ import { useApp } from "@/context/AppContext";
 import { colors } from "@/lib/colors";
 import { canUseFeature, recordFeatureUse } from "@/lib/usageLimits";
 import UpgradeModal from "@/components/UpgradeModal";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
 
 interface Message {
   id: string;
@@ -32,29 +31,11 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleUpgradeNow = () => {
-    setPaying(true);
-    startSubscriptionCheckout(
-      { name: profile.name, phone: profile.phone },
-      async (sub) => {
-        await updateProfile({ subscription: sub });
-        setPaying(false);
-        setUpgradeOpen(false);
-        alert("Subscription activated! Enjoy unlimited access 🎉");
-      },
-      (err) => {
-        setPaying(false);
-        alert(`Payment failed: ${err.message}`);
-      },
-    );
-  };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -195,7 +176,13 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
         </button>
       </div>
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} onUpgrade={handleUpgradeNow} loading={paying} />
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        ctx={{ name: profile.name, phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: sub }); }}
+        mode="dpp"
+      />
 
       <style>{`
         @keyframes bounce {

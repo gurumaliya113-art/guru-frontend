@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { colors, examColor, examLight } from "@/lib/colors";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
+import UpgradeModal from "@/components/UpgradeModal";
 import type { ExamType } from "@/lib/types";
 
 const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
@@ -16,7 +16,7 @@ export default function Profile() {
   const nav = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
-  const [paying, setPaying] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const isTeacher = profile.role === "teacher";
   const subscribed = !!profile.subscription?.active;
@@ -43,13 +43,8 @@ export default function Profile() {
     await upgradeToTeacher();
   };
 
-  const handleUpgrade = async () => {
-    setPaying(true);
-    await startSubscriptionCheckout(
-      { name: profile.name || "Student" },
-      async (sub) => { await updateProfile({ subscription: { active: true, ...sub } }); setPaying(false); },
-      () => { setPaying(false); alert("Payment could not be completed. Please try again."); }
-    );
+  const handleUpgrade = () => {
+    setShowUpgrade(true);
   };
 
   return (
@@ -113,9 +108,9 @@ export default function Profile() {
             </div>
           </div>
           {!subscribed && (
-            <button onClick={handleUpgrade} disabled={paying}
+            <button onClick={handleUpgrade}
               className="shrink-0 px-4 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-60" style={{ background: "#d97706" }}>
-              {paying ? "…" : "Upgrade"}
+              Upgrade
             </button>
           )}
         </div>
@@ -273,6 +268,13 @@ export default function Profile() {
         <Icon name="log-out" size={16} color={colors.primary} />
         <span className="text-sm font-semibold">Logout</span>
       </button>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        ctx={{ name: profile.name || "Student", phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: { active: true, ...sub } }); }}
+      />
     </div>
   );
 }

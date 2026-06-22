@@ -3,7 +3,7 @@ import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
+import UpgradeModal from "@/components/UpgradeModal";
 import type { Question } from "@/lib/types";
 
 const SOL_KEY = "gurutron_solutions_viewed_v1";
@@ -33,7 +33,6 @@ export default function QuestionBank() {
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [solViewed, setSolViewedState] = useState<number>(getSolViewed());
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,23 +94,6 @@ export default function QuestionBank() {
     setSolViewed(next);
     setSolViewedState(next);
     setRevealed((prev) => new Set(prev).add(q.id));
-  }
-
-  async function handleUpgrade() {
-    setPaying(true);
-    await startSubscriptionCheckout(
-      { name: profile.name || "Student" },
-      async (sub) => {
-        await updateProfile({ subscription: { active: true, ...sub } });
-        setShowUpgrade(false);
-        setPaying(false);
-      },
-      (err) => {
-        console.error("[QuestionBank] payment failed", err);
-        setPaying(false);
-        alert("Payment could not be completed. Please try again.");
-      }
-    );
   }
 
   const Header = (
@@ -308,32 +290,13 @@ export default function QuestionBank() {
         )}
       </div>
 
-      {/* Upgrade modal */}
-      {showUpgrade && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center" onClick={() => !paying && setShowUpgrade(false)}>
-          <div className="w-full max-w-md rounded-[28px] border bg-white p-5 shadow-2xl" style={{ borderColor: colors.border }} onClick={(e) => e.stopPropagation()}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: "#fef3c7" }}>
-              <Icon name="lock" size={22} color="#d97706" />
-            </div>
-            <div className="text-[16px] font-bold mb-1" style={{ color: colors.foreground }}>Free solution limit reached</div>
-            <div className="text-[13px] mb-4" style={{ color: colors.mutedForeground }}>
-              You've viewed your {FREE_SOLUTION_LIMIT} free solutions. Upgrade to unlock unlimited answers & step-by-step solutions across all classes and subjects.
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setShowUpgrade(false)} disabled={paying}
-                className="flex-1 rounded-2xl border py-2.5 text-[13px] font-semibold"
-                style={{ borderColor: colors.border, background: colors.secondary, color: colors.foreground }}>
-                Maybe later
-              </button>
-              <button onClick={handleUpgrade} disabled={paying}
-                className="flex-1 rounded-2xl py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
-                style={{ background: colors.primary }}>
-                {paying ? "Processing…" : "Upgrade Now"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Upgrade modal — full plan selection (₹19 / ₹59 / ₹149 / ₹499) */}
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        ctx={{ name: profile.name || "Student", phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: { active: true, ...sub } }); }}
+      />
     </div>
   );
 }

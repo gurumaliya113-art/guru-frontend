@@ -6,7 +6,6 @@ import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { QUESTION_BANK, TOPICS_BY_SUBJECT, filterQuestions } from "@/data/questions";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
 import { canUseFeature, getRemaining, recordFeatureUse } from "@/lib/usageLimits";
 import type { Difficulty, Question, Subject, Topic } from "@/lib/types";
 import DppGeminiChat from "@/components/DppGeminiChat";
@@ -61,7 +60,6 @@ export default function Dpp() {
   });
   const [selectedChapter, setSelectedChapter] = useState<ChapterInfo | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
   const [bookmarkedChapterId, setBookmarkedChapterId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem(BOOKMARK_KEY);
@@ -169,20 +167,7 @@ export default function Dpp() {
   const dppSetsAttempted = Math.min(3, chapterAttempts.length);
 
   const handleUpgradeNow = () => {
-    setPaying(true);
-    startSubscriptionCheckout(
-      { name: profile.name, phone: profile.phone },
-      async (sub) => {
-        await updateProfile({ subscription: sub });
-        setPaying(false);
-        setUpgradeOpen(false);
-        alert("Subscription activated! Enjoy unlimited access 🎉");
-      },
-      (err) => {
-        setPaying(false);
-        alert(`Payment failed: ${err.message}`);
-      },
-    );
+    setUpgradeOpen(true);
   };
 
   const openSet = (setDef: PracticeSet) => {
@@ -444,8 +429,8 @@ export default function Dpp() {
       <UpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
-        onUpgrade={handleUpgradeNow}
-        loading={paying}
+        ctx={{ name: profile.name, phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: sub }); }}
         mode="dpp"
       />
     </div>

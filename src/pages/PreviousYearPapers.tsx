@@ -12,17 +12,9 @@ import UpgradeModal from "@/components/UpgradeModal";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors, examColor, examLight } from "@/lib/colors";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
 import { getRemaining, getUsageStats, recordFeatureUse } from "@/lib/usageLimits";
 import type { ExamType, PreviousYearPaperSummary } from "@/lib/types";
 import AIChat from "@/components/AIChat";
-
-const SUBSCRIPTION_PLANS = [
-  { id: "7d-29", label: "7 days", amount: 29, subtitle: "Short access" },
-  { id: "30d-99", label: "30 days", amount: 99, subtitle: "Most popular" },
-  { id: "3m-249", label: "3 months", amount: 249, subtitle: "Best value" },
-  { id: "lifetime-999", label: "Lifetime", amount: 999, subtitle: "Unlimited access" },
-] as const;
 
 const ALL_EXAMS: (ExamType | "ALL")[] = ["ALL", "NEET", "JEE", "BITS", "BOARD"];
 
@@ -46,25 +38,7 @@ export default function PreviousYearPapers() {
     return "papers";
   });
   const [paywall, setPaywall] = useState<{ message: string } | null>(null);
-  const [paying, setPaying] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-
-  const handleUpgradeNow = () => {
-    setPaying(true);
-    startSubscriptionCheckout(
-      { name: profile.name, phone: profile.phone },
-      async (sub) => {
-        await updateProfile({ subscription: sub });
-        setPaying(false);
-        setUpgradeOpen(false);
-        alert("Subscription activated! Enjoy unlimited access 🎉");
-      },
-      (err) => {
-        setPaying(false);
-        alert(`Payment failed: ${err.message}`);
-      },
-    );
-  };
 
   const openUpgradeModal = () => {
     setUpgradeOpen(true);
@@ -114,7 +88,7 @@ export default function PreviousYearPapers() {
     // The server enforces the same rule so this is purely a UX shortcut.
     if (indexInGlobal >= 5 && !subscribed) {
       setPaywall({
-        message: "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+        message: "First 5 papers / mocks are free. Subscribe from ₹19 to unlock the rest.",
       });
       return;
     }
@@ -143,7 +117,7 @@ export default function PreviousYearPapers() {
       if (msg.includes("PAYWALL") || msg.includes("402")) {
         setPaywall({
           message:
-            "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+            "First 5 papers / mocks are free. Subscribe from ₹19 to unlock the rest.",
         });
       } else {
         setError(msg);
@@ -161,7 +135,7 @@ export default function PreviousYearPapers() {
 
     if (indexInGlobal >= 5 && !subscribed) {
       setPaywall({
-        message: "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+        message: "First 5 papers / mocks are free. Subscribe from ₹19 to unlock the rest.",
       });
       return;
     }
@@ -184,7 +158,7 @@ export default function PreviousYearPapers() {
       if (msg.includes("PAYWALL") || msg.includes("402")) {
         setPaywall({
           message:
-            "First 5 papers / mocks are free. Subscribe from ₹29 to unlock the rest.",
+            "First 5 papers / mocks are free. Subscribe from ₹19 to unlock the rest.",
         });
       } else {
         setError(msg);
@@ -315,12 +289,11 @@ export default function PreviousYearPapers() {
                 </div>
               </div>
               <button
-                onClick={handleUpgradeNow}
-                disabled={paying}
+                onClick={openUpgradeModal}
                 className="px-4 py-2 rounded-lg text-white text-[13px] font-semibold disabled:opacity-60 shrink-0"
                 style={{ background: "#d97706" }}
               >
-                {paying ? "…" : "Upgrade Now"}
+                Upgrade Now
               </button>
             </div>
           )}
@@ -463,8 +436,8 @@ export default function PreviousYearPapers() {
       <UpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
-        onUpgrade={handleUpgradeNow}
-        loading={paying}
+        ctx={{ name: profile.name, phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: sub }); }}
         mode="papers"
       />
     </div>

@@ -2,28 +2,12 @@ import { useMemo, useState } from "react";
 import { Icon, ProgressBar, StatCard } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, subjectColor } from "@/lib/colors";
-import { startSubscriptionCheckout } from "@/lib/razorpay";
+import UpgradeModal from "@/components/UpgradeModal";
 
 export default function Progress() {
   const { attempts, profile, updateProfile, questions } = useApp();
   const subscribed = profile.subscription?.active === true;
-  const [paying, setPaying] = useState(false);
-
-  const handlePay = () => {
-    setPaying(true);
-    startSubscriptionCheckout(
-      { name: profile.name, phone: profile.phone },
-      async (sub) => {
-        await updateProfile({ subscription: sub });
-        setPaying(false);
-        alert("Subscription activated! Enjoy unlimited access 🎉");
-      },
-      (err) => {
-        setPaying(false);
-        alert(`Payment failed: ${err.message}`);
-      },
-    );
-  };
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const total = attempts.length;
   const avgScore = total > 0
@@ -96,16 +80,15 @@ export default function Progress() {
               Unlock full potential
             </div>
             <div className="text-[12px]" style={{ color: "#92400e" }}>
-              All PYP papers · advanced analytics · from ₹29
+              All PYP papers · advanced analytics · from ₹19
             </div>
           </div>
           <button
-            onClick={handlePay}
-            disabled={paying}
+            onClick={() => setShowUpgrade(true)}
             className="px-3 py-2 rounded-xl text-white text-[12px] font-bold disabled:opacity-60"
             style={{ background: "#d97706" }}
           >
-            {paying ? "…" : "From ₹29 · Subscribe"}
+            From ₹19 · Subscribe
           </button>
         </div>
       )}
@@ -205,6 +188,13 @@ export default function Progress() {
           ))}
         </div>
       </div>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        ctx={{ name: profile.name, phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: sub }); }}
+      />
     </div>
   );
 }

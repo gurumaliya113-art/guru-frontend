@@ -296,7 +296,7 @@ export default function Home() {
                   NEET · JEE · Board ·{" "}
                   {profile.subscription?.active
                     ? "all unlocked"
-                    : "first 5 free, then subscription from ₹29"}
+                    : "first 5 free, then subscription from ₹19"}
                 </div>
               </div>
             </div>

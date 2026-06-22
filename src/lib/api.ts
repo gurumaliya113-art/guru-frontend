@@ -279,7 +279,7 @@ export const api = {
       amount: number;
       currency: string;
       plan: string;
-      plans?: { id: string; amount: number; currency: string; label: string; description: string; validityDays: number | null }[];
+      plans?: { id: string; amount: number; currency: string; label: string; description: string; subtitle?: string; validityDays: number | null; popular?: boolean }[];
     }>("/api/payments/config"),
   createPaymentOrder: (planId?: string) =>
     request<{ orderId: string; amount: number; currency: string; keyId: string }>(
