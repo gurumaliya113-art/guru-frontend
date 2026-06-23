@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Icon } from "@/components/ui";
 import UpgradeModal from "@/components/UpgradeModal";
 import { useApp } from "@/context/AppContext";
@@ -6,11 +8,87 @@ import { colors } from "@/lib/colors";
 import { startSubscriptionCheckout } from "@/lib/razorpay";
 import { canUseFeature, getRemaining, recordFeatureUse } from "@/lib/usageLimits";
 
+interface ChatImage {
+  title: string;
+  url: string;
+  description?: string;
+  source?: string;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  images?: ChatImage[];
+}
+
+// Colorful, classroom-style markdown renderer for the tutor's answers.
+function TutorMarkdown({ content }: { content: string }) {
+  return (
+    <div className="tutor-md text-[13.5px] leading-6" style={{ color: colors.foreground }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h2 className="text-base font-bold mt-3 mb-1.5" style={{ color: colors.primary }}>{children}</h2>
+          ),
+          h2: ({ children }) => (
+            <h3 className="text-[15px] font-bold mt-3 mb-1.5 flex items-center gap-1.5" style={{ color: colors.primary }}>{children}</h3>
+          ),
+          h3: ({ children }) => (
+            <h4 className="text-[14px] font-semibold mt-2.5 mb-1" style={{ color: colors.neet || colors.primary }}>{children}</h4>
+          ),
+          p: ({ children }) => <p className="mb-2">{children}</p>,
+          strong: ({ children }) => (
+            <strong style={{ color: colors.primary, fontWeight: 700 }}>{children}</strong>
+          ),
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="marker:text-current" style={{ color: colors.foreground }}>{children}</li>,
+          code: ({ children }) => (
+            <code
+              className="px-1.5 py-0.5 rounded text-[12.5px] font-mono"
+              style={{ background: colors.primary + "18", color: colors.primary }}
+            >
+              {children}
+            </code>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote
+              className="border-l-4 pl-3 my-2 italic"
+              style={{ borderColor: colors.primary, color: colors.mutedForeground }}
+            >
+              {children}
+            </blockquote>
+          ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-2">
+              <table className="w-full text-[12.5px] border-collapse">{children}</table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th
+              className="border px-2 py-1 text-left font-semibold"
+              style={{ borderColor: colors.border, background: colors.primary + "12", color: colors.primary }}
+            >
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border px-2 py-1" style={{ borderColor: colors.border }}>{children}</td>
+          ),
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noreferrer" style={{ color: colors.primary, textDecoration: "underline" }}>
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 export default function AIChat() {
@@ -20,7 +98,8 @@ export default function AIChat() {
     {
       id: "1",
       role: "assistant",
-      content: "Hi! I'm your AI study assistant. Ask me anything about NEET, JEE, or your subjects - like 'What is photosynthesis?' or 'Explain quantum mechanics'. How can I help?",
+      content:
+        "Hi! 👋 I'm **Guru**, your AI study buddy. Ask me anything about NEET, JEE or your subjects — like *'What is photosynthesis?'* or *'Explain quantum mechanics'*. I'll explain it deeply, step by step, with diagrams. Let's learn! 🚀",
       timestamp: Date.now(),
     },
   ]);
@@ -55,6 +134,23 @@ export default function AIChat() {
     );
   };
 
+  // Fetch free educational diagrams from Wikipedia for the asked topic.
+  const fetchImages = async (topic: string): Promise<ChatImage[]> => {
+    try {
+      const resp = await fetch("/api/ai/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ query: topic }),
+      });
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return Array.isArray(data.images) ? data.images.slice(0, 3) : [];
+    } catch {
+      return [];
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     if (!subscribed && !canUseFeature("doubts", false)) {
@@ -64,10 +160,11 @@ export default function AIChat() {
 
     recordFeatureUse("doubts");
 
+    const topic = input.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: topic,
       timestamp: Date.now(),
     };
 
@@ -78,12 +175,15 @@ export default function AIChat() {
     const url = "/api/ai/chat";
 
     try {
+      // Kick off the image search in parallel with the AI answer.
+      const imagesPromise = fetchImages(topic);
+
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          message: input,
+          message: topic,
           conversationHistory: messages.map((m) => ({
             role: m.role,
             content: m.content,
@@ -103,12 +203,14 @@ export default function AIChat() {
       }
 
       const data = await response.json();
+      const images = await imagesPromise;
 
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
         content: data.response || "Sorry, I couldn't generate a response.",
         timestamp: Date.now(),
+        images,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -134,18 +236,50 @@ export default function AIChat() {
         {messages.map((msg) => (
           <div key={msg.id} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-xs px-4 py-2.5 rounded-2xl text-[13px] leading-5 ${
-                msg.role === "user"
-                  ? "text-white"
-                  : "border"
+              className={`px-4 py-3 rounded-2xl ${
+                msg.role === "user" ? "max-w-xs text-[13px] leading-5 text-white" : "max-w-[85%] border shadow-sm"
               }`}
               style={{
-                background: msg.role === "user" ? colors.primary : colors.secondary,
+                background:
+                  msg.role === "user"
+                    ? colors.primary
+                    : `linear-gradient(135deg, ${colors.card} 0%, ${colors.secondary} 100%)`,
                 borderColor: msg.role === "user" ? "none" : colors.border,
                 color: msg.role === "user" ? "#fff" : colors.foreground,
               }}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <>
+                  <TutorMarkdown content={msg.content} />
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.border }}>
+                      <div className="text-[11px] font-semibold mb-2 flex items-center gap-1" style={{ color: colors.mutedForeground }}>
+                        🖼️ Related diagrams
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {msg.images.map((img, i) => (
+                          <a
+                            key={i}
+                            href={img.source || img.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block rounded-lg overflow-hidden border hover:opacity-90 transition"
+                            style={{ borderColor: colors.border, background: "#fff" }}
+                            title={img.title}
+                          >
+                            <img src={img.url} alt={img.title} className="w-full h-24 object-contain bg-white" loading="lazy" />
+                            <div className="px-1.5 py-1 text-[10px] truncate" style={{ color: colors.mutedForeground }}>
+                              {img.title}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -207,6 +341,8 @@ export default function AIChat() {
             transform: scale(1);
           }
         }
+        .tutor-md > *:first-child { margin-top: 0; }
+        .tutor-md > *:last-child { margin-bottom: 0; }
       `}</style>
     </div>
   );
