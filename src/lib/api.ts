@@ -205,6 +205,20 @@ export const api = {
     request<{ memberships: Membership[] }>(
       `/api/classes/${encodeURIComponent(classId)}/memberships`
     ),
+  getClassStats: (classId: string) =>
+    request<{
+      class: { id: string; name: string; code: string; classLevel: string; batchType: string; subject?: string; school?: string };
+      summary: { totalStudents: number; pending: number; totalQuizzes: number; classAvgScore: number };
+      students: {
+        studentId: string; membershipId: string; name: string; rollNumber: string; parentPhone: string;
+        quizzes: number; avgScore: number; bestScore: number; lastActive: string | null;
+      }[];
+    }>(`/api/classes/${encodeURIComponent(classId)}/stats`),
+  getClassStudentAttempts: (classId: string, studentId: string) =>
+    request<{
+      student: { studentId: string; name: string; rollNumber: string; parentPhone: string };
+      attempts: QuizAttempt[];
+    }>(`/api/classes/${encodeURIComponent(classId)}/students/${encodeURIComponent(studentId)}/attempts`),
 
   // ---- Memberships ----
   getMyMemberships: () =>

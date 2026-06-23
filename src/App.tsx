@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
 import ClassCreate from "@/pages/ClassCreate";
 import ClassJoin from "@/pages/ClassJoin";
+import ClassInfo from "@/pages/ClassInfo";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
 import QuizSession from "@/pages/QuizSession";
@@ -53,7 +54,6 @@ const STUDENT_TABS = [
 const TEACHER_TABS = [
   { path: "/", label: "Home", icon: "activity" },
   { path: "/papers", label: "Papers", icon: "file-text" },
-  { path: "/pyp", label: "Super App", icon: "award" },
   { path: "/progress", label: "Progress", icon: "bar-chart-2" },
   { path: "/profile", label: "Profile", icon: "user" },
 ];
@@ -180,6 +180,7 @@ export default function App() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/class/create" element={<ClassCreate />} />
         <Route path="/class/join" element={<ClassJoin />} />
+        <Route path="/class/:id" element={<ClassInfo />} />
         <Route path="/" element={<Shell role={role}><Home /></Shell>} />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />

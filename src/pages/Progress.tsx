@@ -3,8 +3,21 @@ import { Icon, ProgressBar, StatCard } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, subjectColor } from "@/lib/colors";
 import UpgradeModal from "@/components/UpgradeModal";
+import TeacherProgress from "@/pages/TeacherProgress";
 
 export default function Progress() {
+  const { attempts, profile, updateProfile, questions } = useApp();
+
+  // Teachers get a class-oriented progress view instead of the student one.
+  // This check must run before any other hook to keep hook order stable.
+  if (profile.role === "teacher") {
+    return <TeacherProgress />;
+  }
+
+  return <StudentProgress />;
+}
+
+function StudentProgress() {
   const { attempts, profile, updateProfile, questions } = useApp();
   const subscribed = profile.subscription?.active === true;
   const [showUpgrade, setShowUpgrade] = useState(false);

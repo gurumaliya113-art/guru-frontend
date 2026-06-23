@@ -5,7 +5,8 @@ import { useApp } from "@/context/AppContext";
 import { colors } from "@/lib/colors";
 import type { BatchType, ClassRoom } from "@/lib/types";
 
-const CLASS_LEVELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+const CLASS_LEVELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+const EXAM_TRACKS = ["NEET", "JEE"];
 const SUGGESTED_SUBJECTS = [
   "Mathematics",
   "Science",
@@ -125,6 +126,26 @@ export default function ClassCreate() {
                   }}
                 >
                   {cl}
+                </button>
+              );
+            })}
+          </div>
+          {/* Exam tracks for senior/competitive batches */}
+          <div className="mt-2 flex gap-2">
+            {EXAM_TRACKS.map((ex) => {
+              const active = classLevel === ex;
+              return (
+                <button
+                  key={ex}
+                  onClick={() => setClassLevel(ex)}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition active:scale-[0.95]"
+                  style={{
+                    background: active ? "rgba(251,191,36,0.25)" : "rgba(255,255,255,0.08)",
+                    border: `${active ? 2 : 1}px solid ${active ? "#fbbf24" : "rgba(255,255,255,0.15)"}`,
+                    color: active ? "#fbbf24" : "rgba(255,255,255,0.6)",
+                  }}
+                >
+                  {ex}
                 </button>
               );
             })}

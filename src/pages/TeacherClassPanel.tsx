@@ -273,6 +273,16 @@ export default function TeacherClassPanel() {
           </div>
         )}
 
+        {/* Open full class info + student stats */}
+        <button
+          onClick={() => nav(`/class/${active.id}`)}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white"
+          style={{ background: "#1c1917" }}
+        >
+          <Icon name="bar-chart-2" size={16} color="#fbbf24" />
+          View students & stats
+        </button>
+
       </div>
 
       {/* Pending approvals */}
