@@ -159,7 +159,7 @@ export const api = {
     if (payload.topic) fd.append("topic", payload.topic);
     if (payload.difficulty) fd.append("difficulty", payload.difficulty);
     payload.images.forEach((f) => fd.append("images", f, f.name));
-    const url = `${API_BASE_URL}/api/papers/capture`;
+    const url = `/api/papers/capture`;
     const res = await fetch(url, {
       method: "POST",
       body: fd,
