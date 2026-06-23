@@ -36,6 +36,7 @@ import AdminAddPYPForm from "@/pages/admin/AdminAddPYPForm";
 import AdminReferral from "@/pages/admin/AdminReferral";
 import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminRevenue from "@/pages/admin/AdminRevenue";
+import AdminUsers from "@/pages/admin/AdminUsers";
 import Landing from "@/pages/Landing";
 import Teachers from "@/pages/Teachers";
 import Schools from "@/pages/Schools";
@@ -129,6 +130,7 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="subscriptions" element={<AdminSubscriptions />} />
         <Route path="revenue" element={<AdminRevenue />} />
+        <Route path="users" element={<AdminUsers />} />
         <Route path="upload" element={<AdminUpload />} />
         <Route path="questions" element={<AdminQuestions />} />
         <Route path="questions/new" element={<AdminQuestionForm />} />

@@ -6,6 +6,7 @@ import { colors } from "@/lib/colors";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: "bar-chart-2", end: true },
+  { to: "/admin/users", label: "Users", icon: "users" },
   { to: "/admin/subscriptions", label: "Subscriptions", icon: "user-check" },
   { to: "/admin/revenue", label: "Revenue", icon: "indian-rupee" },
   { to: "/admin/upload", label: "Upload PDF", icon: "file-text" },

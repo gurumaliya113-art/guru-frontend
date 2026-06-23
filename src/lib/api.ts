@@ -383,6 +383,25 @@ export const adminApi = {
     ),
   revenue: () => request<AdminRevenueResponse>("/api/admin/revenue", {}, { admin: true }),
 
+  // ---- Users management ----
+  listUsers: () =>
+    request<{
+      users: {
+        id: string; name: string | null; email: string | null; phone: string | null;
+        role: string; classLevel: string | null; createdAt: string | null;
+        suspended: boolean; subscribed: boolean; plan: string | null;
+      }[];
+    }>("/api/admin/users", {}, { admin: true }),
+  suspendUser: (id: string, suspended: boolean) =>
+    request<{ ok: true; suspended: boolean }>(`/api/admin/users/${encodeURIComponent(id)}/suspend`, {
+      method: "POST",
+      body: JSON.stringify({ suspended }),
+    }, { admin: true }),
+  deleteUser: (id: string) =>
+    request<{ ok: true }>(`/api/admin/users/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
   listQuestions: () => request<{ questions: Question[] }>("/api/admin/questions", {}, { admin: true }),
   addQuestions: (questions: Partial<Question>[]) =>
     request<{ added: number; questions: Question[] }>("/api/admin/questions", {
