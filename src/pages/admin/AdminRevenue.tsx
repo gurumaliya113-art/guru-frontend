@@ -68,6 +68,19 @@ export default function AdminRevenue() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="rounded-2xl p-5 border bg-white" style={{ borderColor: colors.border }}>
+          <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>Student revenue</div>
+          <div className="text-3xl font-bold" style={{ color: colors.bits }}>{fmtMoney(data.byRole?.student?.amount || 0, data.currency)}</div>
+          <div className="text-[12px] mt-1" style={{ color: colors.mutedForeground }}>{data.byRole?.student?.count || 0} payments</div>
+        </div>
+        <div className="rounded-2xl p-5 border bg-white" style={{ borderColor: colors.border }}>
+          <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>Teacher revenue</div>
+          <div className="text-3xl font-bold" style={{ color: colors.board }}>{fmtMoney(data.byRole?.teacher?.amount || 0, data.currency)}</div>
+          <div className="text-[12px] mt-1" style={{ color: colors.mutedForeground }}>{data.byRole?.teacher?.count || 0} payments</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-2xl p-5 border bg-white" style={{ borderColor: colors.border }}>
           <div className="text-[15px] font-semibold mb-4" style={{ color: colors.foreground }}>Revenue by plan</div>
           {planEntries.length === 0 && <div className="text-sm" style={{ color: colors.mutedForeground }}>No data yet</div>}
           {planEntries.map(([plan, v]) => {

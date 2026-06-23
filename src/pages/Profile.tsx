@@ -274,6 +274,7 @@ export default function Profile() {
         onClose={() => setShowUpgrade(false)}
         ctx={{ name: profile.name || "Student", phone: profile.phone }}
         onSuccess={async (sub) => { await updateProfile({ subscription: { active: true, ...sub } }); }}
+        mode={isTeacher ? "teacher" : "papers"}
       />
     </div>
   );

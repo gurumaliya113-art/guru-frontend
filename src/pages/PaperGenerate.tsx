@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
+import UpgradeModal from "@/components/UpgradeModal";
 import { api } from "@/lib/api";
 import {
   colors,
@@ -53,7 +54,13 @@ function subjectsFor(exam: ExamType): string[] {
 
 export default function PaperGenerate() {
   const nav = useNavigate();
-  const { addPaper, profile, updateProfile, questions: pool } = useApp();
+  const { addPaper, profile, updateProfile, questions: pool, papers } = useApp();
+
+  const FREE_PAPER_LIMIT = 20;
+  const subscribed = !!profile.subscription?.active;
+  const papersMade = papers?.length || 0;
+  const reachedLimit = !subscribed && papersMade >= FREE_PAPER_LIMIT;
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [step, setStep] = useState<Step>("exam");
   const [examType, setExamType] = useState<ExamType | null>(null);
@@ -186,6 +193,11 @@ export default function PaperGenerate() {
 
   const handleGenerate = async () => {
     if (!examType || !subject) return;
+    // Free teachers can generate up to 20 papers, then must upgrade.
+    if (reachedLimit) {
+      setShowUpgrade(true);
+      return;
+    }
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 900));
     const shuffled = [...matchingQuestions].sort(() => Math.random() - 0.5).slice(0, questionCount);
@@ -581,19 +593,37 @@ export default function PaperGenerate() {
               onClick={handleGenerate}
               disabled={generating || matchingQuestions.length === 0}
               className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold disabled:opacity-50"
-              style={{ background: colors.primary }}
+              style={{ background: reachedLimit ? "#d97706" : colors.primary }}
             >
               {generating ? (
                 <><Spinner size={18} /> Generating…</>
+              ) : reachedLimit ? (
+                <><Icon name="lock" size={18} color="#fff" /> Upgrade to generate more</>
               ) : matchingQuestions.length === 0 ? (
                 "No questions match your filters"
               ) : (
                 <><Icon name="zap" size={18} color="#fff" /> Generate Paper</>
               )}
             </button>
+
+            {!subscribed && (
+              <div className="mt-2 text-center text-[12px]" style={{ color: reachedLimit ? "#b45309" : colors.mutedForeground }}>
+                {reachedLimit
+                  ? `Free limit reached (${papersMade}/${FREE_PAPER_LIMIT} papers). Upgrade for unlimited.`
+                  : `Free plan: ${papersMade}/${FREE_PAPER_LIMIT} papers generated`}
+              </div>
+            )}
           </Panel>
         )}
       </div>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        ctx={{ name: profile.name || "Teacher", phone: profile.phone }}
+        onSuccess={async (sub) => { await updateProfile({ subscription: sub }); }}
+        mode="teacher"
+      />
     </div>
   );
 }

@@ -22,7 +22,7 @@ interface UpgradeModalProps {
   ctx?: { name?: string; email?: string; phone?: string };
   /** Called after a verified payment so the caller can refresh the profile. */
   onSuccess?: (sub: SubscriptionResult) => void | Promise<void>;
-  mode?: "papers" | "dpp";
+  mode?: "papers" | "dpp" | "teacher";
 }
 
 export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "papers" }: UpgradeModalProps) {
@@ -32,6 +32,7 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
   const isDpp = mode === "dpp";
+  const isTeacher = mode === "teacher";
 
   useEffect(() => {
     if (!open) return;
@@ -101,11 +102,19 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
         {/* What you unlock */}
         <div className="mt-4 rounded-2xl border p-3 text-[12px]" style={{ borderColor: colors.border, background: "#eff6ff", color: colors.foreground }}>
           <div className="font-semibold mb-1">Premium unlocks</div>
-          <ul className="list-disc pl-4 space-y-0.5">
-            <li>Unlimited AI doubt solving{isDpp ? " & DPP views" : ""}</li>
-            <li>All previous-year papers & mock tests</li>
-            <li>Full flashcards revision & advanced analytics</li>
-          </ul>
+          {isTeacher ? (
+            <ul className="list-disc pl-4 space-y-0.5">
+              <li>Unlimited question paper generation</li>
+              <li>Assign papers & tests to all your classes</li>
+              <li>Full student performance analytics</li>
+            </ul>
+          ) : (
+            <ul className="list-disc pl-4 space-y-0.5">
+              <li>Unlimited AI doubt solving{isDpp ? " & DPP views" : ""}</li>
+              <li>All previous-year papers & mock tests</li>
+              <li>Full flashcards revision & advanced analytics</li>
+            </ul>
+          )}
         </div>
 
         {/* Plans */}

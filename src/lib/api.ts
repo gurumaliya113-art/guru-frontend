@@ -93,6 +93,7 @@ export interface AdminRevenueResponse {
   totalTransactions: number;
   averageOrderValue: number;
   byPlan: Record<string, { count: number; amount: number }>;
+  byRole: { teacher: { count: number; amount: number }; student: { count: number; amount: number } };
   byMonth: Record<string, number>;
   recent: {
     id: string;

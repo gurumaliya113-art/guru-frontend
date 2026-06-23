@@ -26,9 +26,7 @@ export default function PreviousYearPapers() {
   const [pyps, setPyps] = useState<PreviousYearPaperSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<ExamType | "ALL">(
-    (profile.targetExam as ExamType) || "ALL",
-  );
+  const [filter, setFilter] = useState<ExamType | "ALL">("ALL");
   const [opening, setOpening] = useState<string | null>(null);
   const [showing, setShowing] = useState<"papers" | "chat">(() => {
     const section = new URLSearchParams(location.search).get("section");
