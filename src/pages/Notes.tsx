@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
+import BookReader from "@/components/BookReader";
 
 interface Note {
   id: string;
@@ -267,30 +266,7 @@ export default function Notes() {
             </div>
 
             {selectedNote.description && (
-              <div className="mb-4 note-md text-[14px] leading-7" style={{ color: colors.foreground }}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    h1: ({ children }) => <h2 className="text-lg font-bold mt-4 mb-2" style={{ color: colors.primary }}>{children}</h2>,
-                    h2: ({ children }) => <h3 className="text-base font-bold mt-4 mb-2" style={{ color: colors.primary }}>{children}</h3>,
-                    h3: ({ children }) => <h4 className="text-[15px] font-semibold mt-3 mb-1.5" style={{ color: "#7c3aed" }}>{children}</h4>,
-                    p: ({ children }) => <p className="mb-2.5">{children}</p>,
-                    strong: ({ children }) => <strong style={{ color: colors.primary, fontWeight: 700 }}>{children}</strong>,
-                    ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1.5">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1.5">{children}</ol>,
-                    code: ({ children }) => (
-                      <code className="px-1.5 py-0.5 rounded text-[13px] font-mono" style={{ background: colors.primary + "18", color: colors.primary }}>{children}</code>
-                    ),
-                    table: ({ children }) => (
-                      <div className="overflow-x-auto my-3"><table className="w-full text-[13px] border-collapse">{children}</table></div>
-                    ),
-                    th: ({ children }) => <th className="border px-2 py-1 text-left font-semibold" style={{ borderColor: colors.border, background: colors.primary + "12", color: colors.primary }}>{children}</th>,
-                    td: ({ children }) => <td className="border px-2 py-1" style={{ borderColor: colors.border }}>{children}</td>,
-                  }}
-                >
-                  {selectedNote.description}
-                </ReactMarkdown>
-              </div>
+              <BookReader content={selectedNote.description} title={selectedNote.title} />
             )}
 
             {selectedNote.fileUrl && (
