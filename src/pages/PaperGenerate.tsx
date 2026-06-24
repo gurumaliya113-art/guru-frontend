@@ -323,7 +323,9 @@ export default function PaperGenerate() {
         {step === "class" && (
           <Panel title="Choose class" subtitle="Pick the grade level — questions filter to this class.">
             <HScroll>
-              {ALL_CLASSES.map((c) => (
+              {/* Competitive exams (NEET/JEE/BITS) are only for classes 9–12.
+                  Board papers can be for any class 1–12. */}
+              {(examType && examType !== "BOARD" ? ["9", "10", "11", "12"] : ALL_CLASSES).map((c) => (
                 <BigCard
                   key={c}
                   label={`Class ${c}`}
