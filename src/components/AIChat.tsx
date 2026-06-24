@@ -21,6 +21,7 @@ interface Message {
   content: string;
   timestamp: number;
   images?: ChatImage[];
+  topic?: string; // the user question this answer responded to (for follow-up chips)
 }
 
 // Colorful, classroom-style markdown renderer for the tutor's answers.
@@ -166,6 +167,13 @@ export default function AIChat() {
     );
   };
 
+  // Short follow-up suggestions shown under an answer — one tap to ask, no typing.
+  const followUps = (topic: string) => [
+    { label: "🔁 Related questions", prompt: `Give me a few important exam questions related to ${topic}.` },
+    { label: "📐 Formulas used", prompt: `List the key formulas used in ${topic} with their meaning.` },
+    { label: "🌍 Real-life example", prompt: `Explain a simple real-life example of ${topic}.` },
+  ];
+
   // Fetch free educational diagrams from Wikipedia for the asked topic.
   const fetchImages = async (topic: string): Promise<ChatImage[]> => {
     try {
@@ -183,8 +191,9 @@ export default function AIChat() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async (override?: string) => {
+    const text = (override ?? input).trim();
+    if (!text) return;
     if (!subscribed && !canUseFeature("doubts", false)) {
       setUpgradeOpen(true);
       return;
@@ -192,7 +201,7 @@ export default function AIChat() {
 
     recordFeatureUse("doubts");
 
-    const topic = input.trim();
+    const topic = text;
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -245,6 +254,7 @@ export default function AIChat() {
         content: "", // filled progressively by the typewriter effect
         timestamp: Date.now(),
         images,
+        topic,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -317,6 +327,25 @@ export default function AIChat() {
                           </a>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {typing?.id !== msg.id && msg.topic && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {followUps(msg.topic).map((f, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSendMessage(f.prompt)}
+                          disabled={loading || typing != null}
+                          className="px-2.5 py-1 rounded-full text-[11px] border transition hover:opacity-80 disabled:opacity-40"
+                          style={{
+                            borderColor: colors.primary + "55",
+                            background: colors.primary + "12",
+                            color: colors.primary,
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </>
