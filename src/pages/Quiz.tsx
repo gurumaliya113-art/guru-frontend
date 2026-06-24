@@ -54,11 +54,18 @@ export default function Quiz() {
 
   // Scope the pool to the student's class.
   //  - Lower classes (1–10): strictly that class's tagged questions only.
-  //  - Class 11/12 & aspirants: the full bank (NEET/JEE questions are usually
-  //    not class-tagged), filtered later by the exam chips.
+  //  - Class 11/12 & aspirants: untagged exam questions (NEET/JEE are usually
+  //    not class-tagged) PLUS senior-class (11/12) tagged ones — but NEVER
+  //    lower-class subjects like EVS / Vocabulary / GK / Hindi.
   const pool = useMemo(() => {
-    if (cls && !examMode) return all.filter((q) => String((q as any).classLevel || "") === cls);
-    return all;
+    if (cls && !examMode) {
+      return all.filter((q) => String((q as any).classLevel || "") === cls);
+    }
+    const senior = cls ? [cls] : ["11", "12"];
+    return all.filter((q) => {
+      const ql = String((q as any).classLevel || "");
+      return ql === "" || senior.includes(ql);
+    });
   }, [all, cls, examMode]);
 
   const subjects = useMemo(
