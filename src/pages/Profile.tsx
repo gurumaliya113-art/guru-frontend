@@ -12,12 +12,15 @@ const EXAM_TYPES: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
 const CLASS_LEVELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
 export default function Profile() {
-  const { profile, updateProfile, attempts, papers, resetProgress, upgradeToTeacher, myMemberships } = useApp();
+  const { profile, updateProfile, attempts, papers, resetProgress, upgradeToTeacher, changeClass, myMemberships } = useApp();
   const { logout } = useAuth();
   const nav = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  // Pending class switch awaiting the "progress will be erased" confirmation.
+  const [pendingClassChange, setPendingClassChange] = useState<string | null>(null);
+  const [switchingClass, setSwitchingClass] = useState(false);
 
   const isTeacher = profile.role === "teacher";
   const subscribed = !!profile.subscription?.active;
@@ -130,7 +133,10 @@ export default function Profile() {
               return (
                 <button
                   key={c}
-                  onClick={() => updateProfile({ classLevel: c })}
+                  onClick={() => {
+                    if (profile.classLevel === c) return; // same class — no-op
+                    setPendingClassChange(c);
+                  }}
                   className="py-2.5 rounded-xl text-[14px] font-bold transition active:scale-95"
                   style={{
                     background: active ? colors.primary : colors.secondary,
@@ -279,6 +285,54 @@ export default function Profile() {
         onSuccess={async (sub) => { await updateProfile({ subscription: { active: true, ...sub } }); }}
         mode={isTeacher ? "teacher" : "papers"}
       />
+
+      {/* ---- Change-class warning ---- */}
+      {pendingClassChange && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-5" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#fef3c7" }}>
+                <Icon name="alert-triangle" size={20} color="#d97706" />
+              </div>
+              <div className="text-[17px] font-bold" style={{ color: colors.foreground }}>
+                Switch to Class {pendingClassChange}?
+              </div>
+            </div>
+            <p className="text-[13px] leading-5 mb-4" style={{ color: colors.mutedForeground }}>
+              Your entire progress will be <b style={{ color: colors.destructive }}>erased</b> — quiz history,
+              points, day-streak and badges all reset. You'll start fresh as a
+              <b> Class {pendingClassChange}</b> student with new content and a new progress board.
+              This can't be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingClassChange(null)}
+                disabled={switchingClass}
+                className="flex-1 py-3 rounded-xl border text-sm font-semibold"
+                style={{ borderColor: colors.border, color: colors.foreground, background: colors.secondary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setSwitchingClass(true);
+                  try {
+                    await changeClass(pendingClassChange);
+                  } finally {
+                    setSwitchingClass(false);
+                    setPendingClassChange(null);
+                  }
+                }}
+                disabled={switchingClass}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                style={{ background: colors.destructive }}
+              >
+                {switchingClass ? "Switching…" : "Erase & switch"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

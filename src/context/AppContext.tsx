@@ -87,6 +87,9 @@ interface AppContextType {
   completeOnboarding: (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => Promise<void>;
   upgradeToTeacher: () => Promise<void>;
   resetProgress: () => Promise<void>;
+  /** Switch the student's class. Wipes progress (attempts, points, streak,
+   *  badges) and loads the new class's content — used behind a warning. */
+  changeClass: (newClassLevel: string) => Promise<void>;
   isLoading: boolean;
   /** True once the initial authenticated fetch has completed. */
   dataLoaded: boolean;
@@ -348,6 +351,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await persistProfile(next);
   }, [profile, persistProfile]);
 
+  // Switch class: wipe all progress and start fresh on the new class. Done in a
+  // single profile save so the reset and the new class can't race each other.
+  const changeClass = useCallback(async (newClassLevel: string) => {
+    setAttempts([]);
+    setPapers([]);
+    try { await api.reset(); } catch (e) { console.error(e); }
+    const next: UserProfile = {
+      ...profile,
+      classLevel: newClassLevel,
+      streak: 0,
+      totalPoints: 0,
+      lastQuizDate: "",
+      badges: DEFAULT_BADGES,
+    };
+    await persistProfile(next);
+  }, [profile, persistProfile]);
+
   const upgradeToTeacher = useCallback(async () => {
     setAttempts([]);
     setPapers([]);
@@ -393,6 +413,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         completeOnboarding,
         upgradeToTeacher,
         resetProgress,
+        changeClass,
         isLoading,
         dataLoaded,
       }}
