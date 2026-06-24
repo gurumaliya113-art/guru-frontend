@@ -293,10 +293,16 @@ export function filterQuestions(
   topic: string,
   difficulty: string,
   examType: string,
-  count: number = 10
+  count: number = 10,
+  classLevel?: string
 ): Question[] {
   const base = pool && pool.length ? pool : QUESTION_BANK;
-  let filtered = base.filter((q) => {
+  // When a class level is given (lower-class students), restrict the whole
+  // pool to that class first so a Class-6 quiz never pulls NEET/JEE questions.
+  const scoped = classLevel
+    ? base.filter((q) => String((q as any).classLevel || "") === classLevel)
+    : base;
+  let filtered = scoped.filter((q) => {
     const subjectMatch = subject === "All" || q.subject === subject;
     const topicMatch = topic === "All" || q.topic === topic;
     const diffMatch = difficulty === "All" || q.difficulty === difficulty;
@@ -304,8 +310,9 @@ export function filterQuestions(
     return subjectMatch && topicMatch && diffMatch && examMatch;
   });
 
+  // Back-fill only from the same scope, so the class boundary is never crossed.
   if (filtered.length < count) {
-    const extras = base.filter((q) => !filtered.find((f) => f.id === q.id)).slice(
+    const extras = scoped.filter((q) => !filtered.find((f) => f.id === q.id)).slice(
       0,
       count - filtered.length
     );

@@ -4,6 +4,7 @@ import { Icon, Spinner } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
+import { showExamTracks } from "@/lib/scope";
 import BookReader from "@/components/BookReader";
 
 interface Note {
@@ -124,7 +125,17 @@ export default function Notes() {
       <div className="sticky top-0 z-40 bg-white border-b" style={{ borderColor: colors.border }}>
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Notes</h1>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => nav(-1)}
+                className="w-9 h-9 rounded-full flex items-center justify-center border active:scale-95 transition"
+                style={{ borderColor: colors.border, background: colors.card }}
+                aria-label="Back"
+              >
+                <Icon name="arrow-left" size={18} color={colors.foreground} />
+              </button>
+              <h1 className="text-2xl font-bold">Notes</h1>
+            </div>
             {profile.role === "teacher" && (
               <button
                 onClick={() => nav("/notes/create")}
@@ -191,23 +202,25 @@ export default function Notes() {
               </select>
             )}
 
-            {/* Exam Type Filter */}
-            <select
-              value={filterExam}
-              onChange={(e) => setFilterExam(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border text-sm whitespace-nowrap"
-              style={{
-                borderColor: colors.border,
-                backgroundColor: colors.background,
-              }}
-            >
-              <option value="">All Exams</option>
-              {exams.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
+            {/* Exam Type Filter — only for class 11/12 & exam aspirants */}
+            {showExamTracks(profile.classLevel) && (
+              <select
+                value={filterExam}
+                onChange={(e) => setFilterExam(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border text-sm whitespace-nowrap"
+                style={{
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                }}
+              >
+                <option value="">All Exams</option>
+                {exams.map((e) => (
+                  <option key={e} value={e}>
+                    {e}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       </div>

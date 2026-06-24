@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { colors, examColor, examLight } from "@/lib/colors";
+import { showExamTracks } from "@/lib/scope";
 import UpgradeModal from "@/components/UpgradeModal";
 import type { ExamType } from "@/lib/types";
 
@@ -179,7 +180,8 @@ export default function Profile() {
         </button>
       )}
 
-      {/* ---- Target Exam ---- */}
+      {/* ---- Target Exam (class 11/12 & exam aspirants only) ---- */}
+      {showExamTracks(profile.classLevel) && (
       <div className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
         <div className="text-[15px] font-semibold mb-3" style={{ color: colors.foreground }}>Target Exam</div>
         <div className="flex gap-2">
@@ -204,6 +206,7 @@ export default function Profile() {
           })}
         </div>
       </div>
+      )}
 
       {/* ---- Stats ---- */}
       <div className="flex gap-2 mb-3">

@@ -31,14 +31,15 @@ export default function QuizSession() {
   const topic = state?.topic || params.get("topic") || "All";
   const difficulty = state?.difficulty || params.get("difficulty") || "All";
   const examType = state?.examType || params.get("examType") || "All";
+  const classLevel = (state as any)?.classLevel || params.get("classLevel") || "";
   const timeLimitMin = state?.timeLimitMin ?? parseInt(params.get("timeLimit") || "15", 10);
   const questionsCount = parseInt(params.get("questionsCount") || "10", 10);
   const timeLimit = timeLimitMin * 60;
 
   const questions = useMemo(() => {
     if (state?.questions) return state.questions;
-    return filterQuestions(pool, subject, topic, difficulty, examType, questionsCount);
-  }, [pool, state?.questions, subject, topic, difficulty, examType, questionsCount]);
+    return filterQuestions(pool, subject, topic, difficulty, examType, questionsCount, classLevel || undefined);
+  }, [pool, state?.questions, subject, topic, difficulty, examType, questionsCount, classLevel]);
 
   const subjects = useMemo(
     () => Array.from(new Set(questions.map((q) => q.subject))),
