@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import UpgradeModal from "@/components/UpgradeModal";
 import { useApp } from "@/context/AppContext";
@@ -112,6 +113,9 @@ export default function AIChat() {
   const [typing, setTyping] = useState<{ id: string; full: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const autoAskedRef = useRef(false);
 
   // Gently keep the latest text in view — only nudge down when fresh content
   // has actually gone below the fold, so it reads like a pen moving down the
@@ -273,6 +277,19 @@ export default function AIChat() {
       setLoading(false);
     }
   };
+
+  // Deep-link from "Improve" buttons (e.g. Progress → weak areas): auto-ask the
+  // tutor about a topic so the student lands straight into a lesson. Runs once.
+  useEffect(() => {
+    const autoAsk = (location.state as { autoAsk?: string } | null)?.autoAsk;
+    if (autoAsk && !autoAskedRef.current && !loading) {
+      autoAskedRef.current = true;
+      handleSendMessage(autoAsk);
+      // Clear the navigation state so a refresh / back-nav won't re-fire it.
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   return (
     <div className="flex flex-col h-full" style={{ minHeight: "calc(100vh - 300px)" }}>

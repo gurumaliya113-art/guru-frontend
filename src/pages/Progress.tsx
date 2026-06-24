@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon, ProgressBar, StatCard } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, subjectColor } from "@/lib/colors";
@@ -21,6 +22,17 @@ function StudentProgress() {
   const { attempts, profile, updateProfile, questions } = useApp();
   const subscribed = profile.subscription?.active === true;
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const navigate = useNavigate();
+
+  // Open the AI tutor and start a lesson on a weak topic (one tap, no typing).
+  const improveTopic = (topic: string) => {
+    const exam = profile.targetExam || "your exam";
+    navigate("/pyp?section=chat", {
+      state: {
+        autoAsk: `I'm weak in "${topic}". Teach me this topic deeply for ${exam} — explain the key concepts step by step, important formulas, common mistakes, and give an easy example.`,
+      },
+    });
+  };
 
   const total = attempts.length;
   const avgScore = total > 0
@@ -141,6 +153,14 @@ function StudentProgress() {
                 <span className="w-2 h-2 rounded-full" style={{ background: colors.destructive }} />
                 <span className="flex-1 text-sm font-medium" style={{ color: colors.foreground }}>{topic}</span>
                 <span className="text-xs" style={{ color: colors.mutedForeground }}>missed {count}x</span>
+                <button
+                  onClick={() => improveTopic(topic)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white"
+                  style={{ background: colors.primary }}
+                >
+                  <Icon name="sparkles" size={12} color="#fff" />
+                  Improve
+                </button>
               </div>
             ))}
             <div className="flex items-start gap-2 p-3 rounded-xl mt-1" style={{ background: colors.neetLight }}>
