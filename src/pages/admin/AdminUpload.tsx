@@ -27,10 +27,10 @@ export default function AdminUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<ParserMode>("heuristic");
 
-  // Auto-pick best available parser on mount/when availability changes
+  // Auto-pick the most accurate available parser on mount.
   useEffect(() => {
-    if (groqAvailable) setMode("groq");
-    else if (geminiAvailable) setMode("gemini");
+    if (geminiAvailable) setMode("gemini");
+    else if (groqAvailable) setMode("groq");
     else setMode("raw");
   }, [groqAvailable, geminiAvailable]);
   const [busy, setBusy] = useState(false);
@@ -275,7 +275,7 @@ export default function AdminUpload() {
                 <div className="flex items-center gap-2">
                   <input type="radio" checked={mode === "groq"} readOnly disabled={!groqAvailable} />
                   <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
-                    Groq AI (Llama 3.3 70B — free, recommended)
+                    AI PRO
                   </div>
                   {!groqAvailable && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto"
@@ -286,8 +286,8 @@ export default function AdminUpload() {
                 </div>
                 <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
                   {groqAvailable
-                    ? "Best accuracy on JEE/NEET papers · free 30 req/min"
-                    : "Set GROQ_API_KEY in backend/.env (console.groq.com/keys)"}
+                    ? "Fast & free · great for standard JEE/NEET papers"
+                    : "Set GROQ_API_KEY on the server to enable"}
                 </div>
               </button>
 
@@ -303,7 +303,7 @@ export default function AdminUpload() {
                 <div className="flex items-center gap-2">
                   <input type="radio" checked={mode === "gemini"} readOnly disabled={!geminiAvailable} />
                   <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
-                    Gemini Flash
+                    AI Pro Max
                   </div>
                   {!geminiAvailable && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded ml-auto"
@@ -314,28 +314,8 @@ export default function AdminUpload() {
                 </div>
                 <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
                   {geminiAvailable
-                    ? "Use only if Groq is unavailable"
-                    : "Set GEMINI_API_KEY in backend/.env to enable"}
-                </div>
-              </button>
-
-              <button
-                onClick={() => geminiAvailable && setMode("dpp")}
-                disabled={!geminiAvailable}
-                className="text-left rounded-xl border p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  borderColor: mode === "dpp" ? colors.primary : colors.border,
-                  background: mode === "dpp" ? colors.primary + "10" : colors.card,
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <input type="radio" checked={mode === "dpp"} readOnly disabled={!geminiAvailable} />
-                  <div className="font-semibold text-sm" style={{ color: colors.foreground }}>
-                    DPP Mode (Gemini Vision)
-                  </div>
-                </div>
-                <div className="text-xs ml-6" style={{ color: colors.mutedForeground }}>
-                  Best for camera photos, scanned pages, and DPP question generation
+                    ? "Most accurate · handles scanned & figure-heavy papers"
+                    : "Set GEMINI_API_KEY on the server to enable"}
                 </div>
               </button>
             </div>

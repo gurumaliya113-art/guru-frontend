@@ -24,7 +24,7 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
     {
       id: "1",
       role: "assistant",
-      content: `Ask me anything about ${chapter}. I’ll solve it in real time with Gemini 2.5 Pro.`,
+      content: `Ask me anything about ${chapter}. I’ll solve it in real time with AI Pro Max.`,
       timestamp: Date.now(),
     },
   ]);
@@ -115,14 +115,14 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
       <div className="flex items-center justify-between gap-3 mb-3">
         <div>
           <div className="text-[16px] md:text-[18px] font-bold" style={{ color: colors.foreground }}>
-            Ask Gemini
+            Ask AI Pro Max
           </div>
           <div className="text-[12px]" style={{ color: colors.mutedForeground }}>
             Real-time help for {chapter}
           </div>
         </div>
         <div className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#eff6ff", color: colors.primary }}>
-          Gemini 2.5 Pro
+          AI Pro Max
         </div>
       </div>
 

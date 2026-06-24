@@ -152,11 +152,6 @@ export default function AdminShell() {
           ))}
         </nav>
         <div className="px-3 py-3 border-t" style={{ borderColor: colors.border }}>
-          <div className="px-3 pb-2 text-[11px]" style={{ color: colors.mutedForeground }}>
-            AI parser: <span style={{ color: (groqAvailable || geminiAvailable) ? colors.neet : colors.mutedForeground, fontWeight: 600 }}>
-              {groqAvailable ? "Groq ready" : geminiAvailable ? "Gemini ready" : "off (no key)"}
-            </span>
-          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-[14px] font-medium"
