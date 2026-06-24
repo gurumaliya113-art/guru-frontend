@@ -107,15 +107,48 @@ export default function AIChat() {
   const [loading, setLoading] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [paying, setPaying] = useState(false);
+  // Text currently being "written" line-by-line (handwriting effect).
+  const [typing, setTyping] = useState<{ id: string; full: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Smoothly follow the text as it grows, like a pen moving down the page —
+  // instead of jumping the whole answer into view at once.
+  const followToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   };
 
+  // When a brand-new message is added (user msg or empty assistant msg), nudge down.
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    followToBottom();
+  }, [messages.length]);
+
+  // Typewriter: reveal the assistant answer a few words at a time and keep the
+  // view scrolling along with the text so it reads like live handwriting.
+  useEffect(() => {
+    if (!typing) return;
+    const words = typing.full.split(/(\s+)/); // keep whitespace tokens
+    let i = 0;
+    const STEP = 2; // words revealed per tick
+
+    const tick = () => {
+      i += STEP;
+      const shown = words.slice(0, i).join("");
+      setMessages((prev) =>
+        prev.map((m) => (m.id === typing.id ? { ...m, content: shown } : m)),
+      );
+      requestAnimationFrame(followToBottom);
+      if (i >= words.length) {
+        clearInterval(timer);
+        setTyping(null);
+      }
+    };
+
+    const timer = setInterval(tick, 28);
+    return () => clearInterval(timer);
+  }, [typing]);
 
   const handleUpgradeNow = () => {
     setPaying(true);
@@ -205,15 +238,18 @@ export default function AIChat() {
       const data = await response.json();
       const images = await imagesPromise;
 
+      const fullText = data.response || "Sorry, I couldn't generate a response.";
+      const assistantId = (Date.now() + 1).toString();
       const assistantMessage: Message = {
-        id: Date.now().toString(),
+        id: assistantId,
         role: "assistant",
-        content: data.response || "Sorry, I couldn't generate a response.",
+        content: "", // filled progressively by the typewriter effect
         timestamp: Date.now(),
         images,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      setTyping({ id: assistantId, full: fullText });
     } catch (error) {
       console.error("Chat error:", error);
       const messageText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again.";
@@ -232,7 +268,7 @@ export default function AIChat() {
   return (
     <div className="flex flex-col h-full" style={{ minHeight: "calc(100vh - 300px)" }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-4 pr-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto mb-4 pr-2">
         {messages.map((msg) => (
           <div key={msg.id} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -253,7 +289,13 @@ export default function AIChat() {
               ) : (
                 <>
                   <TutorMarkdown content={msg.content} />
-                  {msg.images && msg.images.length > 0 && (
+                  {typing?.id === msg.id && (
+                    <span
+                      className="inline-block w-[2px] h-4 align-middle ml-0.5"
+                      style={{ background: colors.primary, animation: "blink 1s step-start infinite" }}
+                    />
+                  )}
+                  {typing?.id !== msg.id && msg.images && msg.images.length > 0 && (
                     <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.border }}>
                       <div className="text-[11px] font-semibold mb-2 flex items-center gap-1" style={{ color: colors.mutedForeground }}>
                         🖼️ Related diagrams
@@ -340,6 +382,9 @@ export default function AIChat() {
             opacity: 1;
             transform: scale(1);
           }
+        }
+        @keyframes blink {
+          50% { opacity: 0; }
         }
         .tutor-md > *:first-child { margin-top: 0; }
         .tutor-md > *:last-child { margin-bottom: 0; }
