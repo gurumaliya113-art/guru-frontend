@@ -28,7 +28,10 @@ type QuestionType =
   | "Assertion-Reason"
   | "Case-Based"
   | "Short Answer"
-  | "Long Answer";
+  | "Long Answer"
+  | "Match the Following"
+  | "True-False"
+  | "Fill-in-the-Blank";
 
 type Mode = "manual" | "ai";
 type Step = "exam" | "class" | "subject" | "topic" | "mode" | "details";
@@ -42,6 +45,9 @@ const QUESTION_TYPES: QuestionType[] = [
   "Case-Based",
   "Short Answer",
   "Long Answer",
+  "Match the Following",
+  "True-False",
+  "Fill-in-the-Blank",
 ];
 
 // Subject palette per exam — Biology only makes sense for NEET/BOARD,
@@ -183,8 +189,9 @@ export default function PaperGenerate() {
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) return false;
       if (topic && topic !== "All" && (q.topic || "").trim() !== topic) return false;
+      // Type is now chosen in both modes; filter by it always.
+      if (questionType && q.type && q.type !== questionType) return false;
       if (mode === "manual") {
-        if (questionType && q.type && q.type !== questionType) return false;
         if (difficulty && q.difficulty !== difficulty) return false;
       }
       return true;
@@ -450,16 +457,17 @@ export default function PaperGenerate() {
                     />
                   ))}
                 </Row>
-
                 <div className="h-5" />
-                <Label>Question Type</Label>
-                <div className="flex flex-wrap gap-2">
-                  {QUESTION_TYPES.map((qt) => (
-                    <Pill key={qt} label={qt} active={questionType === qt} onClick={() => setQuestionType(qt)} />
-                  ))}
-                </div>
               </>
             )}
+
+            {/* Question type — asked for BOTH manual and AI modes. */}
+            <Label>Question Type</Label>
+            <div className="flex flex-wrap gap-2">
+              {QUESTION_TYPES.map((qt) => (
+                <Pill key={qt} label={qt} active={questionType === qt} onClick={() => setQuestionType(qt)} />
+              ))}
+            </div>
 
             <div className="h-5" />
             <Label>Number of Questions: {questionCount}</Label>
