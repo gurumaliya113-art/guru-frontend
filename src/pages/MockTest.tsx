@@ -219,6 +219,8 @@ export default function MockTest() {
         date: new Date().toISOString(),
         answers: Object.fromEntries(Object.entries(answers).map(([k, v]) => [k, Number(v) || 0])),
         weakTopics: [...new Set(weak)].slice(0, 6),
+        marks,
+        maxMarks: questions.length * CORRECT,
       });
     } catch (e) { console.warn("[MockTest] attempt save failed", e); }
 

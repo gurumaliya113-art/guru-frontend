@@ -177,21 +177,28 @@ function StudentProgress() {
         <div className="text-base font-semibold mb-4" style={{ color: colors.foreground }}>Recent Attempts</div>
         {attempts.slice(0, 5).map((a) => {
           const pct = Math.round((a.score / a.totalQuestions) * 100);
+          const hasMarks = typeof a.marks === "number" && typeof a.maxMarks === "number";
           return (
             <div key={a.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
               <div className="flex-1 pr-3">
                 <div className="text-[13px] font-medium truncate" style={{ color: colors.foreground }}>{a.title}</div>
                 <div className="text-[11px]" style={{ color: colors.mutedForeground }}>
                   {new Date(a.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  {" · "}{a.score}/{a.totalQuestions} correct
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-lg text-[13px] font-bold"
-                style={{
-                  background: pct >= 70 ? colors.neetLight : pct >= 50 ? colors.jeeLight : "#fee2e2",
-                  color: pct >= 70 ? colors.neet : pct >= 50 ? colors.jee : colors.destructive,
-                }}>
-                {pct}%
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="px-2.5 py-1 rounded-lg text-[13px] font-bold"
+                  style={{
+                    background: pct >= 70 ? colors.neetLight : pct >= 50 ? colors.jeeLight : "#fee2e2",
+                    color: pct >= 70 ? colors.neet : pct >= 50 ? colors.jee : colors.destructive,
+                  }}>
+                  {hasMarks ? `${a.marks}/${a.maxMarks}` : `${a.score}/${a.totalQuestions}`}
+                </span>
+                <span className="text-[10px] mt-0.5" style={{ color: colors.mutedForeground }}>
+                  {hasMarks ? "marks" : `${pct}% correct`}
+                </span>
+              </div>
             </div>
           );
         })}

@@ -75,6 +75,10 @@ export interface QuizAttempt {
   date: string;
   answers: Record<string, number>;
   weakTopics: string[];
+  /** Mock-test marks with +4/−1 (or similar) scheme, when applicable. */
+  marks?: number;
+  /** Maximum obtainable marks for the mock. */
+  maxMarks?: number;
 }
 
 export interface GeneratedPaper {
