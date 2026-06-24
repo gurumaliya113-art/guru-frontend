@@ -112,18 +112,17 @@ export default function AIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Smoothly follow the text as it grows, like a pen moving down the page —
-  // instead of jumping the whole answer into view at once.
+  // Gently keep the latest text in view — only nudge down when fresh content
+  // has actually gone below the fold, so it reads like a pen moving down the
+  // page instead of snapping straight to the bottom.
   const followToBottom = () => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom > 2) {
+      el.scrollTop = el.scrollHeight;
+    }
   };
-
-  // When a brand-new message is added (user msg or empty assistant msg), nudge down.
-  useEffect(() => {
-    followToBottom();
-  }, [messages.length]);
 
   // Typewriter: reveal the assistant answer a few words at a time and keep the
   // view scrolling along with the text so it reads like live handwriting.
