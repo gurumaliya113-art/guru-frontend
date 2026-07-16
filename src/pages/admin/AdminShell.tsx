@@ -127,7 +127,7 @@ export default function AdminShell() {
               <Icon name="book-open" size={18} color="#fff" />
             </div>
             <div>
-              <div className="text-[15px] font-bold" style={{ color: colors.foreground }}>Gurutron</div>
+              <div className="text-[15px] font-bold" style={{ color: colors.foreground }}>Gurtron</div>
               <div className="text-[11px]" style={{ color: colors.mutedForeground }}>Admin Panel</div>
             </div>
           </div>
