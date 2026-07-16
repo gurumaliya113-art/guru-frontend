@@ -552,6 +552,28 @@ export const adminApi = {
     return res.json();
   },
 
+  // Admin: save a NEW per-question figure crop (does not overwrite the page or
+  // other questions). Returns { ok, url } to set as the question's pageImageUrl.
+  cropFigureImage: async (docId: string, file: File): Promise<{ ok: boolean; url: string }> => {
+    const fd = new FormData();
+    fd.append("file", file, file.name || "crop.png");
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/documents/${encodeURIComponent(docId)}/figures/crop`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
   // ---- Referral management (admin) ----
   referralSummary: () =>
     request<{

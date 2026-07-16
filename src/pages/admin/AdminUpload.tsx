@@ -157,6 +157,22 @@ export default function AdminUpload() {
     setError("");
   };
 
+  // Track which questions have been manually cropped/edited by the admin.
+  // Any question whose image was manually cropped via the Crop modal will get
+  // a `/figures/` URL. Ones we didn't touch still point to the raw page
+  // snapshot (`/pages/N.png`). This lets us strip uncropped full-page images.
+  const removeUneditedDiagrams = () => {
+    setDrafts((arr) =>
+      arr.map((q) => {
+        if (!q.pageImageUrl) return q;
+        // If the URL points to a per-question figure crop, keep it.
+        if (q.pageImageUrl.includes("/figures/")) return q;
+        // Otherwise it's an unedited full-page snapshot — remove it.
+        return { ...q, pageImageUrl: undefined, hasFigure: false };
+      })
+    );
+  };
+
   const onSave = async () => {
     if (drafts.length === 0) return;
     setSaving(true); setError("");
@@ -501,6 +517,14 @@ export default function AdminUpload() {
                   style={{ background: colors.destructive }}
                 >
                   Remove flagged questions
+                </button>
+                <button
+                  type="button"
+                  onClick={removeUneditedDiagrams}
+                  className="w-full rounded-xl px-4 py-3 mt-3 font-bold text-sm"
+                  style={{ background: "#fff", border: `1.5px solid ${colors.border}`, color: colors.foreground }}
+                >
+                  🖼 Remove unedited diagrams
                 </button>
               </div>
             </div>

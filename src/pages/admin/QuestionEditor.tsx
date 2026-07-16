@@ -2,6 +2,7 @@
 // new/edit page and inline in the PDF review screen.
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/ui";
+import { MathText } from "@/components/MathText";
 import { adminApi } from "@/lib/api";
 import { TOPICS_BY_SUBJECT } from "@/data/questions";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
@@ -194,12 +195,15 @@ export function QuestionEditor({
               />
               {editing && value.documentId && value.pageNumber && (
                 <CropModal
-                  imageUrl={value.pageImageUrl!}
+                  imageUrl={`/api/documents/${value.documentId}/pages/${value.pageNumber}.png?src=1`}
                   docId={value.documentId}
                   pageNumber={value.pageNumber}
                   onClose={() => setEditing(false)}
                   onSaved={(newUrl: string) => {
-                    update({ pageImageUrl: newUrl });
+                    // Bust the browser cache so the freshly-cropped image shows
+                    // immediately instead of the old full-page one.
+                    const busted = newUrl + (newUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
+                    update({ pageImageUrl: busted });
                     setEditing(false);
                   }}
                 />
@@ -243,37 +247,41 @@ export function QuestionEditor({
             className="w-full rounded-xl px-3 py-2.5 border outline-none text-sm leading-6 resize-vertical"
             style={{ borderColor: colors.border, background: colors.card }}
           />
+          <MathPreview text={value.text} />
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {value.options.map((opt, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => update({ correctIndex: i })}
-                className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
-                title={value.correctIndex === i ? "Correct answer" : "Mark as correct"}
-                style={{
-                  background: value.correctIndex === i ? colors.neet : colors.muted,
-                  color: value.correctIndex === i ? "#fff" : colors.mutedForeground,
-                }}
-              >
-                {String.fromCharCode(65 + i)}
-              </button>
-              <input
-                value={opt}
-                onChange={(e) => {
-                  const next = [...value.options];
-                  next[i] = e.target.value;
-                  update({ options: next });
-                }}
-                placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                className="flex-1 rounded-lg px-3 py-2 border outline-none text-sm"
-                style={{
-                  borderColor: value.correctIndex === i ? colors.neet : colors.border,
-                  background: colors.card,
-                }}
-              />
+            <div key={i} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => update({ correctIndex: i })}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
+                  title={value.correctIndex === i ? "Correct answer" : "Mark as correct"}
+                  style={{
+                    background: value.correctIndex === i ? colors.neet : colors.muted,
+                    color: value.correctIndex === i ? "#fff" : colors.mutedForeground,
+                  }}
+                >
+                  {String.fromCharCode(65 + i)}
+                </button>
+                <input
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...value.options];
+                    next[i] = e.target.value;
+                    update({ options: next });
+                  }}
+                  placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                  className="flex-1 rounded-lg px-3 py-2 border outline-none text-sm"
+                  style={{
+                    borderColor: value.correctIndex === i ? colors.neet : colors.border,
+                    background: colors.card,
+                  }}
+                />
+              </div>
+              <MathPreview text={opt} indent />
             </div>
           ))}
         </div>
@@ -422,6 +430,7 @@ export function QuestionEditor({
                 className="w-full rounded-lg px-3 py-2 border outline-none text-sm resize-vertical"
                 style={{ borderColor: colors.border, background: colors.card }}
               />
+              <MathPreview text={value.explanation || ""} />
             </Field>
           </div>
         </div>
@@ -443,6 +452,7 @@ function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
   const [rect, setRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -481,20 +491,52 @@ function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
 
   useEffect(() => { redraw(); }, [rect]);
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  // Live preview: whenever the selection box changes, render just that region
+  // so the admin can cross-verify the crop before saving.
+  useEffect(() => {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas || !rect || rect.w < 4 || rect.h < 4) {
+      setPreviewUrl(null);
+      return;
+    }
+    const sx = rect.x * (img.naturalWidth / canvas.width);
+    const sy = rect.y * (img.naturalHeight / canvas.height);
+    const sw = rect.w * (img.naturalWidth / canvas.width);
+    const sh = rect.h * (img.naturalHeight / canvas.height);
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, Math.round(sw));
+    out.height = Math.max(1, Math.round(sh));
+    const ctx = out.getContext("2d")!;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, out.width, out.height);
+    try {
+      setPreviewUrl(out.toDataURL("image/png"));
+    } catch {
+      setPreviewUrl(null);
+    }
+  }, [rect]);
+
+  const getCanvasCoords = (e: React.MouseEvent) => {
     const canvas = canvasRef.current!;
-    const rectB = canvas.getBoundingClientRect();
-    const x = e.clientX - rectB.left;
-    const y = e.clientY - rectB.top;
+    const rect = canvas.getBoundingClientRect();
+    // CSS may scale the canvas (width:100%), so we must map client coords
+    // into the canvas's internal coordinate system.
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    return { x, y };
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    const { x, y } = getCanvasCoords(e);
     setStart({ x, y });
+    setRect(null);
     setDragging(true);
   };
   const onMouseMove = (e: React.MouseEvent) => {
     if (!dragging || !start) return;
-    const canvas = canvasRef.current!;
-    const rectB = canvas.getBoundingClientRect();
-    const x = e.clientX - rectB.left;
-    const y = e.clientY - rectB.top;
+    const { x, y } = getCanvasCoords(e);
     const rx = Math.min(start.x, x);
     const ry = Math.min(start.y, y);
     const rw = Math.abs(x - start.x);
@@ -524,10 +566,10 @@ function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, out.width, out.height);
       const blob: Blob = await new Promise((resolve) => out.toBlob(resolve as any, "image/png"));
       const f = new File([blob], `crop-${pageNumber}.png`, { type: "image/png" });
-      const res = await adminApi.cropPageImage(docId, pageNumber, f);
+      // Save as a NEW per-question figure so it never overwrites the source
+      // page or other questions on the same page.
+      const res = await adminApi.cropFigureImage(docId, f);
       if (res && res.url) onSaved(res.url);
-      else if (res && res.ok && res.url) onSaved(res.url);
-      else if (res && res.ok) onSaved(`/api/documents/${docId}/pages/${pageNumber}.png`);
     } catch (e) {
       alert(String(e));
     } finally {
@@ -547,17 +589,62 @@ function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
             </button>
           </div>
         </div>
-        <div>
-          <canvas
-            ref={canvasRef}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            style={{ width: "100%", height: "auto", border: "1px solid #e5e7eb", cursor: "crosshair" }}
-          />
+        <div className="flex gap-3 items-start">
+          <div className="flex-1">
+            <canvas
+              ref={canvasRef}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              style={{ width: "100%", height: "auto", border: "1px solid #e5e7eb", cursor: "crosshair" }}
+            />
+            <div className="text-[11px] mt-1" style={{ color: "#64748b" }}>
+              Draw a box over the diagram. The live preview on the right shows exactly what will be saved.
+            </div>
+          </div>
+          <div className="w-[260px] shrink-0">
+            <div className="text-[11px] font-semibold mb-1" style={{ color: "#64748b" }}>
+              CROP PREVIEW
+            </div>
+            <div
+              className="rounded-lg border flex items-center justify-center"
+              style={{ borderColor: "#e5e7eb", background: "#f8fafc", minHeight: 120, overflow: "hidden" }}
+            >
+              {previewUrl ? (
+                <img src={previewUrl} alt="crop preview" style={{ maxWidth: "100%", maxHeight: 360, display: "block" }} />
+              ) : (
+                <span className="text-[12px] p-4 text-center" style={{ color: "#94a3b8" }}>
+                  Draw a box to see the cropped diagram here
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Live rendered preview of LaTeX/math. Only shown when the text actually
+// contains math delimiters, so plain text questions stay clutter-free.
+function MathPreview({ text, indent }: { text: string; indent?: boolean }) {
+  const hasMath = /\\\(|\\\[|\$/.test(text || "");
+  if (!hasMath || !text.trim()) return null;
+  return (
+    <div
+      className="text-sm rounded-lg px-3 py-1.5"
+      style={{
+        marginLeft: indent ? 44 : 0,
+        background: "#f8fafc",
+        border: `1px dashed ${colors.border}`,
+        color: colors.foreground,
+      }}
+    >
+      <span className="text-[10px] font-semibold mr-2" style={{ color: colors.mutedForeground }}>
+        PREVIEW
+      </span>
+      <MathText text={text} />
     </div>
   );
 }

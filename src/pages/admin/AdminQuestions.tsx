@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "@/components/ui";
+import { MathText } from "@/components/MathText";
 import { useApp } from "@/context/AppContext";
 import { adminApi } from "@/lib/api";
 import { colors, difficultyColor, examColor, examLight, subjectColor } from "@/lib/colors";
@@ -538,7 +539,9 @@ export default function AdminQuestions() {
                   {x.year && <Tag color={colors.jee} bg={colors.jeeLight}>PYQ {x.year}</Tag>}
                   {x.source && <Tag color={colors.mutedForeground} muted>src: {x.source}</Tag>}
                 </div>
-                <div className="text-[14px] leading-6 font-medium mb-2" style={{ color: colors.foreground }}>{x.text}</div>
+                <div className="text-[14px] leading-6 font-medium mb-2" style={{ color: colors.foreground }}>
+                  <MathText text={x.text} />
+                </div>
                 {x.pageImageUrl && (
                   <a
                     href={x.pageImageUrl}
@@ -562,10 +565,27 @@ export default function AdminQuestions() {
                     <div key={i} className="flex items-center gap-2 text-[12px]"
                       style={{ color: i === x.correctIndex ? colors.neet : colors.mutedForeground }}>
                       <span className="w-5 font-bold">{String.fromCharCode(65 + i)}.</span>
-                      <span className="flex-1 truncate">{o}</span>
+                      <span className="flex-1"><MathText text={o} /></span>
                       {i === x.correctIndex && <Icon name="check-circle" size={12} color={colors.neet} />}
                     </div>
                   ))}
+                </div>
+                {/* Correct answer + solution/explanation */}
+                <div className="mt-2 rounded-lg px-3 py-2" style={{ background: "#f0fdf4", border: `1px solid ${colors.neet}33` }}>
+                  <div className="text-[12px] font-bold mb-0.5" style={{ color: colors.neet }}>
+                    Answer: {String.fromCharCode(65 + (x.correctIndex ?? 0))}
+                    {x.options?.[x.correctIndex] ? <>. <MathText text={x.options[x.correctIndex]} /></> : null}
+                  </div>
+                  {(x as any).explanation && String((x as any).explanation).trim() ? (
+                    <div className="text-[12px] leading-5" style={{ color: colors.foreground }}>
+                      <span className="font-semibold" style={{ color: colors.mutedForeground }}>Solution: </span>
+                      <MathText text={(x as any).explanation} />
+                    </div>
+                  ) : (
+                    <div className="text-[11px]" style={{ color: colors.mutedForeground }}>
+                      No solution text — add one via Edit.
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-1.5 shrink-0">
