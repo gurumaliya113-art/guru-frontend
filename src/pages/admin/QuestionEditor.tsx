@@ -84,7 +84,16 @@ export function QuestionEditor({
 }) {
   // Prefer the saved page-image PNG (fast, lightweight). Fall back to the PDF iframe
   // only if we have a pdfUrl but no image (e.g. older parsed questions).
-  const showImage = !!value.pageImageUrl;
+  // The diagram / source-page image. Prefer a saved crop (pageImageUrl). If the
+  // question came from a PDF (documentId + pageNumber) but has no saved image,
+  // point at the page route — the backend renders that page on demand from the
+  // stored PDF, so the admin can open it and crop, exactly like the fresh
+  // upload flow, even for older DB questions where auto-crop didn't run.
+  const pageSrc = value.pageImageUrl
+    || (value.documentId && value.pageNumber
+        ? `/api/documents/${value.documentId}/pages/${value.pageNumber}.png`
+        : null);
+  const showImage = !!pageSrc;
   const showPdfFallback = !showImage && !!pdfUrl && !!value.hasFigure && !!value.pageNumber;
   const update = (patch: Partial<EditableQuestion>) => onChange({ ...value, ...patch });
   const staticTopics = TOPICS_BY_SUBJECT[value.subject as keyof typeof TOPICS_BY_SUBJECT] || [];
@@ -185,7 +194,7 @@ export function QuestionEditor({
             </div>
                 <div className="flex items-center gap-2">
                   <a
-                    href={value.pageImageUrl}
+                    href={pageSrc || undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="text-[11px] font-semibold underline"
@@ -204,7 +213,7 @@ export function QuestionEditor({
                 </div>
           </div>
               <img
-                src={value.pageImageUrl}
+                src={pageSrc || undefined}
                 alt={`PDF page ${value.pageNumber}`}
                 className="w-full block"
                 style={{ background: "#fff", maxHeight: 480, objectFit: "contain" }}
