@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Icon, ProgressBar } from "@/components/ui";
+import MathText from "@/components/MathText";
+import QuestionDiagram from "@/components/QuestionDiagram";
 import { useApp } from "@/context/AppContext";
 import { filterQuestions } from "@/data/questions";
 import { colors } from "@/lib/colors";
@@ -266,19 +268,14 @@ export default function QuizSession() {
             )}
           </div>
 
-          <div className="text-[17px] font-semibold leading-7 mb-3" style={{ color: colors.foreground }}>{q.text}</div>
+          <MathText className="text-[17px] font-semibold leading-7 mb-3 block" style={{ color: colors.foreground }} text={q.text} />
 
-          {q.pageImageUrl && (
-            <div className="mb-5 rounded-xl overflow-hidden border" style={{ borderColor: colors.border }}>
-              <img
-                src={q.pageImageUrl}
-                alt="Question diagram"
-                className="w-full block"
-                style={{ background: "#fff", maxHeight: 420, objectFit: "contain" }}
-                loading="lazy"
-              />
-            </div>
-          )}
+          <QuestionDiagram
+            url={q.pageImageUrl}
+            hasFigure={q.hasFigure}
+            maxHeight={420}
+            className="mb-5 rounded-xl overflow-hidden border"
+          />
 
           <div className="flex flex-col gap-2.5 mb-4">
             {q.options.map((option, idx) => {
@@ -305,7 +302,7 @@ export default function QuizSession() {
                     }}>
                     {String.fromCharCode(65 + idx)}
                   </div>
-                  <div className="flex-1 text-sm leading-5" style={{ color: textC }}>{option}</div>
+                  <MathText className="flex-1 text-sm leading-5" style={{ color: textC }} text={option} />
                   {hasAnswered && idx === q.correctIndex && <Icon name="check-circle" size={18} color={colors.neet} />}
                   {hasAnswered && idx === selectedAnswer && idx !== q.correctIndex && <Icon name="x-circle" size={18} color={colors.destructive} />}
                 </button>
@@ -319,7 +316,7 @@ export default function QuizSession() {
                 <Icon name="info" size={15} color={colors.info} />
                 <div className="text-sm font-semibold" style={{ color: colors.foreground }}>Explanation</div>
               </div>
-              <div className="text-[13px] leading-5" style={{ color: colors.mutedForeground }}>{q.explanation}</div>
+              <MathText className="text-[13px] leading-5 block" style={{ color: colors.mutedForeground }} text={q.explanation} />
             </div>
           )}
 

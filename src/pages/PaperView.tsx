@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@/components/ui";
+import MathText from "@/components/MathText";
+import QuestionDiagram from "@/components/QuestionDiagram";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors, examColor } from "@/lib/colors";
@@ -205,41 +207,19 @@ export default function PaperView() {
             </div>
 
             {q.text && (
-              <div className="text-sm font-medium leading-6 mb-2" style={{ color: colors.foreground }}>{q.text}</div>
+              <MathText className="text-sm font-medium leading-6 mb-2 block" style={{ color: colors.foreground }} text={q.text} />
             )}
 
-            {q.pageImageUrl && (
-              <div className="mb-3 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
-                <div className="relative">
-                  <img
-                    src={q.pageImageUrl}
-                    alt="Question diagram"
-                    className="w-full block"
-                    // For captured papers (image-only) we let the image grow
-                    // to its natural height so handwriting stays readable;
-                    // typed-paper diagrams are still capped.
-                    style={{ background: "#fff", maxHeight: q.options.length === 0 ? 1200 : 360, objectFit: "contain" }}
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.href = q.pageImageUrl || "";
-                      link.download = `question-${idx + 1}.png`;
-                      link.click();
-                    }}
-                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg text-white text-xs font-semibold shadow-lg"
-                    style={{ background: colors.primary }}
-                    title="Download image"
-                  >
-                    Download
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* For captured papers (image-only) we let the image grow to its
+                natural height so handwriting stays readable; typed-paper
+                diagrams are still capped. When the figure is expected but
+                missing/broken, QuestionDiagram shows a clear placeholder. */}
+            <QuestionDiagram
+              url={q.pageImageUrl}
+              hasFigure={q.hasFigure}
+              maxHeight={q.options.length === 0 ? 1200 : 360}
+              downloadName={`question-${idx + 1}.png`}
+            />
 
             <div className="flex flex-col gap-2 mb-1">
               {q.options.map((opt, optIdx) => {
@@ -253,7 +233,7 @@ export default function PaperView() {
                     <span className="text-[13px] font-bold w-5" style={{ color: correct ? colors.neet : colors.mutedForeground }}>
                       {String.fromCharCode(65 + optIdx)}.
                     </span>
-                    <span className="flex-1 text-[13px] leading-5" style={{ color: correct ? colors.neetForeground : colors.foreground }}>{opt}</span>
+                    <MathText className="flex-1 text-[13px] leading-5" style={{ color: correct ? colors.neetForeground : colors.foreground }} text={opt} />
                     {correct && <Icon name="check-circle" size={16} color={colors.neet} />}
                   </div>
                 );
@@ -263,7 +243,7 @@ export default function PaperView() {
             {showAnswers && (
               <div className="rounded-lg p-3 mt-3" style={{ background: colors.muted }}>
                 <div className="text-[11px] font-semibold mb-1" style={{ color: colors.mutedForeground }}>Explanation:</div>
-                <div className="text-xs leading-5" style={{ color: colors.foreground }}>{q.explanation}</div>
+                <MathText className="text-xs leading-5 block" style={{ color: colors.foreground }} text={q.explanation} />
               </div>
             )}
           </div>
@@ -294,7 +274,7 @@ export default function PaperView() {
         <ol className="paper-print-list">
           {paper.questions.map((q) => (
             <li key={q.id} className="paper-print-q">
-              <div className="paper-print-q-text">{q.text}</div>
+              <MathText className="paper-print-q-text" text={q.text} />
               {q.pageImageUrl && (
                 <img
                   src={q.pageImageUrl}
@@ -305,12 +285,12 @@ export default function PaperView() {
               <ol className="paper-print-opts" type="A">
                 {q.options.map((opt, i) => (
                   <li key={i} className={showAnswers && i === q.correctIndex ? "is-correct" : ""}>
-                    {opt}
+                    <MathText text={opt} />
                   </li>
                 ))}
               </ol>
               {showAnswers && q.explanation && (
-                <div className="paper-print-expl"><b>Ans:</b> {q.explanation}</div>
+                <div className="paper-print-expl"><b>Ans:</b> <MathText text={q.explanation} /></div>
               )}
             </li>
           ))}

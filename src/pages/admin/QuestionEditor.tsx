@@ -629,7 +629,11 @@ function CropModal({ imageUrl, docId, pageNumber, onClose, onSaved }: {
 // Live rendered preview of LaTeX/math. Only shown when the text actually
 // contains math delimiters, so plain text questions stay clutter-free.
 function MathPreview({ text, indent }: { text: string; indent?: boolean }) {
-  const hasMath = /\\\(|\\\[|\$/.test(text || "");
+  // Trigger the preview for delimiter-wrapped math ($..$, \(..\), \[..\]) AND
+  // for bare / corrupted LaTeX the content often ships with: backslash
+  // commands, super/sub-scripts, braces, a stripped "rac{" (\frac), unicode
+  // dashes, or Greek letters. This lets admins see the repaired render.
+  const hasMath = /[\\^_{}$]|rac\{|[\u2012\u2013\u2014\u2212]|[\u0370-\u03ff\u2100-\u214f]/.test(text || "");
   if (!hasMath || !text.trim()) return null;
   return (
     <div
