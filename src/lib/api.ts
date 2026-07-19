@@ -366,6 +366,27 @@ export const adminApi = {
       return res.json();
     })(),
   logout: () => request<{ ok: true }>("/api/admin/logout", { method: "POST" }, { admin: true }),
+  // Upload a standalone diagram image (no PDF source needed). Returns its URL.
+  uploadImage: async (file: File): Promise<{ ok: true; url: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const headers: Record<string, string> = {};
+    const t = getAdminToken();
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/upload-image`, {
+      method: "POST",
+      headers, // NOTE: no Content-Type — the browser sets the multipart boundary
+      credentials: "include",
+      body: form,
+    });
+    if (!res.ok) {
+      if (res.status === 401) clearAdminTokenAndNotify();
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
   me: async () => {
     const t = getAdminToken();
     if (t === "LOCAL-BYPASS" && (import.meta as any).env?.DEV) {

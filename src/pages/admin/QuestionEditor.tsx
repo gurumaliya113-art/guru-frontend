@@ -111,6 +111,23 @@ export function QuestionEditor({
   // Crop modal state
   const [editing, setEditing] = useState(false);
 
+  // Manual diagram-image upload (for questions with no PDF source page).
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const handleDiagramFile = async (file?: File | null) => {
+    if (!file) return;
+    setUploadingImg(true);
+    try {
+      const { url } = await adminApi.uploadImage(file);
+      update({ pageImageUrl: url, hasFigure: true });
+    } catch (e: any) {
+      alert("Diagram upload failed: " + (e?.message || e));
+    } finally {
+      setUploadingImg(false);
+      if (imgInputRef.current) imgInputRef.current.value = "";
+    }
+  };
+
   const subjects = mergeUnique(SUBJECTS, extraSubjects, value.subject);
   const topics = mergeUnique(baseTopics, extraTopics, value.topic);
   const types = mergeUnique(TYPES, extraTypes, value.type);
@@ -236,6 +253,39 @@ export function QuestionEditor({
           />
         </div>
       )}
+
+      {/* Manual diagram upload — attach a figure to ANY question, including
+          typed ones with no PDF source page. Uploaded image becomes the
+          question's pageImageUrl and shows in the student paper/quiz views. */}
+      <div className="mb-4 flex items-center gap-2 flex-wrap">
+        <input
+          ref={imgInputRef}
+          type="file"
+          accept="image/png,image/jpeg"
+          className="hidden"
+          onChange={(e) => handleDiagramFile(e.target.files?.[0])}
+        />
+        <button
+          type="button"
+          onClick={() => imgInputRef.current?.click()}
+          disabled={uploadingImg}
+          className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-2 rounded-lg border disabled:opacity-50"
+          style={{ borderColor: colors.border, background: colors.card, color: colors.foreground }}
+        >
+          <Icon name="image" size={14} color={colors.foreground} />
+          {uploadingImg ? "Uploading…" : showImage ? "Replace diagram" : "Upload diagram image"}
+        </button>
+        {showImage && (
+          <button
+            type="button"
+            onClick={() => update({ pageImageUrl: undefined, hasFigure: false })}
+            className="text-[12px] font-semibold px-3 py-2 rounded-lg border"
+            style={{ borderColor: colors.border, background: colors.card, color: colors.destructive }}
+          >
+            Remove diagram
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-4">
         <Field label="Question text">
