@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/ui";
 import { MathText } from "@/components/MathText";
-import { adminApi } from "@/lib/api";
+import { adminApi, getAdminToken } from "@/lib/api";
 import { TOPICS_BY_SUBJECT } from "@/data/questions";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
 import type { Difficulty, Question, Topic } from "@/lib/types";
@@ -123,6 +123,10 @@ export function QuestionEditor({
   // Manual diagram-image upload (for questions with no PDF source page).
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  // Page picker: many PDF-sourced questions have a documentId but no saved
+  // pageNumber. Let the admin type the page so we can render+crop it.
+  const [pageInput, setPageInput] = useState(value.pageNumber ? String(value.pageNumber) : "");
+  const adminToken = getAdminToken();
   const handleDiagramFile = async (file?: File | null) => {
     if (!file) return;
     setUploadingImg(true);
@@ -260,6 +264,53 @@ export function QuestionEditor({
             className="w-full border-0"
             style={{ height: 360, background: "#fff" }}
           />
+        </div>
+      )}
+
+      {/* PDF page picker — for questions that came from a PDF (documentId set)
+          but have no saved page image yet. The admin enters the page number
+          the question sits on; the backend renders that page on-demand from the
+          stored PDF so it can be opened and cropped, exactly like the fresh
+          upload flow. */}
+      {value.documentId && !showImage && (
+        <div className="mb-4 rounded-xl border p-3" style={{ borderColor: colors.border, background: colors.muted }}>
+          <div className="text-[11px] font-semibold mb-2" style={{ color: colors.mutedForeground }}>
+            This question came from a PDF. Enter the page number it's on to open that page and crop the diagram.
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="number"
+              min={1}
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              placeholder="Page #"
+              className="w-24 rounded-lg px-2 py-1.5 border text-sm outline-none"
+              style={{ borderColor: colors.border, background: colors.card }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const n = parseInt(pageInput, 10);
+                if (n > 0) update({ pageNumber: n, hasFigure: true });
+              }}
+              className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border"
+              style={{ borderColor: colors.border, background: colors.card, color: colors.primary }}
+            >
+              <Icon name="image" size={14} color={colors.primary} />
+              Open page &amp; crop
+            </button>
+            {adminToken && (
+              <a
+                href={`/api/admin/documents/${value.documentId}/pdf?token=${encodeURIComponent(adminToken)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[12px] font-semibold underline"
+                style={{ color: colors.primary }}
+              >
+                Open full PDF to find page →
+              </a>
+            )}
+          </div>
         </div>
       )}
 
