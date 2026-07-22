@@ -498,8 +498,9 @@ export const adminApi = {
     file: File,
     mode: ParserMode = "auto",
     opts: { save?: boolean; subject?: string; examType?: string; classLevel?: string } = {},
-    jobId?: string
-  ): Promise<ParsePdfResult> => {
+    jobId?: string,
+    background?: boolean
+  ): Promise<any> => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("mode", mode);
@@ -508,6 +509,11 @@ export const adminApi = {
     if (opts.examType)   fd.append("examType", opts.examType);
     if (opts.classLevel) fd.append("classLevel", opts.classLevel);
     if (jobId)           fd.append("jobId", jobId);
+    // Background mode: the server returns { jobId, async:true } immediately and
+    // processes in the background (avoids gateway 502 on big PDFs). The caller
+    // then polls parseResult(jobId). Without this flag the server responds with
+    // the questions directly (legacy synchronous behavior).
+    if (background)      fd.append("async", "1");
 
     const t = getAdminToken();
     const headers: Record<string, string> = {};
@@ -520,6 +526,27 @@ export const adminApi = {
       body: fd,
     });
     if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // Poll for a background parse job's finished result. Returns the result object
+  // when ready ({ ready:true, questions, ... }); returns { ready:false } while
+  // still processing (HTTP 202).
+  parseResult: async (jobId: string): Promise<any> => {
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/parse-pdf/result/${encodeURIComponent(jobId)}`, {
+      headers,
+      credentials: "include",
+    });
+    if (res.status === 202) return { ready: false };
+    if (!res.ok) {
+      if (res.status === 401) clearAdminTokenAndNotify();
       let detail = "";
       try { detail = (await res.json()).error || ""; } catch {}
       throw new Error(`API ${res.status}: ${detail || res.statusText}`);

@@ -77,6 +77,59 @@ export default function AdminUpload() {
     return null;
   };
 
+  // Turn a finished parse result into editable draft questions for review.
+  const applyResult = (result: any) => {
+    setMeta({ parser: result.parser, pageCount: result.pageCount, textLength: result.textLength });
+    setDocumentId(result.documentId || null);
+    const sourceFallback = result.parser === "raw"
+      ? "pdf-raw"
+      : result.parser === "heuristic"
+      ? "pdf-heuristic"
+      : result.parser === "groq"
+      ? "pdf-groq"
+      : result.parser === "gemini" || String(result.parser).startsWith("gemini-")
+      ? "pdf-gemini"
+      : result.parser === "dpp-ai"
+      ? "dpp-ai"
+      : "pdf";
+    // Normalise into EditableQuestion shape so the editor can mutate freely.
+    const ds: EditableQuestion[] = (result.questions || []).map((q: any) => ({
+      text: q.text || "",
+      options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ["", "", "", ""],
+      correctIndex: typeof q.correctIndex === "number" ? q.correctIndex : 0,
+      subject: q.subject || "Physics",
+      topic: q.topic || "",
+      difficulty: q.difficulty || "Moderate",
+      examType: Array.isArray(q.examType) && q.examType.length ? q.examType : ["NEET"],
+      type: q.type || "MCQ",
+      explanation: q.explanation || "",
+      year: q.year,
+      documentId: q.documentId || result.documentId || undefined,
+      pageNumber: typeof q.pageNumber === "number" ? q.pageNumber : null,
+      hasFigure: typeof q.hasFigure === "boolean" ? q.hasFigure : false,
+      pageImageUrl: q.pageImageUrl || undefined,
+      source: q.source || sourceFallback,
+    }));
+    setDrafts(ds);
+    setBulkEnd(String(ds.length));
+  };
+
+  // Poll the background job's result endpoint until it's ready. Live progress
+  // streams over SSE meanwhile; because the parse runs in the background the
+  // request never hits the gateway timeout, so a big PDF can't 502.
+  const pollParseResult = async (jobId: string) => {
+    const startedAt = Date.now();
+    const maxMs = 16 * 60 * 1000; // safety cap
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // Give up polling early if the job clearly failed.
+    while (Date.now() - startedAt < maxMs) {
+      const r = await adminApi.parseResult(jobId);
+      if (r && r.ready) return r;
+      await sleep(1500);
+    }
+    throw new Error("Timed out waiting for the parse result.");
+  };
+
   const onParse = async () => {
     if (!file) return;
     setBusy(true); setError(""); setDrafts([]); setMeta(null); setSavedCount(null);
@@ -84,40 +137,12 @@ export default function AdminUpload() {
     progress.reset();
     progress.start(jobId);
     try {
-      const result = await adminApi.parsePdf(file, mode, {}, jobId);
-      setMeta({ parser: result.parser, pageCount: result.pageCount, textLength: result.textLength });
-      setDocumentId(result.documentId || null);
-      const sourceFallback = result.parser === "raw"
-        ? "pdf-raw"
-        : result.parser === "heuristic"
-        ? "pdf-heuristic"
-        : result.parser === "groq"
-        ? "pdf-groq"
-        : result.parser === "gemini" || String(result.parser).startsWith("gemini-")
-        ? "pdf-gemini"
-        : result.parser === "dpp-ai"
-        ? "dpp-ai"
-        : "pdf";
-      // Normalise into EditableQuestion shape so the editor can mutate freely.
-      const ds: EditableQuestion[] = result.questions.map((q: any) => ({
-        text: q.text || "",
-        options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ["", "", "", ""],
-        correctIndex: typeof q.correctIndex === "number" ? q.correctIndex : 0,
-        subject: q.subject || "Physics",
-        topic: q.topic || "",
-        difficulty: q.difficulty || "Moderate",
-        examType: Array.isArray(q.examType) && q.examType.length ? q.examType : ["NEET"],
-        type: q.type || "MCQ",
-        explanation: q.explanation || "",
-        year: q.year,
-        documentId: q.documentId || result.documentId || undefined,
-        pageNumber: typeof q.pageNumber === "number" ? q.pageNumber : null,
-        hasFigure: typeof q.hasFigure === "boolean" ? q.hasFigure : false,
-        pageImageUrl: q.pageImageUrl || undefined,
-        source: q.source || sourceFallback,
-      }));
-      setDrafts(ds);
-      setBulkEnd(String(ds.length));
+      // Kick off the background parse (returns immediately with the jobId).
+      await adminApi.parsePdf(file, mode, {}, jobId, true);
+      // Poll for the finished result while the SSE progress panel updates live.
+      const result = await pollParseResult(jobId);
+      if (result?.error) throw new Error(result.error);
+      applyResult(result);
     } catch (e: any) {
       setError(e?.message || "Parsing failed");
     } finally {
