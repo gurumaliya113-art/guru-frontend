@@ -497,7 +497,8 @@ export const adminApi = {
   parsePdf: async (
     file: File,
     mode: ParserMode = "auto",
-    opts: { save?: boolean; subject?: string; examType?: string; classLevel?: string } = {}
+    opts: { save?: boolean; subject?: string; examType?: string; classLevel?: string } = {},
+    jobId?: string
   ): Promise<ParsePdfResult> => {
     const fd = new FormData();
     fd.append("file", file);
@@ -506,6 +507,7 @@ export const adminApi = {
     if (opts.subject)    fd.append("subject", opts.subject);
     if (opts.examType)   fd.append("examType", opts.examType);
     if (opts.classLevel) fd.append("classLevel", opts.classLevel);
+    if (jobId)           fd.append("jobId", jobId);
 
     const t = getAdminToken();
     const headers: Record<string, string> = {};
@@ -524,6 +526,12 @@ export const adminApi = {
     }
     return res.json();
   },
+
+  // Build the SSE progress stream URL for a parse-pdf job. EventSource cannot
+  // set the x-admin-token header, so the admin token is passed as a query param
+  // (the SSE route accepts ?token= via requireAdmin).
+  progressUrl: (jobId: string): string =>
+    `/api/admin/parse-pdf/progress/${encodeURIComponent(jobId)}?token=${encodeURIComponent(getAdminToken() ?? "")}`,
 
   // ---- Notes management (admin) ----
   listNotes: () =>

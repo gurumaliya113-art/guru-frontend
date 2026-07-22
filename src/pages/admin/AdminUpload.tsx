@@ -5,6 +5,8 @@ import { useApp } from "@/context/AppContext";
 import { adminApi, getAdminToken } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { EditableQuestion, QuestionEditor } from "./QuestionEditor";
+import ProgressPanel from "./ProgressPanel";
+import { useParseProgress } from "@/lib/useParseProgress";
 
 type ParserMode = "heuristic" | "groq" | "gemini" | "dpp" | "raw";
 
@@ -23,6 +25,7 @@ export default function AdminUpload() {
   const { geminiAvailable, groqAvailable } = useOutletContext<{ geminiAvailable: boolean; groqAvailable: boolean }>();
   const { refreshQuestions } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
+  const progress = useParseProgress();
 
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<ParserMode>("heuristic");
@@ -57,6 +60,7 @@ export default function AdminUpload() {
     setMeta(null);
     setDocumentId(null);
     setSavedCount(null);
+    progress.reset();
     if (f?.type.startsWith("image/")) {
       setMode("dpp");
     }
@@ -76,8 +80,11 @@ export default function AdminUpload() {
   const onParse = async () => {
     if (!file) return;
     setBusy(true); setError(""); setDrafts([]); setMeta(null); setSavedCount(null);
+    const jobId = crypto.randomUUID();
+    progress.reset();
+    progress.start(jobId);
     try {
-      const result = await adminApi.parsePdf(file, mode);
+      const result = await adminApi.parsePdf(file, mode, {}, jobId);
       setMeta({ parser: result.parser, pageCount: result.pageCount, textLength: result.textLength });
       setDocumentId(result.documentId || null);
       const sourceFallback = result.parser === "raw"
@@ -353,6 +360,8 @@ export default function AdminUpload() {
             </div>
           )}
         </div>
+
+        <ProgressPanel state={progress.state} />
 
         {error && (
           <div className="mt-3 px-3 py-2 rounded-lg text-sm" style={{ background: "#fee2e2", color: colors.destructive }}>

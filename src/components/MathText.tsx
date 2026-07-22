@@ -75,7 +75,11 @@ function isMathToken(t: string): boolean {
   if (/^[+\-*/·×÷]$/.test(t)) return true;      // a lone operator
   if (/[0-9]/.test(t) && /[A-Za-z]/.test(t)) return true; // mixed like "2gt", "3H"
   if (/^[0-9]+\/[0-9]+[.,;]?$/.test(t)) return true;      // fraction like "1/8"
-  if (/^[A-Za-z][.,;]?$/.test(t)) return true;  // single-letter variable
+  // NOTE: a lone single letter (e.g. the article "a", or a stray "F"/"M" in a
+  // sentence) is intentionally NOT treated as math. Mathifying it made prose
+  // look scattered (italic serif, "a" rendered like "α"). Real inline variables
+  // in exam text almost always carry a subscript/superscript/relation
+  // (M_1, a_1, F=...) which the checks above already catch.
   return false;
 }
 
@@ -119,7 +123,18 @@ function renderLine(line: string): string {
   if (!/[\\^_{}=<>]/.test(line) && !/[0-9]/.test(line)) return escapeHtml(line);
   const looksMath =
     /\\[A-Za-z]/.test(line) || /[\^_]/.test(line) || /rac\{/.test(line) || /[=<>]/.test(line);
-  if (looksMath) {
+
+  // Does the line contain real prose (several 2+ letter words that are NOT
+  // known LaTeX commands)? If so, it's sentence text with a little inline math
+  // (e.g. an explanation), NOT one big formula. Rendering the WHOLE line as math
+  // would make KaTeX drop every space and mash the words together. In that case
+  // we skip whole-line math and use token mode, which typesets only the
+  // math-looking words and keeps normal words + spaces intact.
+  const texWordRe = new RegExp(`^(${TEX_WORDS})$`);
+  const proseWords = (line.match(/[A-Za-z]{2,}/g) || []).filter((w) => !texWordRe.test(w));
+  const isMostlyProse = proseWords.length >= 3;
+
+  if (looksMath && !isMostlyProse) {
     try {
       const lead = (line.match(/^\s*/) || [""])[0];
       const trail = (line.match(/\s*$/) || [""])[0];
@@ -145,8 +160,15 @@ function autoMathHtml(chunk: string): string {
 const MATH_RE =
   /(\\\[[\s\S]+?\\\])|(\$\$[\s\S]+?\$\$)|(\\\([\s\S]+?\\\))|(\$[^$\n]+?\$)/g;
 
+// Clean common PDF-extraction artifacts before rendering:
+//   "√--x" / "√ — x"  ->  "√x"   (the root's overline/vinculum bar is often
+//   extracted as one or more dashes between the √ and its radicand).
+function cleanExtractionArtifacts(s: string): string {
+  return s.replace(/√\s*[-–—−]{1,}\s*/g, "√");
+}
+
 export function mathToHtml(input: string): string {
-  const text = String(input || "");
+  const text = cleanExtractionArtifacts(String(input || ""));
   let out = "";
   let last = 0;
   let m: RegExpExecArray | null;
