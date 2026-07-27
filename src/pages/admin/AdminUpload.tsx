@@ -14,7 +14,7 @@ const SUBJECT_OPTIONS = ["Physics", "Chemistry", "Biology", "Mathematics"];
 const DIFFICULTY_OPTIONS = ["Easy", "Moderate", "Hard"];
 const CLASS_OPTIONS = ["9", "10", "11", "12"];
 const BOARD_OPTIONS = ["CBSE", "ICSE", "State", "Other"];
-const EXAM_OPTIONS = ["NEET", "JEE", "BOARD"];
+const EXAM_OPTIONS = ["NEET", "JEE", "BOARD", "NTSE"];
 
 function mergeUniqueOptions(...groups: Array<Array<string | undefined | null>>) {
   return Array.from(new Set(groups.flat().map((value) => String(value || "").trim()).filter(Boolean)));
@@ -51,7 +51,11 @@ export default function AdminUpload() {
   const [bulkDifficulty, setBulkDifficulty] = useState("Moderate");
   const [bulkClassLevel, setBulkClassLevel] = useState("12");
   const [bulkBoard, setBulkBoard] = useState("CBSE");
-  const [bulkExamType, setBulkExamType] = useState("NEET");
+  // Multiple exam types can apply to one question (e.g. a class-10 topic that is
+  // also asked in NEET, or NTSE + Board). Stored as an array and saved as-is.
+  const [bulkExamTypes, setBulkExamTypes] = useState<string[]>(["NEET"]);
+  // Exam types the teacher adds on the spot (beyond the built-in ones).
+  const [extraExamTypes, setExtraExamTypes] = useState<string[]>([]);
 
   const onPick = (f: File | null) => {
     setFile(f);
@@ -159,7 +163,20 @@ export default function AdminUpload() {
   const availableTopics = mergeUniqueOptions(drafts.map((q) => q.topic));
   const availableClassLevels = mergeUniqueOptions(CLASS_OPTIONS, drafts.map((q) => q.classLevel));
   const availableBoards = mergeUniqueOptions(BOARD_OPTIONS, drafts.map((q) => q.board));
-  const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, drafts.flatMap((q) => q.examType || []));
+  const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, extraExamTypes, drafts.flatMap((q) => q.examType || []));
+
+  // Toggle an exam type on/off in the bulk multi-select.
+  const toggleBulkExamType = (name: string) => {
+    setBulkExamTypes((prev) => (prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]));
+  };
+
+  // Add a brand-new exam type on the spot and select it.
+  const addExamTypeOnSpot = () => {
+    const name = (window.prompt("Add exam type (e.g. CUET, Olympiad, NTSE):") || "").trim();
+    if (!name) return;
+    if (!availableExamTypes.includes(name)) setExtraExamTypes((prev) => [...prev, name]);
+    setBulkExamTypes((prev) => (prev.includes(name) ? prev : [...prev, name]));
+  };
 
   const applyBulkAssignment = () => {
     const start = Number(bulkStart);
@@ -178,7 +195,7 @@ export default function AdminUpload() {
         difficulty: bulkDifficulty || q.difficulty,
         classLevel: bulkClassLevel || q.classLevel,
         board: bulkBoard || q.board,
-        examType: bulkExamType ? [bulkExamType] : q.examType,
+        examType: bulkExamTypes.length ? [...bulkExamTypes] : q.examType,
       };
     }));
     setError("");
@@ -516,16 +533,39 @@ export default function AdminUpload() {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
-                <select
-                  value={bulkExamType}
-                  onChange={(e) => setBulkExamType(e.target.value)}
-                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
-                  style={{ borderColor: colors.border, background: colors.card }}
-                >
-                  {availableExamTypes.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                <div className="mb-3">
+                  <div className="text-[11px] mb-1.5" style={{ color: colors.mutedForeground }}>
+                    Exam types (tick one or more)
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableExamTypes.map((option) => {
+                      const on = bulkExamTypes.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleBulkExamType(option)}
+                          className="px-3 py-1.5 rounded-full text-sm font-semibold border"
+                          style={{
+                            borderColor: on ? colors.primary : colors.border,
+                            background: on ? colors.primary + "15" : colors.card,
+                            color: on ? colors.primary : colors.foreground,
+                          }}
+                        >
+                          {on ? "✓ " : ""}{option}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={addExamTypeOnSpot}
+                      className="px-3 py-1.5 rounded-full text-sm font-semibold border border-dashed"
+                      style={{ borderColor: colors.border, color: colors.mutedForeground, background: colors.card }}
+                    >
+                      ＋ Add exam
+                    </button>
+                  </div>
+                </div>
                 <select
                   value={bulkDifficulty}
                   onChange={(e) => setBulkDifficulty(e.target.value)}
