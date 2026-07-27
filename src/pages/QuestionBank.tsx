@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui";
+import { MathText } from "@/components/MathText";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
@@ -244,7 +245,7 @@ export default function QuestionBank() {
                     <span className="text-[12px] font-bold px-2 py-0.5 rounded-md shrink-0" style={{ background: "#eff6ff", color: colors.primary }}>Q{i + 1}</span>
                     <span className="text-[11px] px-2 py-0.5 rounded-md" style={{ background: colors.muted, color: colors.mutedForeground }}>{q.type || "MCQ"}</span>
                   </div>
-                  <div className="text-[14px] font-semibold mb-3" style={{ color: colors.foreground }}>{q.text}</div>
+                  <MathText className="text-[14px] font-semibold mb-3 block" style={{ color: colors.foreground }} text={q.text} />
 
                   <div className="flex flex-col gap-2 mb-3">
                     {(q.options || []).filter((o) => o).map((opt, idx) => {
@@ -263,7 +264,7 @@ export default function QuestionBank() {
                             style={{ background: correct ? colors.success : colors.muted, color: correct ? "#fff" : colors.mutedForeground }}>
                             {String.fromCharCode(65 + idx)}
                           </span>
-                          <span>{opt}</span>
+                          <MathText className="flex-1" text={opt} />
                           {correct && <Icon name="check-circle" size={15} color={colors.success} />}
                         </div>
                       );
@@ -272,7 +273,7 @@ export default function QuestionBank() {
 
                   {isOpen ? (
                     <div className="rounded-xl p-3 text-[12.5px]" style={{ background: "#fffbeb", border: `1px solid #fde68a`, color: "#92400e" }}>
-                      <span className="font-bold">Solution: </span>{q.explanation || "Correct option highlighted above."}
+                      <span className="font-bold">Solution: </span><MathText text={q.explanation || "Correct option highlighted above."} />
                     </div>
                   ) : (
                     <button
