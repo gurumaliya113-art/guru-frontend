@@ -50,24 +50,37 @@ export default function QuestionBank() {
     return () => { cancelled = true; };
   }, []);
 
-  // Only questions that have a class level (the curated class-wise bank).
-  const bank = useMemo(() => all.filter((q) => q.classLevel), [all]);
+  // Every class a question belongs to (multi-class). Falls back to the single
+  // classLevel for questions saved before multi-class existed.
+  const classesOf = (q: Question): string[] => {
+    const arr = Array.isArray(q.classLevels) && q.classLevels.length
+      ? q.classLevels
+      : (q.classLevel ? [q.classLevel] : []);
+    return arr.map((c) => String(c));
+  };
+  const inClass = (q: Question, cls: string) => classesOf(q).includes(cls);
+
+  // Only questions that have at least one class (the curated class-wise bank).
+  const bank = useMemo(() => all.filter((q) => classesOf(q).length > 0), [all]);
 
   const classes = useMemo(() => {
-    const set = new Set(bank.map((q) => String(q.classLevel)));
-    return CLASS_ORDER.filter((c) => set.has(c));
+    const set = new Set<string>();
+    bank.forEach((q) => classesOf(q).forEach((c) => set.add(c)));
+    const ordered = CLASS_ORDER.filter((c) => set.has(c));
+    const extras = [...set].filter((c) => !CLASS_ORDER.includes(c));
+    return [...ordered, ...extras];
   }, [bank]);
 
   const subjects = useMemo(() => {
     if (!selClass) return [];
-    return [...new Set(bank.filter((q) => String(q.classLevel) === selClass).map((q) => q.subject))].sort();
+    return [...new Set(bank.filter((q) => inClass(q, selClass)).map((q) => q.subject))].sort();
   }, [bank, selClass]);
 
   const topics = useMemo(() => {
     if (!selClass || !selSubject) return [];
     return [...new Set(
       bank
-        .filter((q) => String(q.classLevel) === selClass && q.subject === selSubject)
+        .filter((q) => inClass(q, selClass) && q.subject === selSubject)
         .map((q) => q.topic || "General")
     )].sort();
   }, [bank, selClass, selSubject]);
@@ -75,7 +88,7 @@ export default function QuestionBank() {
   const questions = useMemo(() => {
     if (!selClass || !selSubject || !selTopic) return [];
     return bank.filter(
-      (q) => String(q.classLevel) === selClass && q.subject === selSubject && (q.topic || "General") === selTopic
+      (q) => inClass(q, selClass) && q.subject === selSubject && (q.topic || "General") === selTopic
     );
   }, [bank, selClass, selSubject, selTopic]);
 
@@ -185,7 +198,7 @@ export default function QuestionBank() {
             <div className="text-[14px] font-bold mb-3" style={{ color: colors.foreground }}>Choose a subject</div>
             <div className="flex flex-col gap-2.5">
               {subjects.map((s) => {
-                const count = bank.filter((q) => String(q.classLevel) === selClass && q.subject === s).length;
+                const count = bank.filter((q) => inClass(q, selClass) && q.subject === s).length;
                 return (
                   <button
                     key={s}
@@ -214,7 +227,7 @@ export default function QuestionBank() {
             <div className="text-[14px] font-bold mb-3" style={{ color: colors.foreground }}>Pick a topic</div>
             <div className="flex flex-col gap-2.5">
               {topics.map((t) => {
-                const count = bank.filter((q) => String(q.classLevel) === selClass && q.subject === selSubject && (q.topic || "General") === t).length;
+                const count = bank.filter((q) => inClass(q, selClass) && q.subject === selSubject && (q.topic || "General") === t).length;
                 return (
                   <button
                     key={t}
@@ -245,6 +258,21 @@ export default function QuestionBank() {
                     <span className="text-[12px] font-bold px-2 py-0.5 rounded-md shrink-0" style={{ background: "#eff6ff", color: colors.primary }}>Q{i + 1}</span>
                     <span className="text-[11px] px-2 py-0.5 rounded-md" style={{ background: colors.muted, color: colors.mutedForeground }}>{q.type || "MCQ"}</span>
                   </div>
+                  {(() => {
+                    // Show where else this question is available: other classes + exams.
+                    const otherClasses = classesOf(q).filter((c) => c !== selClass).map((c) => `Class ${c}`);
+                    const exams = Array.isArray(q.examType) ? q.examType : [];
+                    const tags = [...otherClasses, ...exams];
+                    if (tags.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                        <span className="text-[10px]" style={{ color: colors.mutedForeground }}>Also available in:</span>
+                        {tags.map((t) => (
+                          <span key={t} className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#f1f5f9", color: colors.mutedForeground }}>{t}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <MathText className="text-[14px] font-semibold mb-3 block" style={{ color: colors.foreground }} text={q.text} />
 
                   <div className="flex flex-col gap-2 mb-3">

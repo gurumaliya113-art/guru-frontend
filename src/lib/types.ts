@@ -11,6 +11,8 @@ export interface Question {
   id: string;
   subject: string;
   topic: string;
+  /** Optional finer classification under a topic (e.g. "Biot-Savart Law"). */
+  subtopic?: string;
   text: string;
   options: string[];
   correctIndex: number;
@@ -19,8 +21,10 @@ export interface Question {
   type: string;
   examType: string[];
   year?: number;
-  /** Class level — e.g. "9" / "10" / "11" / "12" or custom */
+  /** Class level — e.g. "9" / "10" / "11" / "12" or custom (PRIMARY class) */
   classLevel?: string;
+  /** All classes this question belongs to (multi-class). Includes classLevel. */
+  classLevels?: string[];
   /** Board — e.g. "CBSE" / "ICSE" / "State" / "Other" or custom */
   board?: string;
   /** Whether the question is from NCERT textbook */

@@ -48,8 +48,12 @@ export default function AdminUpload() {
   const [bulkEnd, setBulkEnd] = useState("1");
   const [bulkSubject, setBulkSubject] = useState("Biology");
   const [bulkTopic, setBulkTopic] = useState("");
+  const [bulkSubtopic, setBulkSubtopic] = useState("");
   const [bulkDifficulty, setBulkDifficulty] = useState("Moderate");
-  const [bulkClassLevel, setBulkClassLevel] = useState("12");
+  // Multi-class: a question can belong to several classes at once (e.g. a
+  // Magnetism topic in Class 11 AND 12, also useful for a 9th foundation batch).
+  const [bulkClassLevels, setBulkClassLevels] = useState<string[]>(["12"]);
+  const [extraClassLevels, setExtraClassLevels] = useState<string[]>([]);
   const [bulkBoard, setBulkBoard] = useState("CBSE");
   // Multiple exam types can apply to one question (e.g. a class-10 topic that is
   // also asked in NEET, or NTSE + Board). Stored as an array and saved as-is.
@@ -103,6 +107,8 @@ export default function AdminUpload() {
       correctIndex: typeof q.correctIndex === "number" ? q.correctIndex : 0,
       subject: q.subject || "Physics",
       topic: q.topic || "",
+      subtopic: q.subtopic || "",
+      classLevels: Array.isArray(q.classLevels) && q.classLevels.length ? q.classLevels : (q.classLevel ? [q.classLevel] : []),
       difficulty: q.difficulty || "Moderate",
       examType: Array.isArray(q.examType) && q.examType.length ? q.examType : ["NEET"],
       type: q.type || "MCQ",
@@ -161,7 +167,22 @@ export default function AdminUpload() {
 
   const availableSubjects = mergeUniqueOptions(SUBJECT_OPTIONS, drafts.map((q) => q.subject));
   const availableTopics = mergeUniqueOptions(drafts.map((q) => q.topic));
-  const availableClassLevels = mergeUniqueOptions(CLASS_OPTIONS, drafts.map((q) => q.classLevel));
+  const availableClassLevels = mergeUniqueOptions(
+    CLASS_OPTIONS,
+    extraClassLevels,
+    drafts.flatMap((q) => (q.classLevels && q.classLevels.length ? q.classLevels : (q.classLevel ? [q.classLevel] : [])))
+  );
+
+  const toggleBulkClass = (name: string) => {
+    setBulkClassLevels((prev) => (prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]));
+  };
+
+  const addClassOnSpot = () => {
+    const name = (window.prompt("Add class (e.g. 8, 9, 10, 11, 12):") || "").trim();
+    if (!name) return;
+    if (!availableClassLevels.includes(name)) setExtraClassLevels((prev) => [...prev, name]);
+    setBulkClassLevels((prev) => (prev.includes(name) ? prev : [...prev, name]));
+  };
   const availableBoards = mergeUniqueOptions(BOARD_OPTIONS, drafts.map((q) => q.board));
   const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, extraExamTypes, drafts.flatMap((q) => q.examType || []));
 
@@ -192,8 +213,10 @@ export default function AdminUpload() {
         ...q,
         subject: bulkSubject || q.subject,
         topic: bulkTopic || q.topic,
+        subtopic: bulkSubtopic || q.subtopic,
         difficulty: bulkDifficulty || q.difficulty,
-        classLevel: bulkClassLevel || q.classLevel,
+        classLevels: bulkClassLevels.length ? [...bulkClassLevels] : q.classLevels,
+        classLevel: bulkClassLevels.length ? bulkClassLevels[0] : q.classLevel,
         board: bulkBoard || q.board,
         examType: bulkExamTypes.length ? [...bulkExamTypes] : q.examType,
       };
@@ -513,16 +536,46 @@ export default function AdminUpload() {
                     <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
-                <select
-                  value={bulkClassLevel}
-                  onChange={(e) => setBulkClassLevel(e.target.value)}
+                <input
+                  value={bulkSubtopic}
+                  onChange={(e) => setBulkSubtopic(e.target.value)}
+                  placeholder="Subtopic (optional) — e.g. Biot-Savart Law"
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
                   style={{ borderColor: colors.border, background: colors.card }}
-                >
-                  {availableClassLevels.map((option) => (
-                    <option key={option} value={option}>Class {option}</option>
-                  ))}
-                </select>
+                />
+                <div className="mb-3">
+                  <div className="text-[11px] mb-1.5" style={{ color: colors.mutedForeground }}>
+                    Classes (tick every class this applies to)
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableClassLevels.map((option) => {
+                      const on = bulkClassLevels.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleBulkClass(option)}
+                          className="px-3 py-1.5 rounded-full text-sm font-semibold border"
+                          style={{
+                            borderColor: on ? colors.primary : colors.border,
+                            background: on ? colors.primary + "15" : colors.card,
+                            color: on ? colors.primary : colors.foreground,
+                          }}
+                        >
+                          {on ? "✓ " : ""}Class {option}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={addClassOnSpot}
+                      className="px-3 py-1.5 rounded-full text-sm font-semibold border border-dashed"
+                      style={{ borderColor: colors.border, color: colors.mutedForeground, background: colors.card }}
+                    >
+                      ＋ Add class
+                    </button>
+                  </div>
+                </div>
                 <select
                   value={bulkBoard}
                   onChange={(e) => setBulkBoard(e.target.value)}
