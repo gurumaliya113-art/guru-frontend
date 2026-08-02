@@ -21,7 +21,7 @@ import {
   examLight,
   subjectColor,
 } from "@/lib/colors";
-import type { Difficulty, ExamType, Subject, Topic } from "@/lib/types";
+import type { Difficulty, ExamType, Question, Subject, Topic } from "@/lib/types";
 
 type QuestionType =
   | "MCQ"
@@ -70,7 +70,8 @@ export default function PaperGenerate() {
 
   const [step, setStep] = useState<Step>("exam");
   const [examType, setExamType] = useState<ExamType | null>(null);
-  const [classLevel, setClassLevel] = useState<string | null>(null);
+  // Multi-class paper: teacher can mix content from several classes (e.g. 11 + 12).
+  const [classLevels, setClassLevels] = useState<string[]>([]);
   const [subject, setSubject] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode | null>(null);
@@ -114,6 +115,18 @@ export default function PaperGenerate() {
     })();
   }, []);
 
+  // A question's classes (multi-class aware, falls back to single classLevel).
+  const qClasses = (q: Question): string[] =>
+    (Array.isArray(q.classLevels) && q.classLevels.length
+      ? q.classLevels
+      : (q.classLevel ? [q.classLevel] : [])
+    ).map((c) => String(c));
+  // True if the question belongs to any of the selected classes (or none picked).
+  const classMatches = (q: Question) =>
+    classLevels.length === 0 || qClasses(q).some((c) => classLevels.includes(c));
+  const toggleClass = (c: string) =>
+    setClassLevels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+
   const subjects = useMemo(() => {
     if (!examType) return [] as string[];
     const base = subjectsFor(examType);
@@ -124,7 +137,7 @@ export default function PaperGenerate() {
     for (const q of pool) {
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) continue;
-      if (classLevel && q.classLevel !== classLevel) continue;
+      if (!classMatches(q)) continue;
       if (q.subject) fromPool.add(q.subject);
     }
     // If the pool has subjects for this combo, prefer them; otherwise fall back
@@ -137,7 +150,7 @@ export default function PaperGenerate() {
       return [...withData, ...extra];
     }
     return base;
-  }, [examType, classLevel, pool]);
+  }, [examType, classLevels, pool]);
 
   // Topic cards for the selected subject + class + exam combo, with counts
   // pulled from the actual question pool so teachers can see at a glance
@@ -150,9 +163,9 @@ export default function PaperGenerate() {
     const countMap = new Map<string, number>();
     for (const q of pool) {
       if ((q.subject || "").toLowerCase() !== subjLower) continue;
-      // Strict class match: when a class is chosen, ONLY include questions
-      // tagged with that exact class. Untagged questions must not leak in.
-      if (classLevel && q.classLevel !== classLevel) continue;
+      // Class match: when classes are chosen, include a question if it belongs
+      // to ANY selected class (multi-class aware). No class picked = all.
+      if (!classMatches(q)) continue;
       if (examLower) {
         const ets = (q.examType || []).map((e) => String(e).toLowerCase());
         if (!ets.includes(examLower)) continue;
@@ -164,7 +177,7 @@ export default function PaperGenerate() {
     const catalogueNames = new Set<string>();
     for (const t of catalogueTopics) {
       if ((t.subject || "").toLowerCase() !== subjLower) continue;
-      if (t.classLevel && classLevel && t.classLevel !== classLevel) continue;
+      if (t.classLevel && classLevels.length && !classLevels.includes(String(t.classLevel))) continue;
       if (t.examType && examLower && t.examType.toLowerCase() !== examLower) continue;
       catalogueNames.add(t.name);
     }
@@ -173,7 +186,7 @@ export default function PaperGenerate() {
     return [...all]
       .map((name) => ({ name, count: countMap.get(name) || 0 }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [pool, catalogueTopics, subject, classLevel, examType]);
+  }, [pool, catalogueTopics, subject, classLevels, examType]);
 
   const totalForSubject = topicCards.reduce((s, t) => s + t.count, 0);
 
@@ -185,7 +198,7 @@ export default function PaperGenerate() {
     const examLower = examType.toLowerCase();
     return pool.filter((q) => {
       if ((q.subject || "").toLowerCase() !== subjLower) return false;
-      if (classLevel && q.classLevel !== classLevel) return false;
+      if (!classMatches(q)) return false;
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) return false;
       if (topic && topic !== "All" && (q.topic || "").trim() !== topic) return false;
@@ -196,7 +209,7 @@ export default function PaperGenerate() {
       }
       return true;
     });
-  }, [pool, examType, subject, classLevel, topic, mode, questionType, difficulty]);
+  }, [pool, examType, subject, classLevels, topic, mode, questionType, difficulty]);
 
   const handleGenerate = async () => {
     if (!examType || !subject) return;
@@ -243,7 +256,7 @@ export default function PaperGenerate() {
     if (i < 0 || i > stepIndex) return;
     setStep(s);
     if (i <= STEPS.indexOf("exam")) { setExamType(null); }
-    if (i <= STEPS.indexOf("class")) { setClassLevel(null); }
+    if (i <= STEPS.indexOf("class")) { setClassLevels([]); }
     if (i <= STEPS.indexOf("subject")) { setSubject(null); }
     if (i <= STEPS.indexOf("topic")) { setTopic(null); }
     if (i <= STEPS.indexOf("mode")) { setMode(null); }
@@ -285,13 +298,13 @@ export default function PaperGenerate() {
       </div>
 
       {/* Selected breadcrumbs */}
-      {(examType || classLevel || subject || topic || mode) && (
+      {(examType || classLevels.length > 0 || subject || topic || mode) && (
         <div className="px-4 pt-3 flex flex-wrap gap-2">
           {examType && (
             <Crumb label={examType} onClick={() => jumpTo("exam")} color={examColor(examType)} bg={examLight(examType)} />
           )}
-          {classLevel && (
-            <Crumb label={`Class ${classLevel}`} onClick={() => jumpTo("class")} />
+          {classLevels.length > 0 && (
+            <Crumb label={classLevels.length === 1 ? `Class ${classLevels[0]}` : `Classes ${classLevels.join(", ")}`} onClick={() => jumpTo("class")} />
           )}
           {subject && (
             <Crumb label={subject} onClick={() => jumpTo("subject")} color={subjectColor(subject as any) || colors.primary} />
@@ -326,21 +339,39 @@ export default function PaperGenerate() {
           </Panel>
         )}
 
-        {/* ---- STEP 2: CLASS ---- */}
+        {/* ---- STEP 2: CLASS (multi-select) ---- */}
         {step === "class" && (
-          <Panel title="Choose class" subtitle="Pick the grade level — questions filter to this class.">
-            <HScroll>
+          <Panel title="Choose class(es)" subtitle="Tick one or more — a paper can mix content from several classes (e.g. 11 + 12).">
+            <div className="grid grid-cols-3 gap-3">
               {/* Competitive exams (NEET/JEE/BITS) are only for classes 9–12.
                   Board papers can be for any class 1–12. */}
-              {(examType && examType !== "BOARD" ? ["9", "10", "11", "12"] : ALL_CLASSES).map((c) => (
-                <BigCard
-                  key={c}
-                  label={`Class ${c}`}
-                  accent={colors.primary}
-                  onClick={() => { setClassLevel(c); setStep("subject"); }}
-                />
-              ))}
-            </HScroll>
+              {(examType && examType !== "BOARD" ? ["9", "10", "11", "12"] : ALL_CLASSES).map((c) => {
+                const on = classLevels.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => toggleClass(c)}
+                    className="rounded-2xl border-2 py-4 font-bold text-[15px] transition"
+                    style={{
+                      borderColor: on ? colors.primary : colors.border,
+                      background: on ? colors.primary + "15" : "#fff",
+                      color: on ? colors.primary : colors.foreground,
+                    }}
+                  >
+                    {on ? "✓ " : ""}Class {c}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => classLevels.length > 0 && setStep("subject")}
+              disabled={classLevels.length === 0}
+              className="w-full mt-5 py-3.5 rounded-2xl font-bold text-white disabled:opacity-50"
+              style={{ background: colors.primary }}
+            >
+              {classLevels.length > 0 ? `Continue with ${classLevels.length} class${classLevels.length === 1 ? "" : "es"}` : "Select at least one class"}
+            </button>
           </Panel>
         )}
 
@@ -576,7 +607,7 @@ export default function PaperGenerate() {
                 Paper Summary
               </div>
               <Summary label="Exam" value={examType || "—"} />
-              <Summary label="Class" value={classLevel ? `Class ${classLevel}` : "—"} />
+              <Summary label="Class" value={classLevels.length ? (classLevels.length === 1 ? `Class ${classLevels[0]}` : `Classes ${classLevels.join(", ")}`) : "—"} />
               <Summary label="Subject" value={subject || "—"} />
               <Summary label="Topic" value={topic || "—"} />
               <Summary label="Mode" value={mode === "ai" ? "AI Express" : "Manual"} />
