@@ -369,10 +369,31 @@ export default function PaperView() {
             page-break-inside: avoid;
             break-inside: avoid;
           }
+          /* Options: drive the (A)(B)(C)(D) labels with a CSS counter for the
+             same reason as the question numbers — <ol> markers get dropped /
+             clipped inside multi-column print layouts, which left the options
+             stacked with no letters. Counter-based ::before is reliable. */
           .paper-print-opts {
-            margin: 0;
-            padding-left: 18px;
+            margin: 2px 0 0;
+            padding-left: 0;
             font-size: 10.5pt;
+            list-style: none;
+            counter-reset: optnum;
+          }
+          .paper-print-opts li {
+            counter-increment: optnum;
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 1px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .paper-print-opts li::before {
+            content: "(" counter(optnum, upper-alpha) ")";
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: 600;
           }
           .paper-print-opts li.is-correct { font-weight: bold; text-decoration: underline; }
           .paper-print-expl {
