@@ -1,0 +1,666 @@
+import type {
+  Assignment,
+  BatchType,
+  ClassRoom,
+  GeneratedPaper,
+  Membership,
+  MembershipStatus,
+  PreviousYearPaper,
+  PreviousYearPaperSummary,
+  Question,
+  QuizAttempt,
+  Topic,
+  UserProfile,
+} from "./types";
+
+const ADMIN_TOKEN_KEY = "gurutron.adminToken";
+export const ADMIN_AUTH_EXPIRED_EVENT = "gurutron:admin-auth-expired";
+
+export function getAdminToken(): string | null {
+  return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
+export function setAdminToken(token: string | null) {
+  if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  else localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
+
+export function clearAdminTokenAndNotify() {
+  setAdminToken(null);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ADMIN_AUTH_EXPIRED_EVENT));
+  }
+}
+
+async function request<T>(path: string, init: RequestInit = {}, opts: { admin?: boolean } = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((init.headers as Record<string, string>) || {}),
+  };
+  if (opts.admin) {
+    const t = getAdminToken();
+    if (t) headers["x-admin-token"] = t;
+  }
+  const res = await fetch(path, {
+    ...init,
+    headers,
+    credentials: "include" // Include cookies for session authentication
+  });
+  if (!res.ok) {
+    if (opts.admin && res.status === 401) {
+      clearAdminTokenAndNotify();
+    }
+    let detail = "";
+    try { detail = (await res.json()).error || ""; } catch {}
+    throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+  }
+  return res.json();
+}
+
+export interface AdminStats {
+  total: number;
+  bySubject: Record<string, number>;
+  byExam: Record<string, number>;
+  byDifficulty: Record<string, number>;
+  bySource: Record<string, number>;
+}
+
+export interface AdminSubscriptionRow {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  role: string;
+  plan: string | null;
+  active: boolean;
+  expired: boolean;
+  validUntil: string | null;
+  razorpayPaymentId: string | null;
+  lastOrderId: string | null;
+  lastAmount: number | null;
+  totalPaid: number;
+  paymentCount: number;
+  purchasedAt: string | null;
+}
+
+export interface AdminSubscriptionsResponse {
+  subscriptions: AdminSubscriptionRow[];
+  summary: { total: number; active: number; expired: number };
+}
+
+export interface AdminRevenueResponse {
+  currency: string;
+  totalRevenue: number;
+  thisMonthRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+  byPlan: Record<string, { count: number; amount: number }>;
+  byRole: { teacher: { count: number; amount: number }; student: { count: number; amount: number } };
+  byMonth: Record<string, number>;
+  recent: {
+    id: string;
+    email: string | null;
+    name: string | null;
+    plan: string | null;
+    amount: number;
+    currency: string;
+    paymentId: string | null;
+    orderId: string | null;
+    createdAt: string | null;
+  }[];
+}
+
+export interface ParsePdfResult {
+  documentId?: string | null;
+  parser: string;
+  pageCount: number;
+  textLength: number;
+  isScanned?: boolean;
+  questionsCount?: number;
+  questions: Question[];
+  saved?: boolean;
+}
+
+export type ParserMode = "auto" | "groq" | "heuristic" | "gemini" | "ai" | "dpp" | "raw";
+
+export const api = {
+  getProfile: () => request<{ profile: UserProfile | null }>("/api/profile"),
+  saveProfile: (profile: UserProfile & { teacherInviteCode?: string; password?: string; referredByCode?: string }) =>
+    request<{ profile: UserProfile }>("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(profile),
+    }),
+  getAttempts: () => request<{ attempts: QuizAttempt[] }>("/api/attempts"),
+  addAttempt: (attempt: QuizAttempt) =>
+    request<{ attempt: QuizAttempt }>("/api/attempts", {
+      method: "POST",
+      body: JSON.stringify(attempt),
+    }),
+  getPapers: () => request<{ papers: GeneratedPaper[] }>("/api/papers"),
+  getPaper: (id: string) =>
+    request<{ paper: GeneratedPaper }>(`/api/papers/${encodeURIComponent(id)}`),
+  addPaper: (paper: GeneratedPaper) =>
+    request<{ paper: GeneratedPaper }>("/api/papers", {
+      method: "POST",
+      body: JSON.stringify(paper),
+    }),
+  // Upload a "captured" paper — N image snapshots that get turned into a
+  // single image-only paper on the backend. Returns the created paper so
+  // the caller can immediately navigate to /paper/:id or assign it.
+  uploadCapture: async (payload: {
+    title: string;
+    examType?: string;
+    subject?: string;
+    topic?: string;
+    difficulty?: string;
+    images: File[];
+  }): Promise<{ paper: GeneratedPaper }> => {
+    const fd = new FormData();
+    fd.append("title", payload.title);
+    if (payload.examType) fd.append("examType", payload.examType);
+    if (payload.subject) fd.append("subject", payload.subject);
+    if (payload.topic) fd.append("topic", payload.topic);
+    if (payload.difficulty) fd.append("difficulty", payload.difficulty);
+    payload.images.forEach((f) => fd.append("images", f, f.name));
+    const url = `/api/papers/capture`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      // NOTE: don't set Content-Type — the browser must add the multipart boundary.
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch { /* ignore */ }
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+  deletePaper: (id: string) =>
+    request<{ ok: true }>(`/api/papers/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  reset: () => request<{ ok: true }>("/api/reset", { method: "POST" }),
+
+  // Public questions catalogue
+  getQuestions: () => request<{ questions: Question[] }>("/api/questions"),
+
+  // Public topics catalogue (admin-managed). Surfaced in PaperGenerate so
+  // teachers see exactly what admins curated for them.
+  getTopics: () => request<{ topics: Topic[] }>('/api/topics'),
+  getFlashcards: () => request<{ flashcards: Flashcard[] }>('/api/flashcards'),
+
+  // ---- Classes ----
+  getMyClasses: () => request<{ classes: ClassRoom[] }>("/api/classes/mine"),
+  createClass: (payload: {
+    name: string;
+    subject?: string;
+    classLevel: string;
+    batchType: BatchType;
+    school?: string;
+    teacherName?: string;
+  }) =>
+    request<{ class: ClassRoom }>("/api/classes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getClassByCode: (code: string) =>
+    request<{ class: ClassRoom }>(`/api/classes/by-code/${encodeURIComponent(code)}`),
+  getClassMemberships: (classId: string) =>
+    request<{ memberships: Membership[] }>(
+      `/api/classes/${encodeURIComponent(classId)}/memberships`
+    ),
+  getClassStats: (classId: string) =>
+    request<{
+      class: { id: string; name: string; code: string; classLevel: string; batchType: string; subject?: string; school?: string };
+      summary: { totalStudents: number; pending: number; totalQuizzes: number; classAvgScore: number };
+      students: {
+        studentId: string; membershipId: string; name: string; rollNumber: string; parentPhone: string;
+        quizzes: number; avgScore: number; bestScore: number; lastActive: string | null;
+      }[];
+    }>(`/api/classes/${encodeURIComponent(classId)}/stats`),
+  getClassStudentAttempts: (classId: string, studentId: string) =>
+    request<{
+      student: { studentId: string; name: string; rollNumber: string; parentPhone: string };
+      attempts: QuizAttempt[];
+    }>(`/api/classes/${encodeURIComponent(classId)}/students/${encodeURIComponent(studentId)}/attempts`),
+
+  // ---- Memberships ----
+  getMyMemberships: () =>
+    request<{ memberships: Membership[] }>("/api/memberships/mine"),
+  joinClass: (payload: {
+    code: string;
+    studentName: string;
+    rollNumber: string;
+    parentPhone?: string;
+  }) =>
+    request<{ membership: Membership }>("/api/memberships", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  decideMembership: (id: string, status: MembershipStatus) =>
+    request<{ membership: Membership }>(`/api/memberships/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  // ---- Assignments ----
+  getMyAssignments: () =>
+    request<{ assignments: Assignment[] }>("/api/assignments/mine"),
+  getClassAssignments: (classId: string) =>
+    request<{ assignments: Assignment[] }>(
+      `/api/classes/${encodeURIComponent(classId)}/assignments`
+    ),
+  assignPaperToClass: (paperId: string, classId: string) =>
+    request<{ assignment: Assignment; alreadyAssigned?: boolean }>(
+      `/api/papers/${encodeURIComponent(paperId)}/assign`,
+      { method: "POST", body: JSON.stringify({ classId }) }
+    ),
+  unassign: (id: string) =>
+    request<{ ok: true }>(`/api/assignments/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+  getAssignmentsForMe: () =>
+    request<{ assignments: Assignment[] }>("/api/assignments/for-me"),
+
+  // ---- Notes ----
+  getNotes: (query?: { subject?: string; chapter?: string; examType?: string; classLevel?: string; board?: string; q?: string }) =>
+    request<{ notes: any[] }>(`/api/notes${query && Object.keys(query).length > 0 ? `?${new URLSearchParams(Object.entries(query).filter(([, v]) => v) as any).toString()}` : ""}`),
+  getNote: (id: string) =>
+    request<{ note: any }>(`/api/notes/${encodeURIComponent(id)}`),
+  createNote: (note: { title: string; subject?: string; chapter?: string; examType?: string; classLevel?: string; board?: string; description?: string; fileUrl?: string }) =>
+    request<{ note: any }>("/api/notes", {
+      method: "POST",
+      body: JSON.stringify(note),
+    }),
+  updateNote: (id: string, updates: any) =>
+    request<{ note: any }>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }),
+  deleteNote: (id: string) =>
+    request<{ success: true }>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+
+  // ---- Previous Year Papers / Mocks ----
+  // Listing is public (no auth). Detail requires auth and enforces the
+  // 5-free-then-₹49 paywall server-side (HTTP 402 with code "PAYWALL").
+  getPyps: () => request<{ pyps: PreviousYearPaperSummary[] }>("/api/pyp"),
+  getPyp: (id: string) =>
+    request<{ pyp: PreviousYearPaper }>(`/api/pyp/${encodeURIComponent(id)}`),
+
+  // ---- Razorpay subscription payments ----
+  getPaymentConfig: () =>
+    request<{
+      configured: boolean;
+      keyId: string | null;
+      amount: number;
+      currency: string;
+      plan: string;
+      plans?: { id: string; amount: number; currency: string; label: string; description: string; subtitle?: string; validityDays: number | null; popular?: boolean }[];
+    }>("/api/payments/config"),
+  createPaymentOrder: (planId?: string) =>
+    request<{ orderId: string; amount: number; currency: string; keyId: string }>(
+      "/api/payments/create-order",
+      { method: "POST", body: JSON.stringify({ plan: planId }) },
+    ),
+  verifyPayment: (payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    plan?: string;
+  }) =>
+    request<{
+      ok: true;
+      subscription: { active: boolean; plan?: string; validUntil?: string; razorpayPaymentId?: string };
+    }>("/api/payments/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // ---- Referral & Commission (user-facing) ----
+  validateReferralCode: (code: string) =>
+    request<{ valid: boolean; reason?: string; referrer?: { id: string; name: string | null; role: string | null; referralCode: string } }>(
+      "/api/referral/validate",
+      { method: "POST", body: JSON.stringify({ code }) }
+    ),
+  getReferralMe: () =>
+    request<{
+      referralCode: string;
+      shareLink: string;
+      role: string;
+      totals: {
+        totalReferrals: number;
+        teachersReferred: number;
+        studentsReferred: number;
+        pending: number;
+        approved: number;
+        paid: number;
+        cancelled: number;
+        lifetime: number;
+        coins: number;
+        premiumDays: number;
+      };
+    }>("/api/referral/me"),
+  getReferralHistory: () =>
+    request<{
+      referrals: { id: string; name: string; role: string; joinDate: string; status: string }[];
+      commissions: { id: string; orderId: string | null; purchaseAmount: number; commissionPercent: number; commissionAmount: number; status: string; date: string }[];
+      payouts: { id: string; amount: number; transactionNote: string; paidAt: string }[];
+      rewards: { id: string; coins: number; premiumDays: number; reason: string; createdAt: string }[];
+    }>("/api/referral/history"),
+};
+
+// ---- Admin API ----
+export const adminApi = {
+  login: (email: string, password: string) =>
+    (async () => {
+      const res = await fetch(`/api/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try { detail = (await res.json()).error || ""; } catch {}
+        throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+      }
+      return res.json();
+    })(),
+  logout: () => request<{ ok: true }>("/api/admin/logout", { method: "POST" }, { admin: true }),
+  // Upload a standalone diagram image (no PDF source needed). Returns its URL.
+  uploadImage: async (file: File): Promise<{ ok: true; url: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const headers: Record<string, string> = {};
+    const t = getAdminToken();
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/upload-image`, {
+      method: "POST",
+      headers, // NOTE: no Content-Type — the browser sets the multipart boundary
+      credentials: "include",
+      body: form,
+    });
+    if (!res.ok) {
+      if (res.status === 401) clearAdminTokenAndNotify();
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+  me: async () => {
+    const t = getAdminToken();
+    if (t === "LOCAL-BYPASS" && (import.meta as any).env?.DEV) {
+      return { ok: true, geminiAvailable: false, groqAvailable: false };
+    }
+    return request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true });
+  },
+  stats: () => request<AdminStats>("/api/admin/stats", {}, { admin: true }),
+
+  // ---- Subscriptions & revenue ----
+  subscriptions: (q?: string) =>
+    request<AdminSubscriptionsResponse>(
+      `/api/admin/subscriptions${q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`,
+      {},
+      { admin: true },
+    ),
+  revenue: () => request<AdminRevenueResponse>("/api/admin/revenue", {}, { admin: true }),
+
+  // ---- Users management ----
+  listUsers: () =>
+    request<{
+      users: {
+        id: string; name: string | null; email: string | null; phone: string | null;
+        role: string; classLevel: string | null; createdAt: string | null;
+        suspended: boolean; subscribed: boolean; plan: string | null;
+      }[];
+    }>("/api/admin/users", {}, { admin: true }),
+  suspendUser: (id: string, suspended: boolean) =>
+    request<{ ok: true; suspended: boolean }>(`/api/admin/users/${encodeURIComponent(id)}/suspend`, {
+      method: "POST",
+      body: JSON.stringify({ suspended }),
+    }, { admin: true }),
+  deleteUser: (id: string) =>
+    request<{ ok: true }>(`/api/admin/users/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  listQuestions: () => request<{ questions: Question[] }>("/api/admin/questions", {}, { admin: true }),
+  addQuestions: (questions: Partial<Question>[]) =>
+    request<{ added: number; questions: Question[] }>("/api/admin/questions", {
+      method: "POST",
+      body: JSON.stringify({ questions }),
+    }, { admin: true }),
+  updateQuestion: (id: string, updates: Partial<Question>) =>
+    request<{ question: Question }>(`/api/admin/questions/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }, { admin: true }),
+  deleteQuestion: (id: string) =>
+    request<{ ok: true }>(`/api/admin/questions/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // ---- Topics catalogue (admin) ----
+  listTopics: () =>
+    request<{ topics: Topic[] }>("/api/admin/topics", {}, { admin: true }),
+  addTopic: (payload: { subject: string; name: string; classLevel?: string | null; examType?: string | null }) =>
+    request<{ topic: Topic }>("/api/admin/topics", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deleteTopic: (id: string) =>
+    request<{ ok: true }>(`/api/admin/topics/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // ---- Flashcards deck (admin) ----
+  listFlashcards: () =>
+    request<{ flashcards: Flashcard[] }>('/api/admin/flashcards', {}, { admin: true }),
+  addFlashcard: (payload: {
+    subject: string;
+    topic: string;
+    classLevel?: string | null;
+    examType?: string | null;
+    question: string;
+    answer: string;
+    difficulty?: string;
+  }) =>
+    request<{ flashcard: Flashcard }>('/api/admin/flashcards', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deleteFlashcard: (id: string) =>
+    request<{ ok: true }>(`/api/admin/flashcards/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }, { admin: true }),
+
+  // ---- Previous Year Papers / Mocks (admin) ----
+  listPyps: () =>
+    request<{ pyps: PreviousYearPaperSummary[] }>("/api/admin/pyp", {}, { admin: true }),
+  addPyp: (payload: {
+    title: string;
+    examType: string;
+    year: number;
+    subject?: string;
+    durationMinutes?: number;
+    questions: Partial<Question>[];
+  }) =>
+    request<{ pyp: PreviousYearPaper }>("/api/admin/pyp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  deletePyp: (id: string) =>
+    request<{ ok: true }>(`/api/admin/pyp/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  parsePdf: async (
+    file: File,
+    mode: ParserMode = "auto",
+    opts: { save?: boolean; subject?: string; examType?: string; classLevel?: string } = {},
+    jobId?: string,
+    background?: boolean
+  ): Promise<any> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("mode", mode);
+    fd.append("save", opts.save === true ? "1" : "0");
+    if (opts.subject)    fd.append("subject", opts.subject);
+    if (opts.examType)   fd.append("examType", opts.examType);
+    if (opts.classLevel) fd.append("classLevel", opts.classLevel);
+    if (jobId)           fd.append("jobId", jobId);
+    // Background mode: the server returns { jobId, async:true } immediately and
+    // processes in the background (avoids gateway 502 on big PDFs). The caller
+    // then polls parseResult(jobId). Without this flag the server responds with
+    // the questions directly (legacy synchronous behavior).
+    if (background)      fd.append("async", "1");
+
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+
+    const res = await fetch("/api/admin/parse-pdf", {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // Poll for a background parse job's finished result. Returns the result object
+  // when ready ({ ready:true, questions, ... }); returns { ready:false } while
+  // still processing (HTTP 202).
+  parseResult: async (jobId: string): Promise<any> => {
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/parse-pdf/result/${encodeURIComponent(jobId)}`, {
+      headers,
+      credentials: "include",
+    });
+    if (res.status === 202) return { ready: false };
+    if (!res.ok) {
+      if (res.status === 401) clearAdminTokenAndNotify();
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // Build the SSE progress stream URL for a parse-pdf job. EventSource cannot
+  // set the x-admin-token header, so the admin token is passed as a query param
+  // (the SSE route accepts ?token= via requireAdmin).
+  progressUrl: (jobId: string): string =>
+    `/api/admin/parse-pdf/progress/${encodeURIComponent(jobId)}?token=${encodeURIComponent(getAdminToken() ?? "")}`,
+
+  // ---- Notes management (admin) ----
+  listNotes: () =>
+    request<{ notes: any[] }>("/api/admin/notes", {}, { admin: true }),
+  addNote: (payload: {
+    title: string;
+    subject: string;
+    chapter?: string | null;
+    examType?: string | null;
+    classLevel?: string | null;
+    board?: string | null;
+    description?: string;
+    fileUrl?: string | null;
+  }) =>
+    request<{ note: any }>("/api/admin/notes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, { admin: true }),
+  updateNote: (id: string, updates: any) =>
+    request<{ note: any }>(`/api/admin/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    }, { admin: true }),
+  deleteNote: (id: string) =>
+    request<{ ok: true }>(`/api/admin/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }, { admin: true }),
+
+  // Admin: replace a saved page image (crop result)
+  cropPageImage: async (docId: string, pageNumber: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file, file.name || `crop-${pageNumber}.png`);
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/documents/${encodeURIComponent(docId)}/pages/${encodeURIComponent(String(pageNumber))}/crop`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // Admin: save a NEW per-question figure crop (does not overwrite the page or
+  // other questions). Returns { ok, url } to set as the question's pageImageUrl.
+  cropFigureImage: async (docId: string, file: File): Promise<{ ok: boolean; url: string }> => {
+    const fd = new FormData();
+    fd.append("file", file, file.name || "crop.png");
+    const t = getAdminToken();
+    const headers: Record<string, string> = {};
+    if (t) headers["x-admin-token"] = t;
+    const res = await fetch(`/api/admin/documents/${encodeURIComponent(docId)}/figures/crop`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).error || ""; } catch {}
+      throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+    }
+    return res.json();
+  },
+
+  // ---- Referral management (admin) ----
+  referralSummary: () =>
+    request<{
+      totalReferralUsers: number;
+      teachersReferred: number;
+      studentsReferred: number;
+      pendingCommission: number;
+      approvedCommission: number;
+      paidCommission: number;
+      totalCommissionAmount: number;
+    }>("/api/admin/referral/summary", {}, { admin: true }),
+  referralList: () =>
+    request<{ referrals: { id: string; referrerName: string; referralCode: string; referredUser: string; role: string; signupDate: string; status: string }[] }>(
+      "/api/admin/referral/list", {}, { admin: true }
+    ),
+  referralCommissions: () =>
+    request<{ commissions: { id: string; referrer: string; referrerId: string; buyer: string; orderId: string | null; purchaseAmount: number; commissionPercent: number; commissionAmount: number; status: string; date: string }[] }>(
+      "/api/admin/referral/commissions", {}, { admin: true }
+    ),
+  referralSetCommissionStatus: (id: string, status: string) =>
+    request<{ commission: any }>(`/api/admin/referral/commissions/${encodeURIComponent(id)}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }, { admin: true }),
+  referralPayouts: () =>
+    request<{ payouts: { id: string; userId: string; userName: string; amount: number; transactionNote: string; paidAt: string }[] }>(
+      "/api/admin/referral/payouts", {}, { admin: true }
+    ),
+  referralPayout: (userId: string, transactionNote?: string) =>
+    request<{ payout: any; paidCount: number; amount: number }>("/api/admin/referral/payout", {
+      method: "POST",
+      body: JSON.stringify({ userId, transactionNote }),
+    }, { admin: true }),
+};
