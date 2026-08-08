@@ -46,13 +46,18 @@ export default function AdminUpload() {
   // topic (not just the ones the parser happened to tag on this PDF). This
   // lets the teacher pick a known topic in one click, then name a subtopic.
   const [catalogueTopics, setCatalogueTopics] = useState<{ subject: string; name: string }[]>([]);
+  // The live question bank — used to populate the Topic dropdown with every
+  // topic that already exists for the chosen subject + class, exactly like the
+  // Question Bank page (which also loads via adminApi.listQuestions()).
+  const [bankQuestions, setBankQuestions] = useState<any[]>([]);
   useEffect(() => {
     (async () => {
       try {
-        const r = await adminApi.listTopics();
-        setCatalogueTopics((r.topics || []).map((t: any) => ({ subject: t.subject || "", name: t.name || "" })));
+        const [t, q] = await Promise.all([adminApi.listTopics(), adminApi.listQuestions()]);
+        setCatalogueTopics((t.topics || []).map((x: any) => ({ subject: x.subject || "", name: x.name || "" })));
+        setBankQuestions(q.questions || []);
       } catch (e) {
-        console.warn("[AdminUpload] failed to load topic catalogue:", e);
+        console.warn("[AdminUpload] failed to load topic catalogue / question bank:", e);
       }
     })();
   }, []);
@@ -74,6 +79,8 @@ export default function AdminUpload() {
   const [bulkStart, setBulkStart] = useState("1");
   const [bulkEnd, setBulkEnd] = useState("1");
   const [bulkSubject, setBulkSubject] = useState("Biology");
+  // Subjects the teacher adds on the spot (beyond the built-in four).
+  const [extraSubjects, setExtraSubjects] = useState<string[]>([]);
   const [bulkTopic, setBulkTopic] = useState("");
   const [bulkSubtopic, setBulkSubtopic] = useState("");
   const [bulkDifficulty, setBulkDifficulty] = useState("Moderate");
@@ -197,10 +204,19 @@ export default function AdminUpload() {
     : drafts;
   const problemCount = drafts.filter((d) => !!getDraftProblem(d)).length;
 
-  const availableSubjects = mergeUniqueOptions(SUBJECT_OPTIONS, drafts.map((q) => q.subject));
-  // Topic dropdown = every catalogue topic for the chosen subject + any topic
-  // already tagged on the parsed drafts. Sorted so it's easy to scan.
+  const availableSubjects = mergeUniqueOptions(SUBJECT_OPTIONS, extraSubjects, bankQuestions.map((q) => q.subject), drafts.map((q) => q.subject));
+  // A question's classes (multi-class aware).
+  const qClassesOf = (q: any): string[] =>
+    (Array.isArray(q.classLevels) && q.classLevels.length ? q.classLevels : (q.classLevel ? [q.classLevel] : [])).map((c: any) => String(c));
+  // Topic dropdown = every topic that already exists for this subject in the
+  // LIVE question bank (matching the selected class[es], exactly like the
+  // Question Bank page) + admin catalogue topics + any topic on the parsed
+  // drafts. This is why the dropdown now matches "whatever is there".
   const availableTopics = mergeUniqueOptions(
+    bankQuestions
+      .filter((q) => (q.subject || "").toLowerCase() === (bulkSubject || "").toLowerCase())
+      .filter((q) => !bulkClassLevels.length || qClassesOf(q).some((c) => bulkClassLevels.includes(c)))
+      .map((q) => q.topic),
     catalogueTopics
       .filter((t) => !bulkSubject || (t.subject || "").toLowerCase() === bulkSubject.toLowerCase())
       .map((t) => t.name),
@@ -223,6 +239,14 @@ export default function AdminUpload() {
     if (!name) return;
     if (!availableClassLevels.includes(name)) setExtraClassLevels((prev) => [...prev, name]);
     setBulkClassLevels((prev) => (prev.includes(name) ? prev : [...prev, name]));
+  };
+
+  // Add a brand-new subject on the spot and select it.
+  const addSubjectOnSpot = () => {
+    const name = (window.prompt("Add subject (e.g. Science, English, Social Science):") || "").trim();
+    if (!name) return;
+    if (!availableSubjects.includes(name)) setExtraSubjects((prev) => [...prev, name]);
+    setBulkSubject(name);
   };
   const availableBoards = mergeUniqueOptions(BOARD_OPTIONS, drafts.map((q) => q.board));
   const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, extraExamTypes, drafts.flatMap((q) => q.examType || []));
@@ -556,16 +580,26 @@ export default function AdminUpload() {
                     style={{ borderColor: colors.border, background: colors.card }}
                   />
                 </div>
-                <select
-                  value={bulkSubject}
-                  onChange={(e) => setBulkSubject(e.target.value)}
-                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
-                  style={{ borderColor: colors.border, background: colors.card }}
-                >
-                  {availableSubjects.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2 mb-3">
+                  <select
+                    value={bulkSubject}
+                    onChange={(e) => setBulkSubject(e.target.value)}
+                    className="flex-1 rounded-xl border px-3 py-2 text-sm"
+                    style={{ borderColor: colors.border, background: colors.card }}
+                  >
+                    {availableSubjects.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addSubjectOnSpot}
+                    className="whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-semibold"
+                    style={{ borderColor: colors.primary, color: colors.primary, background: colors.primary + "10" }}
+                  >
+                    + Add subject
+                  </button>
+                </div>
                 <select
                   value={bulkTopic}
                   onChange={(e) => setBulkTopic(e.target.value)}
