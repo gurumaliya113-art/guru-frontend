@@ -101,6 +101,10 @@ export default function AdminUpload() {
   const applyResult = (result: any) => {
     setMeta({ parser: result.parser, pageCount: result.pageCount, textLength: result.textLength });
     setDocumentId(result.documentId || null);
+    // The server tells us when it silently downgraded from AI Pro Max (e.g. the
+    // Gemini keys were rejected). Show that instead of leaving the admin with an
+    // empty result and no explanation.
+    if (result.parserWarning) setError(String(result.parserWarning));
     const sourceFallback = result.parser === "raw"
       ? "pdf-raw"
       : result.parser === "heuristic"
