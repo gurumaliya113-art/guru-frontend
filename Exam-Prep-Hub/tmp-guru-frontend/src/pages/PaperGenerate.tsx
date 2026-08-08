@@ -66,8 +66,15 @@ export default function PaperGenerate() {
   const [examType, setExamType] = useState<ExamType | null>(null);
   const [classLevel, setClassLevel] = useState<string | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
-  const [topic, setTopic] = useState<string | null>(null);
+  // Multi-topic selection: an empty array means "All topics" (mix from every
+  // topic). One or more names means the paper is built from just those topics.
+  const [topics, setTopics] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode | null>(null);
+
+  const toggleTopic = (name: string) =>
+    setTopics((cur) =>
+      cur.includes(name) ? cur.filter((t) => t !== name) : [...cur, name]
+    );
 
   const [difficulty, setDifficulty] = useState<Difficulty>("Moderate");
   const [questionType, setQuestionType] = useState<QuestionType>("MCQ");
@@ -182,14 +189,24 @@ export default function PaperGenerate() {
       if (classLevel && q.classLevel !== classLevel) return false;
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) return false;
-      if (topic && topic !== "All" && (q.topic || "").trim() !== topic) return false;
+      // Empty topics[] = "All topics". Otherwise the question's topic must be
+      // one of the selected topics.
+      if (topics.length > 0 && !topics.includes((q.topic || "").trim())) return false;
       if (mode === "manual") {
         if (questionType && q.type && q.type !== questionType) return false;
         if (difficulty && q.difficulty !== difficulty) return false;
       }
       return true;
     });
-  }, [pool, examType, subject, classLevel, topic, mode, questionType, difficulty]);
+  }, [pool, examType, subject, classLevel, topics, mode, questionType, difficulty]);
+
+  // Human-readable label for the current topic selection.
+  const topicLabel =
+    topics.length === 0
+      ? "All topics"
+      : topics.length === 1
+      ? topics[0]
+      : `${topics.length} topics`;
 
   const handleGenerate = async () => {
     if (!examType || !subject) return;
@@ -203,10 +220,10 @@ export default function PaperGenerate() {
     const shuffled = [...matchingQuestions].sort(() => Math.random() - 0.5).slice(0, questionCount);
     const paper = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-      title: `${examType} ${subject} — ${!topic || topic === "All" ? "Mixed Topics" : topic}`,
+      title: `${examType} ${subject} — ${topics.length === 0 ? "Mixed Topics" : topics.length === 1 ? topics[0] : `${topics.length} Topics`}`,
       examType,
       subject: subject as Subject,
-      topic: topic || "All",
+      topic: topics.length === 0 ? "All" : topics.join(", "),
       difficulty,
       questions: shuffled,
       createdAt: new Date().toISOString(),
@@ -238,7 +255,7 @@ export default function PaperGenerate() {
     if (i <= STEPS.indexOf("exam")) { setExamType(null); }
     if (i <= STEPS.indexOf("class")) { setClassLevel(null); }
     if (i <= STEPS.indexOf("subject")) { setSubject(null); }
-    if (i <= STEPS.indexOf("topic")) { setTopic(null); }
+    if (i <= STEPS.indexOf("topic")) { setTopics([]); }
     if (i <= STEPS.indexOf("mode")) { setMode(null); }
   };
 
@@ -278,7 +295,7 @@ export default function PaperGenerate() {
       </div>
 
       {/* Selected breadcrumbs */}
-      {(examType || classLevel || subject || topic || mode) && (
+      {(examType || classLevel || subject || topics.length > 0 || mode) && (
         <div className="px-4 pt-3 flex flex-wrap gap-2">
           {examType && (
             <Crumb label={examType} onClick={() => jumpTo("exam")} color={examColor(examType)} bg={examLight(examType)} />
@@ -289,11 +306,9 @@ export default function PaperGenerate() {
           {subject && (
             <Crumb label={subject} onClick={() => jumpTo("subject")} color={subjectColor(subject as any) || colors.primary} />
           )}
-          {topic && topic !== "All" && (
-            <Crumb label={topic} onClick={() => jumpTo("topic")} />
-          )}
-          {topic === "All" && (
-            <Crumb label="All topics" onClick={() => jumpTo("topic")} />
+          {/* Only show topic crumb(s) once the user has moved past the topic step. */}
+          {topics.length > 0 && stepIndex > STEPS.indexOf("topic") && (
+            <Crumb label={topicLabel} onClick={() => jumpTo("topic")} />
           )}
           {mode && (
             <Crumb label={mode === "ai" ? "AI Express" : "Manual"} onClick={() => jumpTo("mode")} />
@@ -352,17 +367,24 @@ export default function PaperGenerate() {
           </Panel>
         )}
 
-        {/* ---- STEP 4: TOPIC ---- */}
+        {/* ---- STEP 4: TOPIC (multi-select) ---- */}
         {step === "topic" && subject && (
-          <Panel title={`Topics in ${subject}`} subtitle="Number next to each topic shows available questions.">
+          <Panel
+            title={`Topics in ${subject}`}
+            subtitle="Tick one or more topics to mix them in the same paper. Leave all unticked for a mixed paper from every topic."
+          >
+            {/* "All topics" — clears the selection so the paper mixes every topic. */}
             <button
-              onClick={() => { setTopic("All"); setStep("mode"); }}
+              onClick={() => setTopics([])}
               className="w-full text-left rounded-2xl border-2 bg-white p-4 mb-3 hover:shadow-md transition"
-              style={{ borderColor: colors.primary }}
+              style={{ borderColor: topics.length === 0 ? colors.primary : colors.border }}
             >
               <div className="flex items-center justify-between">
-                <div className="font-bold text-[15px]" style={{ color: colors.primary }}>
-                  All topics
+                <div className="flex items-center gap-3">
+                  <CheckBox checked={topics.length === 0} />
+                  <div className="font-bold text-[15px]" style={{ color: colors.primary }}>
+                    All topics
+                  </div>
                 </div>
                 <span
                   className="text-[12px] font-bold px-2.5 py-1 rounded-md"
@@ -371,7 +393,7 @@ export default function PaperGenerate() {
                   {totalForSubject}
                 </span>
               </div>
-              <div className="text-[12px] mt-1" style={{ color: colors.mutedForeground }}>
+              <div className="text-[12px] mt-1 ml-9" style={{ color: colors.mutedForeground }}>
                 Mix questions from every topic
               </div>
             </button>
@@ -380,32 +402,48 @@ export default function PaperGenerate() {
               <EmptyState text={`No topics yet for ${subject}.`} />
             ) : (
               <div className="flex flex-col gap-2.5">
-                {topicCards.map((t) => (
-                  <button
-                    key={t.name}
-                    onClick={() => { setTopic(t.name); setStep("mode"); }}
-                    disabled={t.count === 0}
-                    className="w-full text-left rounded-xl border bg-white px-4 py-3 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ borderColor: colors.border }}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="font-semibold text-[14px]" style={{ color: colors.foreground }}>
-                        {t.name}
+                {topicCards.map((t) => {
+                  const checked = topics.includes(t.name);
+                  return (
+                    <button
+                      key={t.name}
+                      onClick={() => toggleTopic(t.name)}
+                      disabled={t.count === 0}
+                      className="w-full text-left rounded-xl border bg-white px-4 py-3 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ borderColor: checked ? colors.primary : colors.border }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <CheckBox checked={checked} />
+                          <div className="font-semibold text-[14px]" style={{ color: colors.foreground }}>
+                            {t.name}
+                          </div>
+                        </div>
+                        <span
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
+                          style={{
+                            background: t.count > 0 ? (subjectColor(subject as any) || colors.primary) + "18" : colors.muted,
+                            color: t.count > 0 ? subjectColor(subject as any) || colors.primary : colors.mutedForeground,
+                          }}
+                        >
+                          {t.count} {t.count === 1 ? "question" : "questions"}
+                        </span>
                       </div>
-                      <span
-                        className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
-                        style={{
-                          background: t.count > 0 ? (subjectColor(subject as any) || colors.primary) + "18" : colors.muted,
-                          color: t.count > 0 ? subjectColor(subject as any) || colors.primary : colors.mutedForeground,
-                        }}
-                      >
-                        {t.count} {t.count === 1 ? "question" : "questions"}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
+
+            {/* Continue — sticky-ish action so multi-select doesn't auto-advance. */}
+            <button
+              onClick={() => setStep("mode")}
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold"
+              style={{ background: colors.primary }}
+            >
+              <Icon name="arrow-right" size={18} color="#fff" />
+              Continue with {topicLabel}
+            </button>
           </Panel>
         )}
 
@@ -568,7 +606,7 @@ export default function PaperGenerate() {
               <Summary label="Exam" value={examType || "—"} />
               <Summary label="Class" value={classLevel ? `Class ${classLevel}` : "—"} />
               <Summary label="Subject" value={subject || "—"} />
-              <Summary label="Topic" value={topic || "—"} />
+              <Summary label={topics.length > 1 ? "Topics" : "Topic"} value={topics.length === 0 ? "All topics" : topics.join(", ")} />
               <Summary label="Mode" value={mode === "ai" ? "AI Express" : "Manual"} />
               {mode === "manual" && (
                 <>
@@ -629,6 +667,20 @@ export default function PaperGenerate() {
 }
 
 // ---------- Presentational helpers ----------
+
+function CheckBox({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition"
+      style={{
+        border: `2px solid ${checked ? colors.primary : colors.border}`,
+        background: checked ? colors.primary : "#fff",
+      }}
+    >
+      {checked && <Icon name="check" size={13} color="#fff" />}
+    </span>
+  );
+}
 
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
