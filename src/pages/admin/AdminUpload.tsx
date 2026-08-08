@@ -42,6 +42,21 @@ export default function AdminUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<ParserMode>("heuristic");
 
+  // Full admin topic catalogue so the "Topic" dropdown lists every existing
+  // topic (not just the ones the parser happened to tag on this PDF). This
+  // lets the teacher pick a known topic in one click, then name a subtopic.
+  const [catalogueTopics, setCatalogueTopics] = useState<{ subject: string; name: string }[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await adminApi.listTopics();
+        setCatalogueTopics((r.topics || []).map((t: any) => ({ subject: t.subject || "", name: t.name || "" })));
+      } catch (e) {
+        console.warn("[AdminUpload] failed to load topic catalogue:", e);
+      }
+    })();
+  }, []);
+
   // Auto-pick the most accurate available parser on mount.
   useEffect(() => {
     if (geminiAvailable) setMode("gemini");
@@ -183,7 +198,16 @@ export default function AdminUpload() {
   const problemCount = drafts.filter((d) => !!getDraftProblem(d)).length;
 
   const availableSubjects = mergeUniqueOptions(SUBJECT_OPTIONS, drafts.map((q) => q.subject));
-  const availableTopics = mergeUniqueOptions(drafts.map((q) => q.topic));
+  // Topic dropdown = every catalogue topic for the chosen subject + any topic
+  // already tagged on the parsed drafts. Sorted so it's easy to scan.
+  const availableTopics = mergeUniqueOptions(
+    catalogueTopics
+      .filter((t) => !bulkSubject || (t.subject || "").toLowerCase() === bulkSubject.toLowerCase())
+      .map((t) => t.name),
+    drafts.map((q) => q.topic)
+  ).sort((a, b) => a.localeCompare(b));
+  // Existing subtopics (from parsed drafts) offered as autocomplete suggestions.
+  const availableSubtopics = mergeUniqueOptions(drafts.map((q) => (q as any).subtopic)).sort((a, b) => a.localeCompare(b));
   const availableClassLevels = mergeUniqueOptions(
     CLASS_OPTIONS,
     extraClassLevels,
@@ -557,9 +581,15 @@ export default function AdminUpload() {
                   value={bulkSubtopic}
                   onChange={(e) => setBulkSubtopic(e.target.value)}
                   placeholder="Subtopic (optional) — e.g. Biot-Savart Law"
+                  list="bulk-subtopic-suggestions"
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
                   style={{ borderColor: colors.border, background: colors.card }}
                 />
+                <datalist id="bulk-subtopic-suggestions">
+                  {availableSubtopics.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
                 <div className="mb-3">
                   <div className="text-[11px] mb-1.5" style={{ color: colors.mutedForeground }}>
                     Classes (tick every class this applies to)

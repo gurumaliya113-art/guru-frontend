@@ -76,8 +76,35 @@ export default function PaperGenerate() {
   // Multi-topic paper: teacher can mix several topics (e.g. two chapters).
   // Empty array = "All topics" (mix from every topic in the subject).
   const [topics, setTopics] = useState<string[]>([]);
+  // Selected subtopics, stored as composite keys `topic\u0000subtopic` so the
+  // same subtopic name under different topics never collides.
+  const [subKeys, setSubKeys] = useState<string[]>([]);
+  // Which topic rows are expanded to reveal their subtopics.
+  const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
+  const SUBSEP = "\u0000";
+  const subsSelectedFor = (topicName: string) =>
+    subKeys
+      .filter((k) => k.startsWith(topicName + SUBSEP))
+      .map((k) => k.slice((topicName + SUBSEP).length));
   const toggleTopic = (name: string) =>
-    setTopics((prev) => (prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]));
+    setTopics((prev) => {
+      if (prev.includes(name)) {
+        // Unticking a topic clears its subtopic picks too.
+        setSubKeys((s) => s.filter((k) => !k.startsWith(name + SUBSEP)));
+        return prev.filter((t) => t !== name);
+      }
+      return [...prev, name];
+    });
+  const toggleExpand = (name: string) =>
+    setExpandedTopics((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
+    );
+  const toggleSub = (topicName: string, sub: string) => {
+    const key = topicName + SUBSEP + sub;
+    // Ticking a subtopic auto-selects its parent topic.
+    setTopics((prev) => (prev.includes(topicName) ? prev : [...prev, topicName]));
+    setSubKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
   const [mode, setMode] = useState<Mode | null>(null);
 
   const [difficulty, setDifficulty] = useState<Difficulty>("Moderate");
@@ -194,6 +221,39 @@ export default function PaperGenerate() {
 
   const totalForSubject = topicCards.reduce((s, t) => s + t.count, 0);
 
+  // Distinct subtopics per topic, derived from the question pool (admins tag
+  // subtopics during PDF upload). Same subject/class/exam filters as topicCards.
+  const subtopicsByTopic = useMemo(() => {
+    const map = new Map<string, { name: string; count: number }[]>();
+    if (!subject) return map;
+    const subjLower = subject.toLowerCase();
+    const examLower = examType?.toLowerCase();
+    const counts = new Map<string, Map<string, number>>();
+    for (const q of pool) {
+      if ((q.subject || "").toLowerCase() !== subjLower) continue;
+      if (!classMatches(q)) continue;
+      if (examLower) {
+        const ets = (q.examType || []).map((e) => String(e).toLowerCase());
+        if (!ets.includes(examLower)) continue;
+      }
+      const sub = (q.subtopic || "").trim();
+      if (!sub) continue; // only real subtopics
+      const t = (q.topic || "").trim() || "Untagged";
+      if (!counts.has(t)) counts.set(t, new Map());
+      const inner = counts.get(t)!;
+      inner.set(sub, (inner.get(sub) || 0) + 1);
+    }
+    for (const [t, inner] of counts) {
+      map.set(
+        t,
+        [...inner.entries()]
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      );
+    }
+    return map;
+  }, [pool, subject, classLevels, examType]);
+
   // Filter the pool by every selection in one place — both the live preview
   // count and the actual generation use this so they can never disagree.
   const matchingQuestions = useMemo(() => {
@@ -207,7 +267,16 @@ export default function PaperGenerate() {
       if (!ets.includes(examLower)) return false;
       // Empty topics[] = "All topics". Otherwise the question's topic must be
       // one of the selected topics (multi-topic aware).
-      if (topics.length > 0 && !topics.includes((q.topic || "").trim())) return false;
+      const qTopic = (q.topic || "").trim();
+      if (topics.length > 0) {
+        if (!topics.includes(qTopic)) return false;
+        // Subtopic narrowing: only applies to a topic that has subtopics ticked.
+        // A topic with no ticked subtopics keeps all its questions.
+        const subs = subKeys
+          .filter((k) => k.startsWith(qTopic + SUBSEP))
+          .map((k) => k.slice((qTopic + SUBSEP).length));
+        if (subs.length > 0 && !subs.includes((q.subtopic || "").trim())) return false;
+      }
       // Type is now chosen in both modes; filter by it always.
       if (questionType && q.type && q.type !== questionType) return false;
       if (mode === "manual") {
@@ -215,7 +284,7 @@ export default function PaperGenerate() {
       }
       return true;
     });
-  }, [pool, examType, subject, classLevels, topics, mode, questionType, difficulty]);
+  }, [pool, examType, subject, classLevels, topics, subKeys, mode, questionType, difficulty]);
 
   // Human-readable label for the current topic selection.
   const topicLabel =
@@ -268,7 +337,7 @@ export default function PaperGenerate() {
     if (i <= STEPS.indexOf("exam")) { setExamType(null); }
     if (i <= STEPS.indexOf("class")) { setClassLevels([]); }
     if (i <= STEPS.indexOf("subject")) { setSubject(null); }
-    if (i <= STEPS.indexOf("topic")) { setTopics([]); }
+    if (i <= STEPS.indexOf("topic")) { setTopics([]); setSubKeys([]); setExpandedTopics([]); }
     if (i <= STEPS.indexOf("mode")) { setMode(null); }
   };
 
@@ -436,32 +505,91 @@ export default function PaperGenerate() {
               <div className="flex flex-col gap-2.5">
                 {topicCards.map((t) => {
                   const checked = topics.includes(t.name);
+                  const subs = subtopicsByTopic.get(t.name) || [];
+                  const hasSubs = subs.length > 0;
+                  const expanded = expandedTopics.includes(t.name);
+                  const pickedSubs = subsSelectedFor(t.name);
+                  const accent = subjectColor(subject as any) || colors.primary;
                   return (
-                    <button
+                    <div
                       key={t.name}
-                      onClick={() => toggleTopic(t.name)}
-                      disabled={t.count === 0}
-                      className="w-full text-left rounded-xl border bg-white px-4 py-3 hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ borderColor: checked ? colors.primary : colors.border }}
+                      className="rounded-xl border bg-white transition"
+                      style={{ borderColor: checked ? colors.primary : colors.border, opacity: t.count === 0 ? 0.5 : 1 }}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between gap-2 px-4 py-3">
+                        {/* Main tap area toggles the topic. */}
+                        <button
+                          type="button"
+                          onClick={() => toggleTopic(t.name)}
+                          disabled={t.count === 0}
+                          className="flex items-center gap-3 flex-1 text-left disabled:cursor-not-allowed"
+                        >
                           <CheckBox checked={checked} />
                           <div className="font-semibold text-[14px]" style={{ color: colors.foreground }}>
                             {t.name}
+                            {hasSubs && pickedSubs.length > 0 && (
+                              <span className="ml-2 text-[11px] font-normal" style={{ color: colors.mutedForeground }}>
+                                · {pickedSubs.length} subtopic{pickedSubs.length === 1 ? "" : "s"}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
+                            style={{
+                              background: t.count > 0 ? accent + "18" : colors.muted,
+                              color: t.count > 0 ? accent : colors.mutedForeground,
+                            }}
+                          >
+                            {t.count} {t.count === 1 ? "question" : "questions"}
+                          </span>
+                          {/* Chevron reveals subtopics — only when the topic has any. */}
+                          {hasSubs && (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(t.name)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center"
+                              style={{ background: colors.secondary }}
+                              aria-label={expanded ? "Hide subtopics" : "Show subtopics"}
+                            >
+                              <span style={{ display: "inline-flex", transform: expanded ? "rotate(90deg)" : "none", transition: "transform .15s" }}>
+                                <Icon name="chevron-right" size={16} color={colors.mutedForeground} />
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Subtopics — tickable, nested under the topic. */}
+                      {hasSubs && expanded && (
+                        <div className="px-4 pb-3 pl-11 flex flex-col gap-1.5">
+                          {subs.map((s) => {
+                            const sChecked = pickedSubs.includes(s.name);
+                            return (
+                              <button
+                                key={s.name}
+                                type="button"
+                                onClick={() => toggleSub(t.name, s.name)}
+                                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left"
+                                style={{ borderColor: sChecked ? colors.primary : colors.border }}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <CheckBox checked={sChecked} />
+                                  <span className="text-[13px]" style={{ color: colors.foreground }}>{s.name}</span>
+                                </div>
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: colors.muted, color: colors.mutedForeground }}>
+                                  {s.count}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          <div className="text-[11px] mt-0.5" style={{ color: colors.mutedForeground }}>
+                            Tick specific subtopics to narrow this topic, or leave all unticked to include the whole topic.
                           </div>
                         </div>
-                        <span
-                          className="text-[11px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap"
-                          style={{
-                            background: t.count > 0 ? (subjectColor(subject as any) || colors.primary) + "18" : colors.muted,
-                            color: t.count > 0 ? subjectColor(subject as any) || colors.primary : colors.mutedForeground,
-                          }}
-                        >
-                          {t.count} {t.count === 1 ? "question" : "questions"}
-                        </span>
-                      </div>
-                    </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
