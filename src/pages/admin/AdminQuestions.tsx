@@ -56,6 +56,38 @@ export default function AdminQuestions() {
   const [subject, setSubject] = useState<string | null>(searchParams.get("subject"));
   const [topic, setTopic] = useState<string | null>(searchParams.get("topic"));
 
+  // Admin-added class / exam categories. Classes and exam tracks are otherwise
+  // derived from the questions themselves, so a brand-new class/exam would not
+  // show a card until a question is tagged with it. These custom entries let
+  // the admin pre-create a category card (shows count 0 until questions exist).
+  // Persisted in localStorage (per browser) since there is no dedicated table.
+  const readList = (key: string): string[] => {
+    try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
+  };
+  const [customClasses, setCustomClasses] = useState<string[]>(() => readList("admin_custom_classes"));
+  const [customExams, setCustomExams] = useState<string[]>(() => readList("admin_custom_exams"));
+
+  const addCustomClass = () => {
+    const raw = (window.prompt("Add a class (e.g. 8):") || "").trim();
+    if (!raw) return;
+    const name = raw.replace(/^class\s*/i, "").trim();
+    if (!name) return;
+    setCustomClasses((prev) => {
+      const next = prev.includes(name) ? prev : [...prev, name];
+      localStorage.setItem("admin_custom_classes", JSON.stringify(next));
+      return next;
+    });
+  };
+  const addCustomExam = () => {
+    const name = (window.prompt("Add an exam track (e.g. CUET, NTSE, Olympiad):") || "").trim();
+    if (!name) return;
+    setCustomExams((prev) => {
+      const next = prev.some((x) => x.toLowerCase() === name.toLowerCase()) ? prev : [...prev, name];
+      localStorage.setItem("admin_custom_exams", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const load = async () => {
     setLoading(true);
     try {
@@ -116,6 +148,7 @@ export default function AdminQuestions() {
   // the three fixed exam tracks. Counts are precomputed so the cards show numbers.
   const categoryCards = useMemo(() => {
     const classMap = new Map<string, number>();
+    const examMap = new Map<string, number>(); // lowercased exam name -> count
     let neet = 0, jee = 0, board = 0;
     for (const x of questions) {
       if (x.classLevel) classMap.set(x.classLevel, (classMap.get(x.classLevel) || 0) + 1);
@@ -123,17 +156,25 @@ export default function AdminQuestions() {
       if (ets.includes("neet")) neet++;
       if (ets.includes("jee")) jee++;
       if (ets.includes("board")) board++;
+      for (const e of ets) examMap.set(e, (examMap.get(e) || 0) + 1);
     }
-    const classCats: { cat: Category; count: number }[] = [...classMap.entries()]
-      .sort((a, b) => Number(a[0]) - Number(b[0]) || a[0].localeCompare(b[0]))
-      .map(([cls, count]) => ({ cat: { kind: "class", value: cls, label: `Class ${cls}` }, count }));
+    // Classes: those present in the data + any admin-added custom class.
+    const classValues = new Set<string>([...classMap.keys(), ...customClasses]);
+    const classCats: { cat: Category; count: number }[] = [...classValues]
+      .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b))
+      .map((cls) => ({ cat: { kind: "class", value: cls, label: `Class ${cls}` }, count: classMap.get(cls) || 0 }));
+    // Exams: the three built-in tracks + any admin-added custom exam track.
     const examCats: { cat: Category; count: number }[] = [
       { cat: EXAM_CATEGORIES[0], count: neet },
       { cat: EXAM_CATEGORIES[1], count: jee },
       { cat: EXAM_CATEGORIES[2], count: board },
     ];
+    for (const ex of customExams) {
+      if (["neet", "jee", "board"].includes(ex.toLowerCase())) continue;
+      examCats.push({ cat: { kind: "exam", value: ex.toUpperCase(), label: ex }, count: examMap.get(ex.toLowerCase()) || 0 });
+    }
     return { classCats, examCats };
-  }, [questions]);
+  }, [questions, customClasses, customExams]);
 
   // Subjects within the chosen category.
   const subjectCards = useMemo(() => {
@@ -291,7 +332,25 @@ export default function AdminQuestions() {
             {loading ? "Loading…" : `${questions.length} total questions`}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          {!category && (
+            <>
+              <button
+                onClick={addCustomClass}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white font-semibold text-sm"
+                style={{ borderColor: colors.border, color: colors.foreground }}
+              >
+                <Icon name="plus" size={16} color={colors.foreground} /> Add Class
+              </button>
+              <button
+                onClick={addCustomExam}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white font-semibold text-sm"
+                style={{ borderColor: colors.border, color: colors.foreground }}
+              >
+                <Icon name="plus" size={16} color={colors.foreground} /> Add Exam
+              </button>
+            </>
+          )}
           <button
             onClick={() => nav("/admin/upload")}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white font-semibold text-sm"
