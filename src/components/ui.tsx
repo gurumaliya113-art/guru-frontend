@@ -71,6 +71,12 @@ const ICON_MAP: Record<string, keyof typeof Icons> = {
   clipboard: "Clipboard",
   notebook: "Notebook",
   settings: "Settings",
+  repeat: "Repeat",
+  tag: "Tag",
+  download: "Download",
+  image: "Image",
+  upload: "Upload",
+  sliders: "Sliders",
 };
 
 export function Icon({

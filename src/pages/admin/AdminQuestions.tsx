@@ -7,8 +7,6 @@ import { adminApi } from "@/lib/api";
 import { colors, difficultyColor, examColor, examLight, subjectColor } from "@/lib/colors";
 import type { Difficulty, Question, Topic } from "@/lib/types";
 
-const DIFFICULTIES: (Difficulty | "All")[] = ["All", "Easy", "Moderate", "Hard"];
-
 // Top-level categories — a category is either a class ("Class 10") or an exam track ("JEE").
 // Both are first-class browse axes for the admin question bank.
 type Category =
@@ -40,7 +38,13 @@ export default function AdminQuestions() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
+  // Multi-select difficulty filter. Empty array = "All levels". Tick several
+  // (e.g. Easy + Hard) to show questions of any of the ticked levels at once.
+  const [levels, setLevels] = useState<Difficulty[]>([]);
+  const toggleLevel = (d: Difficulty) =>
+    setLevels((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  // "Repeat" filter — when on, only pattern-wise / repeat-flagged questions show.
+  const [repeatOnly, setRepeatOnly] = useState(false);
 
   // Drill-down state: null at each level means "this level is the current view".
   // Initial values come from ?subject=&classLevel=&topic= so deep links from
@@ -243,14 +247,15 @@ export default function AdminQuestions() {
           if (t !== topic) return false;
         }
       }
-      if (difficulty !== "All" && x.difficulty !== difficulty) return false;
+      if (levels.length > 0 && !levels.includes(x.difficulty)) return false;
+      if (repeatOnly && !x.isRepeat) return false;
       if (needle) {
         const hay = (x.text + " " + (x.topic || "") + " " + x.options.join(" ")).toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     });
-  }, [questions, q, isSearching, category, subject, topic, difficulty]);
+  }, [questions, q, isSearching, category, subject, topic, levels, repeatOnly]);
 
   // Which view is active right now?
   // Search overrides the drill — any non-empty query takes you straight to the question list.
@@ -385,7 +390,55 @@ export default function AdminQuestions() {
             </button>
           )}
         </div>
-        <Select value={difficulty} onChange={(v) => setDifficulty(v as any)} options={DIFFICULTIES} label="Difficulty" />
+        {/* Multi-select level filter — tick one or more levels at the same time.
+            "All" clears the selection (shows every level). */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[12px] font-semibold mr-0.5" style={{ color: colors.mutedForeground }}>Level:</span>
+          <button
+            type="button"
+            onClick={() => setLevels([])}
+            className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border"
+            style={{
+              background: levels.length === 0 ? colors.primary : colors.card,
+              borderColor: levels.length === 0 ? colors.primary : colors.border,
+              color: levels.length === 0 ? "#fff" : colors.mutedForeground,
+            }}
+          >
+            All
+          </button>
+          {(["Easy", "Moderate", "Hard"] as Difficulty[]).map((d) => {
+            const on = levels.includes(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => toggleLevel(d)}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border"
+                style={{
+                  background: on ? difficultyColor(d) + "20" : colors.card,
+                  borderColor: on ? difficultyColor(d) : colors.border,
+                  color: on ? difficultyColor(d) : colors.mutedForeground,
+                }}
+              >
+                {on ? "✓ " : ""}{d}
+              </button>
+            );
+          })}
+          {/* Repeat filter — sits alongside the levels. */}
+          <button
+            type="button"
+            onClick={() => setRepeatOnly((v) => !v)}
+            className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border"
+            style={{
+              background: repeatOnly ? colors.jee + "20" : colors.card,
+              borderColor: repeatOnly ? colors.jee : colors.border,
+              color: repeatOnly ? colors.jee : colors.mutedForeground,
+            }}
+            title="Show only repeat / pattern-wise questions"
+          >
+            {repeatOnly ? "✓ " : ""}Repeat
+          </button>
+        </div>
       </div>
 
       {/* Breadcrumbs — only when drilled in (or searching) */}
@@ -596,6 +649,8 @@ export default function AdminQuestions() {
                     <Tag key={e} color={examColor(e)} bg={examLight(e)}>{e}</Tag>
                   ))}
                   {x.year && <Tag color={colors.jee} bg={colors.jeeLight}>PYQ {x.year}</Tag>}
+                  {x.remark && <Tag color={colors.primary} bg={colors.primary + "18"}>{x.remark}</Tag>}
+                  {x.isRepeat && <Tag color={colors.jee} bg={colors.jee + "20"}>Repeat</Tag>}
                   {x.source && <Tag color={colors.mutedForeground} muted>src: {x.source}</Tag>}
                 </div>
                 <div className="text-[14px] leading-6 font-medium mb-2" style={{ color: colors.foreground }}>
@@ -676,22 +731,6 @@ export default function AdminQuestions() {
         </>
       )}
     </div>
-  );
-}
-
-function Select({ value, onChange, options, label }: { value: string; onChange: (v: string) => void; options: readonly string[]; label: string }) {
-  return (
-    <label className="flex items-center gap-2 text-xs" style={{ color: colors.mutedForeground }}>
-      <span className="font-semibold uppercase tracking-wider">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg px-2.5 py-2 border bg-white text-sm"
-        style={{ borderColor: colors.border, color: colors.foreground }}
-      >
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </label>
   );
 }
 

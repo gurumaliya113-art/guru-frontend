@@ -94,6 +94,9 @@ export default function AdminUpload() {
   const [bulkExamTypes, setBulkExamTypes] = useState<string[]>(["NEET"]);
   // Exam types the teacher adds on the spot (beyond the built-in ones).
   const [extraExamTypes, setExtraExamTypes] = useState<string[]>([]);
+  // Bulk "Repeat" flag — when on, the applied range is marked as repeat /
+  // pattern-wise frequently-asked questions.
+  const [bulkRepeat, setBulkRepeat] = useState(false);
 
   const onPick = (f: File | null) => {
     setFile(f);
@@ -284,6 +287,7 @@ export default function AdminUpload() {
         classLevel: bulkClassLevels.length ? bulkClassLevels[0] : q.classLevel,
         board: bulkBoard || q.board,
         examType: bulkExamTypes.length ? [...bulkExamTypes] : q.examType,
+        isRepeat: bulkRepeat ? true : q.isRepeat,
       };
     }));
     setError("");
@@ -710,6 +714,20 @@ export default function AdminUpload() {
                     <option key={option}>{option}</option>
                   ))}
                 </select>
+                {/* Repeat (pattern-wise) flag for the applied range. */}
+                <button
+                  type="button"
+                  onClick={() => setBulkRepeat((v) => !v)}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 mb-4 font-semibold border text-sm"
+                  style={{
+                    background: bulkRepeat ? colors.jee + "20" : colors.card,
+                    borderColor: bulkRepeat ? colors.jee : colors.border,
+                    color: bulkRepeat ? colors.jee : colors.mutedForeground,
+                  }}
+                >
+                  <Icon name={bulkRepeat ? "check-circle" : "repeat"} size={15} color={bulkRepeat ? colors.jee : colors.mutedForeground} />
+                  {bulkRepeat ? "Will mark as Repeat" : "Mark as Repeat (pattern-wise)"}
+                </button>
                 <button
                   type="button"
                   onClick={applyBulkAssignment}

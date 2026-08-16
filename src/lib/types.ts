@@ -30,8 +30,14 @@ export interface Question {
   board?: string;
   /** Whether the question is from NCERT textbook */
   isNCERT?: boolean;
+  /** Marks a "repeat" / frequently-asked (pattern-wise) question. Set on
+   *  upload; used as a filter in the admin Question Bank. */
+  isRepeat?: boolean;
   /** Provenance: "seed" | "manual" | "pdf" | "pdf-ai" — admin metadata */
   source?: string;
+  /** Free-text remark shown with the question (e.g. "NEET 2022", "JEE 2025").
+   *  Visible in the exam builder & on-screen paper; optional in printed PDF. */
+  remark?: string;
   /** ID of the source document (PDF), if extracted */
   documentId?: string;
   /** 1-indexed page number in the source PDF */

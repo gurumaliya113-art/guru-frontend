@@ -13,6 +13,9 @@ export default function PaperView() {
   const { id = "" } = useParams();
   const { papers, profile } = useApp();
   const [showAnswers, setShowAnswers] = useState(false);
+  // Remarks (e.g. "NEET 2022") always show on screen. This flag controls
+  // whether they are also included in the printed / saved-as-PDF paper.
+  const [includeRemarks, setIncludeRemarks] = useState(false);
 
   // Local-cache hit (teacher viewing own paper) is the fast path. For
   // students opening an assigned paper, the paper isn't in their `papers`
@@ -172,6 +175,23 @@ export default function PaperView() {
           <Icon name={showAnswers ? "eye-off" : "eye"} size={15} color={showAnswers ? colors.neet : colors.mutedForeground} />
           {showAnswers ? "Hide" : "Answers"}
         </button>
+        {/* Toggle whether remarks (e.g. "NEET 2022") are printed. They always
+            show on screen; this only affects the PDF/print output. */}
+        {paper.questions.some((q) => q.remark) && (
+          <button
+            onClick={() => setIncludeRemarks((v) => !v)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border text-xs font-semibold"
+            style={{
+              background: includeRemarks ? colors.primary + "18" : colors.secondary,
+              borderColor: includeRemarks ? colors.primary : colors.border,
+              color: includeRemarks ? colors.primary : colors.mutedForeground,
+            }}
+            title="Include remarks in the printed PDF"
+          >
+            <Icon name={includeRemarks ? "check-circle" : "tag"} size={15} color={includeRemarks ? colors.primary : colors.mutedForeground} />
+            {includeRemarks ? "Remarks in PDF" : "Remarks"}
+          </button>
+        )}
       </div>
 
       <div className="px-4 pt-4 pb-8">
@@ -203,6 +223,11 @@ export default function PaperView() {
                   }}>
                   {q.difficulty}
                 </span>
+                {q.remark && (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: colors.primary + "18", color: colors.primary }}>
+                    {q.remark}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -257,7 +282,7 @@ export default function PaperView() {
           and stamp the teacher's header image at the top of every page via
           `position: running()` fallback — most browsers honor it. The screen
           UI itself is hidden with a print rule on `.no-print`. */}
-      <div className="paper-print">
+      <div className={`paper-print ${includeRemarks ? "remarks-on" : "remarks-off"}`}>
         {profile?.paperHeaderImage && !paper.skipHeader && (
           <img src={profile.paperHeaderImage} alt="" className="paper-print-header" />
         )}
@@ -274,6 +299,7 @@ export default function PaperView() {
         <ol className="paper-print-list">
           {paper.questions.map((q) => (
             <li key={q.id} className="paper-print-q">
+              {q.remark && <span className="paper-print-remark">[{q.remark}]</span>}
               <MathText className="paper-print-q-text" text={q.text} />
               {q.pageImageUrl && (
                 <img
@@ -360,6 +386,15 @@ export default function PaperView() {
             min-width: 20px;
           }
           .paper-print-q-text { margin-bottom: 3px; }
+          /* Remarks are optional in print — hidden unless "Remarks in PDF" is on. */
+          .paper-print-remark {
+            display: inline-block;
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #444;
+            margin-right: 4px;
+          }
+          .paper-print.remarks-off .paper-print-remark { display: none; }
           .paper-print-q-img {
             display: block;
             max-width: 100%;

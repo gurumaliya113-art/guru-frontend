@@ -72,7 +72,23 @@ export default function PaperGenerate() {
   const [examType, setExamType] = useState<ExamType | null>(null);
   // Multi-class paper: teacher can mix content from several classes (e.g. 11 + 12).
   const [classLevels, setClassLevels] = useState<string[]>([]);
-  const [subject, setSubject] = useState<string | null>(null);
+  // Multi-subject paper: teacher can mix content from several subjects
+  // (e.g. Physics + Chemistry + Maths). Empty = none picked yet.
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const toggleSubject = (s: string) =>
+    setSubjects((prev) => {
+      if (prev.includes(s)) {
+        // Unticking a subject clears any topics/subtopics that belonged to it
+        // is handled loosely — topics are re-derived from the pool, so we just
+        // drop the subject here and let the topic list refresh.
+        return prev.filter((x) => x !== s);
+      }
+      return [...prev, s];
+    });
+  // True if the question's subject is one of the selected subjects (or none picked).
+  const subjectMatches = (q: Question) =>
+    subjects.length === 0 ||
+    subjects.some((s) => s.toLowerCase() === (q.subject || "").toLowerCase());
   // Multi-topic paper: teacher can mix several topics (e.g. two chapters).
   // Empty array = "All topics" (mix from every topic in the subject).
   const [topics, setTopics] = useState<string[]>([]);
@@ -158,7 +174,7 @@ export default function PaperGenerate() {
   const toggleClass = (c: string) =>
     setClassLevels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
 
-  const subjects = useMemo(() => {
+  const availableSubjects = useMemo(() => {
     if (!examType) return [] as string[];
     const base = subjectsFor(examType);
     const examLower = examType.toLowerCase();
@@ -187,13 +203,12 @@ export default function PaperGenerate() {
   // pulled from the actual question pool so teachers can see at a glance
   // whether a topic has enough questions.
   const topicCards = useMemo(() => {
-    if (!subject) return [] as { name: string; count: number }[];
-    const subjLower = subject.toLowerCase();
+    if (subjects.length === 0) return [] as { name: string; count: number }[];
     const examLower = examType?.toLowerCase();
 
     const countMap = new Map<string, number>();
     for (const q of pool) {
-      if ((q.subject || "").toLowerCase() !== subjLower) continue;
+      if (!subjectMatches(q)) continue;
       // Class match: when classes are chosen, include a question if it belongs
       // to ANY selected class (multi-class aware). No class picked = all.
       if (!classMatches(q)) continue;
@@ -205,9 +220,10 @@ export default function PaperGenerate() {
       countMap.set(t, (countMap.get(t) || 0) + 1);
     }
 
+    const subjLowerSet = new Set(subjects.map((s) => s.toLowerCase()));
     const catalogueNames = new Set<string>();
     for (const t of catalogueTopics) {
-      if ((t.subject || "").toLowerCase() !== subjLower) continue;
+      if (!subjLowerSet.has((t.subject || "").toLowerCase())) continue;
       if (t.classLevel && classLevels.length && !classLevels.includes(String(t.classLevel))) continue;
       if (t.examType && examLower && t.examType.toLowerCase() !== examLower) continue;
       catalogueNames.add(t.name);
@@ -217,7 +233,7 @@ export default function PaperGenerate() {
     return [...all]
       .map((name) => ({ name, count: countMap.get(name) || 0 }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [pool, catalogueTopics, subject, classLevels, examType]);
+  }, [pool, catalogueTopics, subjects, classLevels, examType]);
 
   const totalForSubject = topicCards.reduce((s, t) => s + t.count, 0);
 
@@ -225,12 +241,11 @@ export default function PaperGenerate() {
   // subtopics during PDF upload). Same subject/class/exam filters as topicCards.
   const subtopicsByTopic = useMemo(() => {
     const map = new Map<string, { name: string; count: number }[]>();
-    if (!subject) return map;
-    const subjLower = subject.toLowerCase();
+    if (subjects.length === 0) return map;
     const examLower = examType?.toLowerCase();
     const counts = new Map<string, Map<string, number>>();
     for (const q of pool) {
-      if ((q.subject || "").toLowerCase() !== subjLower) continue;
+      if (!subjectMatches(q)) continue;
       if (!classMatches(q)) continue;
       if (examLower) {
         const ets = (q.examType || []).map((e) => String(e).toLowerCase());
@@ -252,16 +267,15 @@ export default function PaperGenerate() {
       );
     }
     return map;
-  }, [pool, subject, classLevels, examType]);
+  }, [pool, subjects, classLevels, examType]);
 
   // Filter the pool by every selection in one place — both the live preview
   // count and the actual generation use this so they can never disagree.
   const matchingQuestions = useMemo(() => {
-    if (!examType || !subject) return [];
-    const subjLower = subject.toLowerCase();
+    if (!examType || subjects.length === 0) return [];
     const examLower = examType.toLowerCase();
     return pool.filter((q) => {
-      if ((q.subject || "").toLowerCase() !== subjLower) return false;
+      if (!subjectMatches(q)) return false;
       if (!classMatches(q)) return false;
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
       if (!ets.includes(examLower)) return false;
@@ -284,14 +298,17 @@ export default function PaperGenerate() {
       }
       return true;
     });
-  }, [pool, examType, subject, classLevels, topics, subKeys, mode, questionType, difficulty]);
+  }, [pool, examType, subjects, classLevels, topics, subKeys, mode, questionType, difficulty]);
 
   // Human-readable label for the current topic selection.
   const topicLabel =
     topics.length === 0 ? "All topics" : topics.length === 1 ? topics[0] : `${topics.length} topics`;
+  // Human-readable label for the current subject selection.
+  const subjectLabel =
+    subjects.length === 0 ? "—" : subjects.length <= 2 ? subjects.join(" & ") : `${subjects.length} subjects`;
 
   const handleGenerate = async () => {
-    if (!examType || !subject) return;
+    if (!examType || subjects.length === 0) return;
     // Free teachers can generate up to 20 papers, then must upgrade.
     if (reachedLimit) {
       setShowUpgrade(true);
@@ -302,9 +319,10 @@ export default function PaperGenerate() {
     const shuffled = [...matchingQuestions].sort(() => Math.random() - 0.5).slice(0, questionCount);
     const paper = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-      title: `${examType} ${subject} — ${topics.length === 0 ? "Mixed Topics" : topics.length === 1 ? topics[0] : `${topics.length} Topics`}`,
+      title: `${examType} ${subjects.join(" / ")} — ${topics.length === 0 ? "Mixed Topics" : topics.length === 1 ? topics[0] : `${topics.length} Topics`}`,
       examType,
-      subject: subject as Subject,
+      // GeneratedPaper.subject is a display string; join for multi-subject papers.
+      subject: subjects.join(", ") as Subject,
       topic: topics.length === 0 ? "All" : topics.join(", "),
       difficulty,
       questions: shuffled,
@@ -336,7 +354,7 @@ export default function PaperGenerate() {
     setStep(s);
     if (i <= STEPS.indexOf("exam")) { setExamType(null); }
     if (i <= STEPS.indexOf("class")) { setClassLevels([]); }
-    if (i <= STEPS.indexOf("subject")) { setSubject(null); }
+    if (i <= STEPS.indexOf("subject")) { setSubjects([]); }
     if (i <= STEPS.indexOf("topic")) { setTopics([]); setSubKeys([]); setExpandedTopics([]); }
     if (i <= STEPS.indexOf("mode")) { setMode(null); }
   };
@@ -377,7 +395,7 @@ export default function PaperGenerate() {
       </div>
 
       {/* Selected breadcrumbs */}
-      {(examType || classLevels.length > 0 || subject || topics.length > 0 || mode) && (
+      {(examType || classLevels.length > 0 || subjects.length > 0 || topics.length > 0 || mode) && (
         <div className="px-4 pt-3 flex flex-wrap gap-2">
           {examType && (
             <Crumb label={examType} onClick={() => jumpTo("exam")} color={examColor(examType)} bg={examLight(examType)} />
@@ -385,8 +403,8 @@ export default function PaperGenerate() {
           {classLevels.length > 0 && (
             <Crumb label={classLevels.length === 1 ? `Class ${classLevels[0]}` : `Classes ${classLevels.join(", ")}`} onClick={() => jumpTo("class")} />
           )}
-          {subject && (
-            <Crumb label={subject} onClick={() => jumpTo("subject")} color={subjectColor(subject as any) || colors.primary} />
+          {subjects.length > 0 && (
+            <Crumb label={subjectLabel} onClick={() => jumpTo("subject")} color={subjects.length === 1 ? (subjectColor(subjects[0] as any) || colors.primary) : colors.primary} />
           )}
           {topics.length > 0 && stepIndex > STEPS.indexOf("topic") && (
             <Crumb label={topicLabel} onClick={() => jumpTo("topic")} />
@@ -417,11 +435,11 @@ export default function PaperGenerate() {
 
         {/* ---- STEP 2: CLASS (multi-select) ---- */}
         {step === "class" && (
-          <Panel title="Choose class(es)" subtitle="Tick one or more — a paper can mix content from several classes (e.g. 11 + 12).">
+          <Panel title="Choose class(es)" subtitle="Tick one or more — any class works with any exam (e.g. JEE Class 8, NEET Class 9).">
             <div className="grid grid-cols-3 gap-3">
-              {/* Competitive exams (NEET/JEE/BITS) are only for classes 9–12.
-                  Board papers can be for any class 1–12. */}
-              {(examType && examType !== "BOARD" ? ["9", "10", "11", "12"] : ALL_CLASSES).map((c) => {
+              {/* Any class can be paired with any exam track (JEE 8th, NEET 9th,
+                  Olympiad 6th, etc.) — admins tag questions freely on upload. */}
+              {ALL_CLASSES.map((c) => {
                 const on = classLevels.includes(c);
                 return (
                   <button
@@ -451,27 +469,50 @@ export default function PaperGenerate() {
           </Panel>
         )}
 
-        {/* ---- STEP 3: SUBJECT ---- */}
+        {/* ---- STEP 3: SUBJECT (multi-select) ---- */}
         {step === "subject" && (
-          <Panel title="Choose subject">
+          <Panel title="Choose subject(s)" subtitle="Tick one or more — a paper can mix several subjects (e.g. Physics + Chemistry + Maths).">
             <div className="grid grid-cols-2 gap-3">
-              {subjects.map((s) => (
-                <BigCard
-                  key={s}
-                  label={s}
-                  accent={subjectColor(s as any) || colors.primary}
-                  onClick={() => { setSubject(s); setStep("topic"); }}
-                  fullWidth
-                />
-              ))}
+              {availableSubjects.map((s) => {
+                const on = subjects.includes(s);
+                const accent = subjectColor(s as any) || colors.primary;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSubject(s)}
+                    className="rounded-2xl border-2 p-5 text-left transition relative overflow-hidden"
+                    style={{
+                      borderColor: on ? accent : colors.border,
+                      background: on ? accent + "12" : "#fff",
+                    }}
+                  >
+                    <div className="absolute inset-x-0 top-0 h-1.5" style={{ background: accent }} />
+                    <div className="flex items-center gap-2 mt-2">
+                      <CheckBox checked={on} />
+                      <span className="font-bold text-[17px]" style={{ color: accent }}>{s}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            <button
+              onClick={() => subjects.length > 0 && setStep("topic")}
+              disabled={subjects.length === 0}
+              className="w-full mt-5 py-3.5 rounded-2xl font-bold text-white disabled:opacity-50"
+              style={{ background: colors.primary }}
+            >
+              {subjects.length > 0
+                ? `Continue with ${subjects.length === 1 ? subjects[0] : `${subjects.length} subjects`}`
+                : "Select at least one subject"}
+            </button>
           </Panel>
         )}
 
         {/* ---- STEP 4: TOPIC (multi-select) ---- */}
-        {step === "topic" && subject && (
+        {step === "topic" && subjects.length > 0 && (
           <Panel
-            title={`Topics in ${subject}`}
+            title={`Topics in ${subjectLabel}`}
             subtitle="Tick one or more topics to mix them in the same paper. Leave all unticked for a mixed paper from every topic."
           >
             {/* "All topics" — clears the selection so the paper mixes every topic. */}
@@ -500,7 +541,7 @@ export default function PaperGenerate() {
             </button>
 
             {topicCards.length === 0 ? (
-              <EmptyState text={`No topics yet for ${subject}.`} />
+              <EmptyState text={`No topics yet for ${subjectLabel}.`} />
             ) : (
               <div className="flex flex-col gap-2.5">
                 {topicCards.map((t) => {
@@ -509,7 +550,7 @@ export default function PaperGenerate() {
                   const hasSubs = subs.length > 0;
                   const expanded = expandedTopics.includes(t.name);
                   const pickedSubs = subsSelectedFor(t.name);
-                  const accent = subjectColor(subject as any) || colors.primary;
+                  const accent = subjects.length === 1 ? (subjectColor(subjects[0] as any) || colors.primary) : colors.primary;
                   return (
                     <div
                       key={t.name}
@@ -766,7 +807,7 @@ export default function PaperGenerate() {
               </div>
               <Summary label="Exam" value={examType || "—"} />
               <Summary label="Class" value={classLevels.length ? (classLevels.length === 1 ? `Class ${classLevels[0]}` : `Classes ${classLevels.join(", ")}`) : "—"} />
-              <Summary label="Subject" value={subject || "—"} />
+              <Summary label={subjects.length > 1 ? "Subjects" : "Subject"} value={subjects.length ? subjects.join(", ") : "—"} />
               <Summary label={topics.length > 1 ? "Topics" : "Topic"} value={topics.length === 0 ? "All topics" : topics.join(", ")} />
               <Summary label="Mode" value={mode === "ai" ? "AI Express" : "Manual"} />
               {mode === "manual" && (

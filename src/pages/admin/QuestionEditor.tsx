@@ -32,6 +32,10 @@ export type EditableQuestion = Partial<Question> & {
   classLevel?: string;
   board?: string;
   isNCERT?: boolean;
+  /** Marks a "repeat" / pattern-wise frequently-asked question. */
+  isRepeat?: boolean;
+  /** Free-text remark (e.g. "NEET 2022", "JEE 2025"). Optional in print. */
+  remark?: string;
   // PDF source tracking (set by upload flow):
   documentId?: string;
   pageNumber?: number | null;
@@ -521,6 +525,28 @@ export function QuestionEditor({
               })}
             </div>
           </Field>
+          <Field label="Repeat (pattern)">
+            <div className="flex gap-1">
+              {[{ k: true, l: "Yes" }, { k: false, l: "No" }].map((opt) => {
+                const active = !!value.isRepeat === opt.k;
+                return (
+                  <button
+                    key={opt.l}
+                    type="button"
+                    onClick={() => update({ isRepeat: opt.k })}
+                    className="flex-1 px-2 py-2 rounded-lg text-[12px] font-semibold border"
+                    style={{
+                      background: active ? colors.jee + "20" : colors.card,
+                      borderColor: active ? colors.jee : colors.border,
+                      color: active ? colors.jee : colors.mutedForeground,
+                    }}
+                  >
+                    {opt.l}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
           <Field label="Year (PYQ, optional)">
             <input
               type="number"
@@ -532,6 +558,19 @@ export function QuestionEditor({
             />
           </Field>
         </div>
+
+        {/* Remark — free text shown with the question in the builder & on-screen
+            paper (e.g. "NEET 2022", "JEE 2025"). Optional in the printed PDF. */}
+        <Field label="Remark (optional — e.g. NEET 2022 / JEE 2025)">
+          <input
+            type="text"
+            value={value.remark || ""}
+            onChange={(e) => update({ remark: e.target.value || undefined })}
+            placeholder="e.g. NEET 2022, JEE Main 2025 shift-1…"
+            className="w-full rounded-lg px-3 py-2 border outline-none text-sm bg-white"
+            style={{ borderColor: colors.border }}
+          />
+        </Field>
 
         <div className="grid grid-cols-1 gap-3">
           <div>
