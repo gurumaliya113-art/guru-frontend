@@ -97,6 +97,10 @@ export default function AdminUpload() {
   // Bulk "Repeat" flag — when on, the applied range is marked as repeat /
   // pattern-wise frequently-asked questions.
   const [bulkRepeat, setBulkRepeat] = useState(false);
+  // Bulk remark (e.g. "NEET 2022") applied to the whole range at once.
+  const [bulkRemark, setBulkRemark] = useState("");
+  // Topics the admin adds on the spot in the bulk panel (beyond bank/catalogue).
+  const [extraTopics, setExtraTopics] = useState<string[]>([]);
 
   const onPick = (f: File | null) => {
     setFile(f);
@@ -223,7 +227,8 @@ export default function AdminUpload() {
     catalogueTopics
       .filter((t) => !bulkSubject || (t.subject || "").toLowerCase() === bulkSubject.toLowerCase())
       .map((t) => t.name),
-    drafts.map((q) => q.topic)
+    drafts.map((q) => q.topic),
+    extraTopics
   ).sort((a, b) => a.localeCompare(b));
   // Existing subtopics (from parsed drafts) offered as autocomplete suggestions.
   const availableSubtopics = mergeUniqueOptions(drafts.map((q) => (q as any).subtopic)).sort((a, b) => a.localeCompare(b));
@@ -250,6 +255,14 @@ export default function AdminUpload() {
     if (!name) return;
     if (!availableSubjects.includes(name)) setExtraSubjects((prev) => [...prev, name]);
     setBulkSubject(name);
+  };
+
+  // Add a brand-new topic on the spot and select it in the bulk dropdown.
+  const addTopicOnSpot = () => {
+    const name = (window.prompt("Add topic (e.g. Microbes in Human Welfare):") || "").trim();
+    if (!name) return;
+    if (!availableTopics.includes(name)) setExtraTopics((prev) => [...prev, name]);
+    setBulkTopic(name);
   };
   const availableBoards = mergeUniqueOptions(BOARD_OPTIONS, drafts.map((q) => q.board));
   const availableExamTypes = mergeUniqueOptions(EXAM_OPTIONS, extraExamTypes, drafts.flatMap((q) => q.examType || []));
@@ -288,6 +301,7 @@ export default function AdminUpload() {
         board: bulkBoard || q.board,
         examType: bulkExamTypes.length ? [...bulkExamTypes] : q.examType,
         isRepeat: bulkRepeat ? true : q.isRepeat,
+        remark: bulkRemark.trim() || q.remark,
       };
     }));
     setError("");
@@ -604,21 +618,31 @@ export default function AdminUpload() {
                     + Add subject
                   </button>
                 </div>
-                <select
-                  value={bulkTopic}
-                  onChange={(e) => setBulkTopic(e.target.value)}
-                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
-                  style={{ borderColor: colors.border, background: colors.card }}
-                >
-                  <option value="">Topic (keep existing)</option>
-                  {availableTopics.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2 mb-3">
+                  <select
+                    value={bulkTopic}
+                    onChange={(e) => setBulkTopic(e.target.value)}
+                    className="flex-1 rounded-xl border px-3 py-2 text-sm"
+                    style={{ borderColor: colors.border, background: colors.card }}
+                  >
+                    <option value="">Topic (keep existing)</option>
+                    {availableTopics.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addTopicOnSpot}
+                    className="whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-semibold"
+                    style={{ borderColor: colors.primary, color: colors.primary, background: colors.primary + "10" }}
+                  >
+                    + Add topic
+                  </button>
+                </div>
                 <input
                   value={bulkSubtopic}
                   onChange={(e) => setBulkSubtopic(e.target.value)}
-                  placeholder="Subtopic (optional) — e.g. Biot-Savart Law"
+                  placeholder="Subtopic (optional) — type to add, e.g. Biot-Savart Law"
                   list="bulk-subtopic-suggestions"
                   className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
                   style={{ borderColor: colors.border, background: colors.card }}
@@ -628,6 +652,14 @@ export default function AdminUpload() {
                     <option key={s} value={s} />
                   ))}
                 </datalist>
+                {/* Bulk remark — applied to the whole range (e.g. "NEET 2022"). */}
+                <input
+                  value={bulkRemark}
+                  onChange={(e) => setBulkRemark(e.target.value)}
+                  placeholder="Remark (optional) — e.g. NEET 2022, JEE 2025"
+                  className="w-full rounded-xl border px-3 py-2 text-sm mb-3"
+                  style={{ borderColor: colors.border, background: colors.card }}
+                />
                 <div className="mb-3">
                   <div className="text-[11px] mb-1.5" style={{ color: colors.mutedForeground }}>
                     Classes (tick every class this applies to)
