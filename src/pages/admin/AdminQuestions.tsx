@@ -45,6 +45,10 @@ export default function AdminQuestions() {
     setLevels((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   // "Repeat" filter — when on, only pattern-wise / repeat-flagged questions show.
   const [repeatOnly, setRepeatOnly] = useState(false);
+  // Bulk-edit the questions currently shown (e.g. stamp "NEET 2022" on every
+  // old NEET question at once, or mark them all as Repeat).
+  const [bulkRemark, setBulkRemark] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // Drill-down state: null at each level means "this level is the current view".
   // Initial values come from ?subject=&classLevel=&topic= so deep links from
@@ -278,6 +282,34 @@ export default function AdminQuestions() {
     } catch (e: any) {
       alert(e?.message || "Delete failed");
     }
+  };
+
+  // ---- Bulk edit for the questions currently shown (filtered) ----
+  // Upserts the whole shown set in one request (addQuestions upserts by id),
+  // so old NEET/JEE questions can be stamped with a remark or marked Repeat
+  // without opening each one.
+  const applyBulkToShown = async (patch: Partial<Question>, label: string) => {
+    if (filtered.length === 0) return;
+    if (!window.confirm(`${label} for all ${filtered.length} shown question${filtered.length === 1 ? "" : "s"}?`)) return;
+    setBulkBusy(true);
+    try {
+      const updated = filtered.map((x) => ({ ...x, ...patch }));
+      await adminApi.addQuestions(updated);
+      const byId = new Map(updated.map((u) => [u.id, u]));
+      setQuestions((arr) => arr.map((x) => byId.get(x.id) || x));
+      refreshQuestions();
+    } catch (e: any) {
+      alert(e?.message || "Bulk update failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const applyBulkRemark = async () => {
+    const r = bulkRemark.trim();
+    if (!r) return;
+    await applyBulkToShown({ remark: r }, `Set remark "${r}"`);
+    setBulkRemark("");
   };
 
   // ---- Topic catalogue handlers ----
@@ -627,6 +659,54 @@ export default function AdminQuestions() {
       {/* ---- LEVEL 4: QUESTIONS ---- */}
       {!loading && view === "questions" && (
         <>
+          {/* Bulk-edit toolbar — stamp a remark / mark Repeat on EVERY question
+              currently shown. Filter first (e.g. exam=NEET), then apply. */}
+          {filtered.length > 0 && (
+            <div className="rounded-2xl border bg-white p-3 mb-3 flex flex-col md:flex-row gap-2 md:items-center"
+              style={{ borderColor: colors.border }}>
+              <span className="text-[12px] font-semibold" style={{ color: colors.mutedForeground }}>
+                Bulk on {filtered.length} shown:
+              </span>
+              <div className="flex-1 flex items-center gap-2">
+                <input
+                  value={bulkRemark}
+                  onChange={(e) => setBulkRemark(e.target.value)}
+                  placeholder="Remark e.g. NEET 2022, JEE 2025"
+                  className="flex-1 rounded-lg px-3 py-2 border outline-none text-sm"
+                  style={{ borderColor: colors.border, background: colors.card }}
+                />
+                <button
+                  type="button"
+                  onClick={applyBulkRemark}
+                  disabled={bulkBusy || !bulkRemark.trim()}
+                  className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: colors.primary }}
+                >
+                  {bulkBusy ? "Applying…" : "Apply remark"}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyBulkToShown({ isRepeat: true }, "Mark as Repeat")}
+                  disabled={bulkBusy}
+                  className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold border disabled:opacity-50"
+                  style={{ borderColor: colors.jee, color: colors.jee, background: colors.jee + "12" }}
+                >
+                  Mark all Repeat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyBulkToShown({ isRepeat: false }, "Clear Repeat")}
+                  disabled={bulkBusy}
+                  className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold border disabled:opacity-50"
+                  style={{ borderColor: colors.border, color: colors.mutedForeground, background: colors.card }}
+                >
+                  Clear Repeat
+                </button>
+              </div>
+            </div>
+          )}
           <div className="text-sm mb-3" style={{ color: colors.mutedForeground }}>
             Showing {filtered.length} question{filtered.length === 1 ? "" : "s"}
           </div>
