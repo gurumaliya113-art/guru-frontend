@@ -37,9 +37,20 @@ function repairTex(input: string): string {
   s = s.replace(/[\u2012\u2013\u2014\u2212]/g, "-");
   // 4. Collapse the "^{. . .}^" / "{...}" ellipsis garbage into \ldots.
   s = s.replace(/\^?\{\s*\.(?:\s*\.)+\s*\}\^?/g, "\\ldots ");
-  // 5. Re-attach missing backslashes on known commands/Greek letters.
+  // 5. Protect the contents of text-mode groups (\text{...}, \operatorname{...},
+  //    \mathrm{...}) from the backslash re-attach below. Otherwise a plain unit
+  //    word like "sec" (seconds) inside \text{ sec} gets turned into "\sec"
+  //    (secant), which is invalid inside \text and makes KaTeX show a red error.
+  const protectedSpans: string[] = [];
+  s = s.replace(/\\(?:text|operatorname|mathrm|mathbf|textbf)\s*\{[^{}]*\}/g, (match) => {
+    protectedSpans.push(match);
+    return `\u0000P${protectedSpans.length - 1}\u0000`;
+  });
+  // 6. Re-attach missing backslashes on known commands/Greek letters.
   const re = new RegExp(`(^|[^\\\\A-Za-z])(${TEX_WORDS})(?![A-Za-z])`, "g");
   s = s.replace(re, "$1\\$2");
+  // 7. Restore the protected text-mode groups untouched.
+  s = s.replace(/\u0000P(\d+)\u0000/g, (_, i) => protectedSpans[Number(i)]);
   return s;
 }
 
