@@ -19,6 +19,8 @@ export interface ProgressState {
   /** null = calculating / unavailable */
   etaSeconds: number | null;
   pages: Record<number, "processing" | "done" | "failed">;
+  /** Reason a page failed, keyed by page number (e.g. "…timed out after 60000ms"). */
+  pageNotes: Record<number, string>;
   /** Human-readable note about the engine/key currently running, e.g. "Running on Key 2 of 4". */
   activeKey: string | null;
   error: string | null;
@@ -51,6 +53,7 @@ const IDLE_STATE: ProgressState = {
   percentage: 0,
   etaSeconds: null,
   pages: {},
+  pageNotes: {},
   activeKey: null,
   error: null,
 };
@@ -93,12 +96,22 @@ function reducer(state: ProgressState, action: Action): ProgressState {
 
         case "progress": {
           let pages = state.pages;
+          let pageNotes = state.pageNotes;
+          let activeKey = state.activeKey;
           if (event.page) {
             pages = { ...pages, [event.page.number]: event.page.outcome };
+            if (event.page.outcome === "failed" && event.note) {
+              // A failed page carries its REAL reason in `note` — store it per
+              // page so the UI can show "Page N failed: <reason>".
+              pageNotes = { ...pageNotes, [event.page.number]: event.note };
+            } else if (event.note) {
+              // A successful page's note is the running engine/key label.
+              activeKey = event.note;
+            }
+          } else if (event.note) {
+            activeKey = event.note;
           }
-          // Keep the last known engine/key label if this event doesn't carry one.
-          const activeKey = event.note ?? state.activeKey;
-          return { ...applyMetrics(state, event), status: "running", pages, activeKey };
+          return { ...applyMetrics(state, event), status: "running", pages, pageNotes, activeKey };
         }
 
         case "complete":

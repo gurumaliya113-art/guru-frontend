@@ -23,9 +23,11 @@ function formatEta(etaSeconds: number): string {
 function PageChip({
   page,
   status,
+  note,
 }: {
   page: number;
   status: "done" | "failed" | "processing" | "pending";
+  note?: string;
 }) {
   const style: { bg: string; fg: string; border: string; icon: string } = (() => {
     switch (status) {
@@ -40,11 +42,18 @@ function PageChip({
     }
   })();
 
+  // On a failed page show the real reason in the hover tooltip; otherwise the
+  // plain status. This is why hovering page 3 now says exactly why it failed.
+  const title =
+    status === "failed" && note
+      ? `Page ${page} failed: ${note}`
+      : `Page ${page}${status !== "pending" ? ` — ${status}` : ""}`;
+
   return (
     <div
       className="flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
       style={{ background: style.bg, color: style.fg, borderColor: style.border }}
-      title={`Page ${page}${status !== "pending" ? ` — ${status}` : ""}`}
+      title={title}
     >
       {style.icon && <span aria-hidden>{style.icon}</span>}
       <span>{page}</span>
@@ -148,10 +157,37 @@ export default function ProgressPanel({ state }: ProgressPanelProps) {
           style={{ background: colors.background }}
         >
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-            <PageChip key={n} page={n} status={pageStatus(n)} />
+            <PageChip key={n} page={n} status={pageStatus(n)} note={state.pageNotes[n]} />
           ))}
         </div>
       )}
+
+      {/* Failed-page reasons — spelled out so the admin doesn't have to guess
+          why a page's badge went red. */}
+      {(() => {
+        const failed = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
+          (n) => state.pages[n] === "failed"
+        );
+        if (failed.length === 0) return null;
+        return (
+          <div
+            className="mt-3 rounded-lg border px-3 py-2 text-xs"
+            style={{ background: "#fef2f2", borderColor: colors.destructive + "55", color: colors.destructive }}
+          >
+            <div className="font-semibold mb-1">
+              {failed.length} page{failed.length === 1 ? "" : "s"} failed:
+            </div>
+            <ul className="list-disc pl-4 space-y-0.5">
+              {failed.map((n) => (
+                <li key={n}>
+                  <span className="font-semibold">Page {n}:</span>{" "}
+                  {state.pageNotes[n] || "reason not reported"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Terminal banners */}
       {state.status === "complete" && (

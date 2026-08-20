@@ -16,6 +16,8 @@ function makeState(overrides: Partial<ProgressState> = {}): ProgressState {
     percentage: 0,
     etaSeconds: null,
     pages: {},
+    pageNotes: {},
+    activeKey: null,
     error: null,
     ...overrides,
   };
