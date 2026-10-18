@@ -26,6 +26,9 @@ export const colors = {
   bits: "#db2777",
   bitsLight: "#fce7f3",
   bitsForeground: "#9d174d",
+  olympiads: "#0891b2",
+  olympiadsLight: "#e0f2fe",
+  olympiadsForeground: "#0c4a6e",
   success: "#22c55e",
   warning: "#f59e0b",
   info: "#3b82f6",
@@ -43,11 +46,23 @@ export const subjectColor = (subj: string) =>
     Mathematics: colors.mathematics,
   }[subj] || colors.primary);
 
-export const examColor = (exam: string) =>
-  exam === "NEET" ? colors.neet : exam === "JEE" ? colors.jee : exam === "BITS" ? colors.bits : colors.board;
+export const examColor = (exam: string) => {
+  const e = exam?.toUpperCase();
+  if (e === "NEET") return colors.neet;
+  if (e === "JEE") return colors.jee;
+  if (e === "BITS") return colors.bits;
+  if (e === "OLYMPIADS" || e === "OLYMPIAD") return colors.olympiads;
+  return colors.board;
+};
 
-export const examLight = (exam: string) =>
-  exam === "NEET" ? colors.neetLight : exam === "JEE" ? colors.jeeLight : exam === "BITS" ? colors.bitsLight : colors.boardLight;
+export const examLight = (exam: string) => {
+  const e = exam?.toUpperCase();
+  if (e === "NEET") return colors.neetLight;
+  if (e === "JEE") return colors.jeeLight;
+  if (e === "BITS") return colors.bitsLight;
+  if (e === "OLYMPIADS" || e === "OLYMPIAD") return colors.olympiadsLight;
+  return colors.boardLight;
+};
 
 export const difficultyColor = (d: string) =>
   d === "Easy" ? colors.neet : d === "Moderate" ? colors.jee : colors.destructive;

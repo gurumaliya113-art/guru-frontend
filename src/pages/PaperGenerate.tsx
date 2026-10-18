@@ -37,7 +37,7 @@ type Mode = "manual" | "ai";
 type Step = "exam" | "class" | "subject" | "topic" | "mode" | "details";
 
 const STEPS: Step[] = ["exam", "class", "subject", "topic", "mode", "details"];
-const ALL_EXAMS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD"];
+const ALL_EXAMS: ExamType[] = ["NEET", "JEE", "BITS", "BOARD", "OLYMPIADS"];
 const ALL_CLASSES = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const QUESTION_TYPES: QuestionType[] = [
   "MCQ",
@@ -55,6 +55,7 @@ const QUESTION_TYPES: QuestionType[] = [
 function subjectsFor(exam: ExamType): string[] {
   if (exam === "NEET") return ["Biology", "Physics", "Chemistry"];
   if (exam === "JEE") return ["Physics", "Chemistry", "Mathematics"];
+  if (exam === "OLYMPIADS") return ["Physics", "Chemistry", "Biology", "Mathematics"];
   return ["Physics", "Chemistry", "Biology", "Mathematics"];
 }
 
@@ -178,12 +179,11 @@ export default function PaperGenerate() {
     if (!examType) return [] as string[];
     const base = subjectsFor(examType);
     const examLower = examType.toLowerCase();
-    // Pull any subjects that actually exist in the question pool for this
-    // exam + class (so primary-class subjects like English/Hindi/EVS/GK show up).
+    const isOlympiads = examLower === "olympiads";
     const fromPool = new Set<string>();
     for (const q of pool) {
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
-      if (!ets.includes(examLower)) continue;
+      if (isOlympiads ? !ets.some((e) => e.startsWith("olympiad")) : !ets.includes(examLower)) continue;
       if (!classMatches(q)) continue;
       if (q.subject) fromPool.add(q.subject);
     }
@@ -205,16 +205,16 @@ export default function PaperGenerate() {
   const topicCards = useMemo(() => {
     if (subjects.length === 0) return [] as { name: string; count: number }[];
     const examLower = examType?.toLowerCase();
+    const isOlympiads = examLower === "olympiads";
 
     const countMap = new Map<string, number>();
     for (const q of pool) {
       if (!subjectMatches(q)) continue;
-      // Class match: when classes are chosen, include a question if it belongs
       // to ANY selected class (multi-class aware). No class picked = all.
       if (!classMatches(q)) continue;
       if (examLower) {
         const ets = (q.examType || []).map((e) => String(e).toLowerCase());
-        if (!ets.includes(examLower)) continue;
+        if (isOlympiads ? !ets.some((e) => e.startsWith("olympiad")) : !ets.includes(examLower)) continue;
       }
       const t = (q.topic || "").trim() || "Untagged";
       countMap.set(t, (countMap.get(t) || 0) + 1);
@@ -225,7 +225,10 @@ export default function PaperGenerate() {
     for (const t of catalogueTopics) {
       if (!subjLowerSet.has((t.subject || "").toLowerCase())) continue;
       if (t.classLevel && classLevels.length && !classLevels.includes(String(t.classLevel))) continue;
-      if (t.examType && examLower && t.examType.toLowerCase() !== examLower) continue;
+      if (t.examType && examLower) {
+        const tl = t.examType.toLowerCase();
+        if (isOlympiads ? !tl.startsWith("olympiad") : tl !== examLower) continue;
+      }
       catalogueNames.add(t.name);
     }
 
@@ -243,13 +246,14 @@ export default function PaperGenerate() {
     const map = new Map<string, { name: string; count: number }[]>();
     if (subjects.length === 0) return map;
     const examLower = examType?.toLowerCase();
+    const isOlympiads = examLower === "olympiads";
     const counts = new Map<string, Map<string, number>>();
     for (const q of pool) {
       if (!subjectMatches(q)) continue;
       if (!classMatches(q)) continue;
       if (examLower) {
         const ets = (q.examType || []).map((e) => String(e).toLowerCase());
-        if (!ets.includes(examLower)) continue;
+        if (isOlympiads ? !ets.some((e) => e.startsWith("olympiad")) : !ets.includes(examLower)) continue;
       }
       const sub = (q.subtopic || "").trim();
       if (!sub) continue; // only real subtopics
@@ -274,11 +278,17 @@ export default function PaperGenerate() {
   const matchingQuestions = useMemo(() => {
     if (!examType || subjects.length === 0) return [];
     const examLower = examType.toLowerCase();
+    const isOlympiads = examLower === "olympiads";
     return pool.filter((q) => {
       if (!subjectMatches(q)) return false;
       if (!classMatches(q)) return false;
       const ets = (q.examType || []).map((e) => String(e).toLowerCase());
-      if (!ets.includes(examLower)) return false;
+      // Olympiads: match all spelling variants
+      if (isOlympiads) {
+        if (!ets.some((e) => e.startsWith("olympiad"))) return false;
+      } else {
+        if (!ets.includes(examLower)) return false;
+      }
       // Empty topics[] = "All topics". Otherwise the question's topic must be
       // one of the selected topics (multi-topic aware).
       const qTopic = (q.topic || "").trim();

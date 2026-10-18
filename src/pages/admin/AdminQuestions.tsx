@@ -17,13 +17,17 @@ const EXAM_CATEGORIES: Category[] = [
   { kind: "exam", value: "NEET", label: "NEET" },
   { kind: "exam", value: "JEE", label: "JEE" },
   { kind: "exam", value: "BOARD", label: "Board" },
+  { kind: "exam", value: "OLYMPIADS", label: "Olympiads" },
 ];
 
 function questionMatchesCategory(qn: Question, cat: Category | null): boolean {
   if (!cat) return true;
   if (cat.kind === "class") return (qn.classLevel || "") === cat.value;
-  // case-insensitive exam match — DB sometimes has mixed casing
   const want = cat.value.toLowerCase();
+  // Olympiads: match all spelling variants in the DB
+  if (want === "olympiads") {
+    return (qn.examType || []).some((e) => String(e).toLowerCase().startsWith("olympiad"));
+  }
   return (qn.examType || []).some((e) => String(e).toLowerCase() === want);
 }
 
@@ -157,13 +161,15 @@ export default function AdminQuestions() {
   const categoryCards = useMemo(() => {
     const classMap = new Map<string, number>();
     const examMap = new Map<string, number>(); // lowercased exam name -> count
-    let neet = 0, jee = 0, board = 0;
+    let neet = 0, jee = 0, board = 0, olympiads = 0;
     for (const x of questions) {
       if (x.classLevel) classMap.set(x.classLevel, (classMap.get(x.classLevel) || 0) + 1);
       const ets = (x.examType || []).map((e) => String(e).toLowerCase());
       if (ets.includes("neet")) neet++;
       if (ets.includes("jee")) jee++;
       if (ets.includes("board")) board++;
+      // Match all Olympiad spellings: "OLYMPIADS", "Olympiads", "OLYMPIAD", "olympiad"
+      if (ets.some((e) => e.startsWith("olympiad"))) olympiads++;
       for (const e of ets) examMap.set(e, (examMap.get(e) || 0) + 1);
     }
     // Classes: those present in the data + any admin-added custom class.
@@ -171,11 +177,12 @@ export default function AdminQuestions() {
     const classCats: { cat: Category; count: number }[] = [...classValues]
       .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b))
       .map((cls) => ({ cat: { kind: "class", value: cls, label: `Class ${cls}` }, count: classMap.get(cls) || 0 }));
-    // Exams: the three built-in tracks + any admin-added custom exam track.
+    // Exams: the four built-in tracks + any admin-added custom exam track.
     const examCats: { cat: Category; count: number }[] = [
       { cat: EXAM_CATEGORIES[0], count: neet },
       { cat: EXAM_CATEGORIES[1], count: jee },
       { cat: EXAM_CATEGORIES[2], count: board },
+      { cat: EXAM_CATEGORIES[3], count: olympiads },
     ];
     for (const ex of customExams) {
       if (["neet", "jee", "board"].includes(ex.toLowerCase())) continue;

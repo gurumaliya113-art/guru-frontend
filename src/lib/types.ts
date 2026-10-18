@@ -1,4 +1,4 @@
-export type ExamType = "NEET" | "JEE" | "BITS" | "BOARD";
+export type ExamType = "NEET" | "JEE" | "BITS" | "BOARD" | "OLYMPIADS";
 export type Subject = "Physics" | "Chemistry" | "Biology" | "Mathematics";
 export type Difficulty = "Easy" | "Moderate" | "Hard";
 export type Role = "student" | "teacher";
