@@ -6,13 +6,19 @@ import QuestionDiagram from "@/components/QuestionDiagram";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { colors, examColor } from "@/lib/colors";
-import type { GeneratedPaper } from "@/lib/types";
+import type { GeneratedPaper, Question } from "@/lib/types";
 
 export default function PaperView() {
   const nav = useNavigate();
   const { id = "" } = useParams();
-  const { papers, profile } = useApp();
+  const { papers, profile, questions: pool, updatePaperQuestions } = useApp();
   const [showAnswers, setShowAnswers] = useState(false);
+  // Swap-question sheet state
+  const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  const [swapSearch, setSwapSearch] = useState("");
+  const [swapLimit, setSwapLimit] = useState(30);
+  const [swapError, setSwapError] = useState("");
+  const [justSwapped, setJustSwapped] = useState<string | null>(null);
   // Remarks (e.g. "NEET 2022") always show on screen. This flag controls
   // whether they are also included in the printed / saved-as-PDF paper.
   const [includeRemarks, setIncludeRemarks] = useState(false);
@@ -123,8 +129,38 @@ export default function PaperView() {
     );
   }
 
+  // Only the paper's owner can swap questions, and only for normal MCQ papers
+  // (not captured photo papers or previous-year papers).
+  const canSwap =
+    Boolean(localPaper) &&
+    paper.topic !== "Previous Year" &&
+    paper.questions.some((q) => q.options.length > 0);
+
+  const candidatesFor = (target: Question) => {
+    const inPaper = new Set(paper.questions.map((q) => q.id));
+    const sameTopic = (q: Question) =>
+      q.topic === target.topic && (!target.subject || q.subject === target.subject);
+    return pool
+      .filter((q) => !inPaper.has(q.id) && sameTopic(q) && q.options?.length > 0)
+      .sort((a, b) => Number(b.difficulty === target.difficulty) - Number(a.difficulty === target.difficulty));
+  };
+
+  const replaceQuestion = async (index: number, next: Question) => {
+    const updated = paper.questions.map((q, i) => (i === index ? next : q));
+    setSwapIndex(null);
+    setSwapError("");
+    try {
+      await updatePaperQuestions(paper.id, updated);
+      setJustSwapped(next.id);
+      window.setTimeout(() => setJustSwapped(null), 1600);
+    } catch (e: any) {
+      setSwapError("Could not save the change: " + String(e?.message || e));
+    }
+  };
+
   return (
     <div className="min-h-full max-w-[640px] mx-auto">
+     <div className="no-print">
       <div className="flex items-center gap-2.5 px-4 pt-12 pb-3 border-b bg-white sticky top-0 z-10" style={{ borderColor: colors.border }}>
         <button onClick={() => nav(-1)} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: colors.secondary }}>
           <Icon name="arrow-left" size={18} color={colors.foreground} />
@@ -208,13 +244,39 @@ export default function PaperView() {
           </div>
         </div>
 
+        {canSwap && (
+          <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-3 border" style={{ background: colors.secondary, borderColor: "#ddd6fe" }}>
+            <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: colors.primaryGradient }}>
+              <Icon name="refresh-cw" size={16} color="#fff" />
+            </span>
+            <div className="text-[13px] leading-5" style={{ color: colors.foreground }}>
+              <b>Review your paper.</b> Koi question badalna ho to uske <b>Replace</b> button pe tap karo — usi topic ke
+              dusre questions dikhenge, jo chaho select kar lo.
+            </div>
+          </div>
+        )}
+        {swapError && (
+          <div className="rounded-xl px-3 py-2 mb-4 text-[13px]" style={{ background: "#fef2f2", color: "#b91c1c" }}>{swapError}</div>
+        )}
+
         {paper.questions.map((q, idx) => (
-          <div key={q.id} className="rounded-2xl p-4 mb-4 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
+          <div key={q.id}
+            className={`rounded-2xl p-4 mb-4 border bg-white shadow-sm transition-shadow ${justSwapped === q.id ? "pv-swapped" : ""}`}
+            style={{ borderColor: justSwapped === q.id ? colors.primary : colors.border }}>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[13px] font-bold" style={{ background: colors.primaryGradient }}>
                 {idx + 1}
               </div>
-              <div className="flex gap-1.5">
+              {canSwap && q.options.length > 0 && (
+                <button
+                  onClick={() => { setSwapIndex(idx); setSwapSearch(""); setSwapLimit(30); }}
+                  className="order-last ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold"
+                  style={{ borderColor: "#ddd6fe", color: colors.primary, background: "#fff" }}
+                >
+                  <Icon name="refresh-cw" size={12} color={colors.primary} /> Replace
+                </button>
+              )}
+              <div className="flex gap-1.5 flex-wrap">
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ background: colors.secondary, color: colors.mutedForeground }}>{q.topic}</span>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-medium"
                   style={{
@@ -275,6 +337,93 @@ export default function PaperView() {
         ))}
       </div>
 
+      {/* ---------- Swap-question sheet ---------- */}
+      {swapIndex !== null && paper.questions[swapIndex] && (() => {
+        const target = paper.questions[swapIndex];
+        const term = swapSearch.trim().toLowerCase();
+        const all = candidatesFor(target);
+        const list = term
+          ? all.filter((c) => (c.text + " " + c.options.join(" ")).toLowerCase().includes(term))
+          : all;
+        return (
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pv-fade" onClick={() => setSwapIndex(null)}
+            style={{ background: "rgba(20,17,43,0.45)" }}>
+            <div className="pv-sheet w-full sm:max-w-[600px] max-h-[88vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: colors.border }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[16px] font-bold" style={{ color: colors.foreground }}>Replace Q{swapIndex + 1}</div>
+                    <div className="text-[12px] mt-0.5" style={{ color: colors.mutedForeground }}>
+                      {target.subject ? `${target.subject} · ` : ""}{target.topic} · {all.length} other question{all.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <button onClick={() => setSwapIndex(null)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: colors.secondary }}>
+                    <Icon name="x" size={16} color={colors.foreground} />
+                  </button>
+                </div>
+                <div className="mt-3 rounded-xl p-3 text-[12px] leading-5" style={{ background: colors.secondary, color: colors.mutedForeground }}>
+                  <span className="font-semibold" style={{ color: colors.foreground }}>Current: </span>
+                  <MathText text={target.text.length > 160 ? target.text.slice(0, 160) + "…" : target.text} />
+                </div>
+                {all.length > 6 && (
+                  <input
+                    value={swapSearch}
+                    onChange={(e) => setSwapSearch(e.target.value)}
+                    placeholder="Search in these questions…"
+                    className="mt-3 w-full rounded-xl px-3 py-2 text-[13px] outline-none border"
+                    style={{ borderColor: colors.border, background: "#fff" }}
+                  />
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                {list.length === 0 ? (
+                  <div className="py-10 text-center text-[13px]" style={{ color: colors.mutedForeground }}>
+                    <Icon name="inbox" size={28} color={colors.mutedForeground} />
+                    <div className="mt-2">
+                      {all.length === 0 ? "Is topic mein aur koi question nahi hai." : "Search se koi question match nahi hua."}
+                    </div>
+                  </div>
+                ) : (
+                  list.slice(0, swapLimit).map((c, i) => (
+                    <button
+                      key={c.id}
+                      onClick={() => replaceQuestion(swapIndex, c)}
+                      className="pv-item w-full text-left rounded-2xl border p-3.5 mb-2.5 bg-white"
+                      style={{ borderColor: colors.border, animationDelay: `${Math.min(i, 10) * 0.035}s` }}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                          style={{
+                            background: c.difficulty === "Easy" ? colors.neetLight : c.difficulty === "Moderate" ? colors.jeeLight : "#fee2e2",
+                            color: c.difficulty === "Easy" ? colors.neet : c.difficulty === "Moderate" ? colors.jee : colors.destructive,
+                          }}>{c.difficulty}</span>
+                        {c.remark && <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: colors.secondary, color: colors.primary }}>{c.remark}</span>}
+                        {c.pageImageUrl && <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: colors.secondary, color: colors.mutedForeground }}>Diagram</span>}
+                        <span className="ml-auto text-[11px] font-bold" style={{ color: colors.primary }}>Select</span>
+                      </div>
+                      <MathText className="text-[13px] leading-5 block" style={{ color: colors.foreground }} text={c.text} />
+                      <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]" style={{ color: colors.mutedForeground }}>
+                        {c.options.slice(0, 4).map((o, oi) => (
+                          <div key={oi} className="truncate"><b>{String.fromCharCode(65 + oi)}.</b> <MathText text={o} /></div>
+                        ))}
+                      </div>
+                    </button>
+                  ))
+                )}
+                {list.length > swapLimit && (
+                  <button onClick={() => setSwapLimit((n) => n + 30)} className="w-full py-2.5 rounded-xl text-[13px] font-semibold" style={{ color: colors.primary, background: colors.secondary }}>
+                    Show more ({list.length - swapLimit} left)
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+     </div>
+
       {/* ----------------- PRINT-ONLY VIEW ----------------- */}
       {/* This block is invisible on screen and only flows into the page when
           the user hits the PDF / print button. We use CSS multi-column to
@@ -327,16 +476,28 @@ export default function PaperView() {
           and doesn't pollute the global app styles. */}
       <style>{`
         .paper-print { display: none; }
+        .pv-fade { animation: pv-fade .2s ease backwards; }
+        @keyframes pv-fade { from { opacity: 0; } }
+        .pv-sheet { animation: pv-up .35s cubic-bezier(.22,1,.36,1) backwards; }
+        @keyframes pv-up { from { translate: 0 40px; opacity: 0; } }
+        .pv-item { animation: pv-rise .4s cubic-bezier(.22,1,.36,1) backwards; transition: border-color .2s, box-shadow .2s, translate .2s; }
+        .pv-item:hover { border-color: #c4b5fd !important; box-shadow: 0 12px 26px -18px rgba(46,16,101,.45); translate: 0 -1px; }
+        @keyframes pv-rise { from { opacity: 0; translate: 0 10px; } }
+        .pv-swapped { animation: pv-flash 1.6s ease; }
+        @keyframes pv-flash { 0% { box-shadow: 0 0 0 0 rgba(124,58,237,.45); } 40% { box-shadow: 0 0 0 8px rgba(124,58,237,0); } 100% { box-shadow: none; } }
         @media print {
           @page { size: A4; margin: 12mm 10mm; }
-          body { background: #fff !important; }
-          /* Hide everything except our print block */
+          /* Blank-page fix: the on-screen UI used to be only visibility-hidden,
+             so its full height still counted and added empty pages. Remove it
+             from layout entirely and let the print block flow normally. */
+          html, body, #root { height: auto !important; min-height: 0 !important; background: #fff !important; }
+          #root * { min-height: 0 !important; }
+          .no-print { display: none !important; }
           body * { visibility: hidden !important; }
           .paper-print, .paper-print * { visibility: visible !important; }
           .paper-print {
             display: block !important;
-            position: absolute;
-            inset: 0;
+            position: static;
             color: #000;
             font-family: "Times New Roman", Georgia, serif;
             font-size: 11pt;

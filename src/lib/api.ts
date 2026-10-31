@@ -197,6 +197,11 @@ export const api = {
   },
   deletePaper: (id: string) =>
     request<{ ok: true }>(`/api/papers/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  updatePaperQuestions: (id: string, questions: Question[]) =>
+    request<{ paper: GeneratedPaper }>(`/api/papers/${encodeURIComponent(id)}/questions`, {
+      method: "PUT",
+      body: JSON.stringify({ questions }),
+    }),
   reset: () => request<{ ok: true }>("/api/reset", { method: "POST" }),
 
   // Public questions catalogue

@@ -84,6 +84,7 @@ interface AppContextType {
    *  Used by the capture-upload flow where the server has already saved it. */
   attachPaper: (paper: GeneratedPaper) => void;
   deletePaper: (id: string) => Promise<void>;
+  updatePaperQuestions: (id: string, questions: Question[]) => Promise<void>;
   completeOnboarding: (name: string, role: Role, exam: ExamType, extras?: OnboardingExtras) => Promise<void>;
   upgradeToTeacher: () => Promise<void>;
   resetProgress: () => Promise<void>;
@@ -342,6 +343,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try { await api.deletePaper(id); } catch (e) { console.error(e); }
   }, []);
 
+  // Save a new question list for a paper; rolls back the local copy on failure.
+  const updatePaperQuestions = useCallback(async (id: string, questions: Question[]) => {
+    let previous: Question[] | undefined;
+    setPapers((prev) => prev.map((p) => {
+      if (p.id !== id) return p;
+      previous = p.questions;
+      return { ...p, questions };
+    }));
+    try {
+      await api.updatePaperQuestions(id, questions);
+    } catch (e) {
+      if (previous) {
+        const restore = previous;
+        setPapers((prev) => prev.map((p) => (p.id === id ? { ...p, questions: restore } : p)));
+      }
+      throw e;
+    }
+  }, []);
+
   const resetProgress = useCallback(async () => {
     setAttempts([]);
     setPapers([]);
@@ -410,6 +430,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addPaper,
         attachPaper,
         deletePaper,
+        updatePaperQuestions,
         completeOnboarding,
         upgradeToTeacher,
         resetProgress,
