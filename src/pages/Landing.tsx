@@ -40,11 +40,21 @@ import "../landing.css";
 
 const NAV_LINKS = [
   { label: "Mock Tests", href: "#exams" },
+  { label: "Toppers", href: "#toppers" },
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
   { label: "For Teachers", href: "/teachers" },
   { label: "For Schools", href: "/schools" },
   { label: "Refer & Earn", href: "#referral", badge: "NEW" },
+];
+
+// Photos live in frontend/public/toppers/ (see file names below).
+const TOPPERS = [
+  { name: "Jyoti",    photo: "/toppers/jyoti.jpg",    score: 577, outOf: 720, exam: "NEET" },
+  { name: "Anjali",   photo: "/toppers/anjali.jpg",   score: 552, outOf: 720, exam: "NEET" },
+  { name: "Himanshu", photo: "/toppers/himanshu.jpg", score: 563, outOf: 720, exam: "NEET" },
+  { name: "Mahi",     photo: "/toppers/mahi.jpg",     score: 495, outOf: 720, exam: "NEET", extra: "BITSAT Cleared" },
+  { name: "Jhanvi",   photo: "/toppers/jhanvi.jpg",   score: 100, outOf: 100, exam: "Mathematics" },
 ];
 
 const EXAM_CARDS = [
@@ -187,6 +197,71 @@ function useAutoPage(pages: number, ms: number) {
   return { page, setPage, hover };
 }
 
+/** Counts from 0 to `to` once the number scrolls into view. */
+function CountUp({ to, ms = 1400 }: { to: number; ms?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+      setVal(to);
+      return;
+    }
+    let raf = 0;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min(1, (now - start) / ms);
+        setVal(Math.round(to * (1 - Math.pow(1 - p, 3)))); // ease-out cubic
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.6 });
+    io.observe(el);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+  }, [to, ms]);
+  return <span ref={ref}>{val}</span>;
+}
+
+function Laurel({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg viewBox="0 0 60 120" aria-hidden className={`gl-sway h-24 w-12 text-violet-200 md:h-32 md:w-16 ${flip ? "-scale-x-100" : ""}`}
+      style={{ animationDelay: flip ? "1.5s" : "0s" }} fill="currentColor">
+      <path d="M44 116C20 98 10 70 16 40" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      {[[30, 100, -30], [22, 84, -40], [17, 66, -50], [16, 48, -60], [19, 31, -70]].map(([x, y, r], i) => (
+        <g key={i}>
+          <ellipse cx={x - 9} cy={y} rx="9" ry="4.5" transform={`rotate(${r} ${x - 9} ${y})`} />
+          <ellipse cx={x + 8} cy={y - 4} rx="9" ry="4.5" transform={`rotate(${r + 80} ${x + 8} ${y - 4})`} />
+        </g>
+      ))}
+      <ellipse cx="20" cy="18" rx="5" ry="10" transform="rotate(20 20 18)" />
+    </svg>
+  );
+}
+
+function TopperPhoto({ src, name }: { src: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="relative block h-[92px] w-[92px] shrink-0">
+      {/* rotating gradient ring */}
+      <span className="gl-spin-slow absolute -inset-[5px] rounded-full"
+        style={{ background: "conic-gradient(from 0deg, #c4b5fd, #7c3aed, #f0abfc, #c4b5fd)" }} />
+      <span className="absolute -inset-[2px] rounded-full bg-white" />
+      {failed ? (
+        <span className="gl-grad relative flex h-full w-full items-center justify-center rounded-full text-2xl font-bold text-white">
+          {name[0]}
+        </span>
+      ) : (
+        <img src={src} alt={name} loading="lazy" onError={() => setFailed(true)}
+          className="relative h-full w-full rounded-full object-cover object-top" />
+      )}
+    </span>
+  );
+}
+
 function Spark({ className = "", delay = 0 }: { className?: string; delay?: number }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={`gl-twinkle ${className}`} style={{ animationDelay: `${delay}s` }}>
@@ -289,6 +364,10 @@ export default function Landing() {
   const tPages = Math.max(1, TESTIMONIALS.length - perView + 1);
   const t = useAutoPage(tPages, 4000);
 
+  const topPerView = usePerView(1, 2, 4);
+  const topPages = Math.max(1, TOPPERS.length - topPerView + 1);
+  const top = useAutoPage(topPages, 6000);
+
   const muted = { color: "var(--text)" };
 
   return (
@@ -371,6 +450,66 @@ export default function Landing() {
             </R>
           </div>
           <R delay={0.1} y={0} scale={0.94}><HeroVisual /></R>
+        </div>
+      </section>
+
+      {/* ── TOPPERS ── */}
+      <section id="toppers" className="relative overflow-hidden py-20">
+        <span className="gl-dots pointer-events-none absolute left-8 top-10 hidden h-16 w-16 text-violet-300 md:block" />
+        <span className="gl-dots pointer-events-none absolute right-8 top-28 hidden h-16 w-16 text-violet-300 md:block" />
+        <Spark className="absolute left-[18%] top-[62%] hidden h-3 w-3 text-violet-300 md:block" delay={0.6} />
+        <Spark className="absolute right-[16%] top-[14%] hidden h-4 w-4 text-violet-400 md:block" delay={2} />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-4 md:gap-10">
+            <Laurel />
+            <R className="max-w-xl text-center">
+              <Kicker icon={Trophy}>Our toppers</Kicker>
+              <h2 className="gl-h mt-4 text-3xl font-extrabold md:text-[42px] md:leading-[1.15]">
+                From Students to <span className="gl-grad-text">Achievers</span>
+              </h2>
+              <p className="mt-3 text-[15px]" style={muted}>Celebrating Gurtron students who worked hard and made it to the top.</p>
+            </R>
+            <Laurel flip />
+          </div>
+
+          <div className="relative mt-12" {...top.hover}>
+            <div className="overflow-hidden px-1 py-4">
+              <div className="gl-track" style={{ transform: `translateX(-${(top.page * 100) / topPerView}%)` }}>
+                {TOPPERS.map((s, i) => (
+                  <div key={s.name} className="shrink-0 px-2.5" style={{ width: `${100 / topPerView}%` }}>
+                    <R delay={0.08 + Math.min(i, 3) * 0.1} y={26} className="h-full">
+                      <article className="gl-lift gl-sheen group relative flex h-full items-center gap-5 overflow-hidden rounded-[20px] border border-gray-100 bg-white p-5 shadow-[0_14px_34px_-22px_rgba(46,16,101,.4)]">
+                        <TopperPhoto src={s.photo} name={s.name} />
+                        <div className="min-w-0">
+                          <div className="gl-h text-[28px] font-extrabold leading-none text-violet-700">
+                            <CountUp to={s.score} /><span className="text-[15px] font-bold text-violet-400">/{s.outOf}</span>
+                          </div>
+                          <div className="mt-1.5 text-[13px] text-gray-500">{s.exam}</div>
+                          <span className="mt-2 block h-[2px] w-8 rounded-full bg-violet-500 transition-all duration-500 group-hover:w-14" />
+                          <div className="mt-2 text-[15px] font-extrabold uppercase tracking-wide" style={{ color: "var(--ink)" }}>{s.name}</div>
+                          {s.extra && (
+                            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                              <CheckCircle2 className="h-3 w-3" /> {s.extra}
+                            </span>
+                          )}
+                        </div>
+                        {s.score === s.outOf && (
+                          <span className="gl-pop absolute right-3 top-3 rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900">Perfect</span>
+                        )}
+                      </article>
+                    </R>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {topPages > 1 && (
+              <div className="mt-4 flex justify-center gap-2.5">
+                {Array.from({ length: topPages }).map((_, i) => (
+                  <button key={i} aria-label={`Slide ${i + 1}`} onClick={() => top.setPage(i)} className={`gl-dot ${i === top.page ? "is-active" : ""}`} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
