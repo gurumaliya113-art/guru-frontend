@@ -129,3 +129,9 @@
 @media (prefers-reduced-motion: reduce) {
   .app-rise *, .am-grad *, .am-tab-indicator { animation: none !important; transition: none !important; }
 }
+
+/* Printing / Save as PDF: never animate (animations restart on print-only
+   blocks and would leave them at opacity 0 → blank PDF). */
+@media print {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -493,6 +493,11 @@ export default function PaperView() {
           html, body, #root { height: auto !important; min-height: 0 !important; background: #fff !important; }
           #root * { min-height: 0 !important; }
           .no-print { display: none !important; }
+          /* The print block is display:none on screen, so the page-entry
+             animation (opacity 0 → 1) would restart when printing and the PDF
+             came out blank. Never animate in print. */
+          *, *::before, *::after { animation: none !important; transition: none !important; }
+          .paper-print, .paper-print * { opacity: 1 !important; translate: none !important; }
           body * { visibility: hidden !important; }
           .paper-print, .paper-print * { visibility: visible !important; }
           .paper-print {
