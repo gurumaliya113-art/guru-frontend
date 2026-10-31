@@ -5,6 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { ExamType, Role } from "@/lib/types";
+import { Sparkle } from "@/components/motion";
 import "@/onboarding.css";
 
 declare global {
@@ -13,8 +14,8 @@ declare global {
   }
 }
 
-const GOLD = "#EEB32B";
-const BG = "#040718";
+const GOLD = "#6d28d9"; // brand purple (name kept to limit churn)
+const BG = "#ffffff";
 
 type OnboardingStage = "role" | "student-path" | "class" | "exam";
 
@@ -70,7 +71,7 @@ export default function Onboarding() {
       });
       buttonRef.current.innerHTML = "";
       window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: "filled_black",
+        theme: "outline",
         size: "large",
         shape: "pill",
         text: "continue_with",
@@ -161,7 +162,7 @@ export default function Onboarding() {
   // Reusable optional referral input shown on the final onboarding steps.
   const ReferralField = (
     <div className="mt-4 text-left">
-      <div className="text-[13px] font-semibold mb-1" style={{ color: "#fff" }}>
+      <div className="text-[13px] font-semibold mb-1" style={{ color: "#14112b" }}>
         Were you referred by someone?
       </div>
       <input
@@ -170,7 +171,7 @@ export default function Onboarding() {
         onBlur={checkReferral}
         placeholder="Enter Referral Code (Optional)"
         className="w-full rounded-xl px-3 py-2 text-sm outline-none"
-        style={{ background: "#071028", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}
+        style={{ background: "#faf9ff", border: "1px solid #e4def5", color: "#14112b" }}
       />
       {refStatus ? (
         <div className="mt-1 text-[12px]" style={{ color: refStatus.ok ? "#34d399" : "#f87171" }}>
@@ -182,39 +183,53 @@ export default function Onboarding() {
 
   return (
     <div className="onboarding-root">
+      <span className="am-blob-a ob-bg-blob ob-bg-blob--a" aria-hidden />
+      <span className="am-blob-b ob-bg-blob ob-bg-blob--b" aria-hidden />
+      <span className="ob-dots ob-dots--tl" aria-hidden />
+      <span className="ob-dots ob-dots--br" aria-hidden />
+      <Sparkle className="absolute left-[10%] bottom-[18%] h-4 w-4 text-violet-400" delay={0.6} />
+      <Sparkle className="absolute right-[12%] top-[14%] h-5 w-5 text-violet-500" delay={2} />
       <main className="onboarding-screen">
         <div className="onboarding-card onboarding-card--compact">
           {!showOnboarding ? (
             <div className="brand-hero text-center">
-              <div className="brand-orb brand-orb--left" />
-              <div className="brand-orb brand-orb--right" />
-              <div className="hero-frame">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="logo-mark logo-mark--large" style={{ background: GOLD, color: BG }}>
-                    <Icon name="zap" size={24} color={BG} />
+              <div className="hero-frame am-grad">
+                <span className="am-blob-a brand-orb brand-orb--left" />
+                <span className="am-blob-b brand-orb brand-orb--right" />
+                <Sparkle className="absolute left-[14%] top-[18%] h-3 w-3 text-white/60" />
+                <Sparkle className="absolute right-[12%] top-[30%] h-4 w-4 text-violet-200/80" delay={1.4} />
+                <div className="ob-in flex items-center justify-center gap-3 mb-4">
+                  <div className="logo-mark logo-mark--large">
+                    <Icon name="zap" size={24} color="#6d28d9" />
                   </div>
                 </div>
-                <div className="brand-name">Gurtron</div>
-                <div className="brand-tagline">Built for 1 % Who refuses average</div>
+                <div className="ob-in brand-name" style={{ animationDelay: ".08s" }}><span className="am-shine">Gurtron</span></div>
+                <div className="ob-in brand-tagline" style={{ animationDelay: ".16s" }}>Built for the 1% who refuse average</div>
                 <div className="brand-graphic" aria-hidden="true">
                   <div className="brand-arc brand-arc--one" />
                   <div className="brand-arc brand-arc--two" />
-                  <div className="brand-card brand-card--one">
-                    <span className="brand-card-label">Focus</span>
-                    <span className="brand-card-value">99%</span>
+                  <div className="brand-card brand-card--one am-float">
+                    <span className="brand-card-label">Mock Tests</span>
+                    <span className="brand-card-value">Real pattern</span>
                   </div>
-                  <div className="brand-card brand-card--two">
-                    <span className="brand-card-label">Edge</span>
-                    <span className="brand-card-value">Elite</span>
+                  <div className="brand-card brand-card--two am-float" style={{ animationDelay: "1.2s" }}>
+                    <span className="brand-card-label">AI Doubts</span>
+                    <span className="brand-card-value">24×7</span>
                   </div>
                 </div>
               </div>
-              {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#fff" }}>{error}</div> : null}
-              <div ref={buttonRef} className="flex justify-center" />
-              {busy ? <div className="mt-3 text-sm" style={{ color: "#8b95b0" }}>Signing in…</div> : null}
+              <div className="ob-in mt-6 mb-1 text-[15px] font-bold" style={{ color: "#14112b", animationDelay: ".24s" }}>Welcome! Let's get you started</div>
+              <div className="ob-in mb-5 text-[13px]" style={{ color: "#6b6880", animationDelay: ".28s" }}>Sign in with Google to continue</div>
+              {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "#fef2f2", color: "#b91c1c" }}>{error}</div> : null}
+              <div ref={buttonRef} className="ob-in flex justify-center" style={{ animationDelay: ".34s" }} />
+              {busy ? <div className="mt-3 text-sm" style={{ color: "#6b6880" }}>Signing in…</div> : null}
+              <div className="mt-5 flex items-center justify-center gap-4 text-[11px]" style={{ color: "#6b6880" }}>
+                <span className="flex items-center gap-1"><Icon name="check-circle" size={12} color="#16a34a" /> Free to start</span>
+                <span className="flex items-center gap-1"><Icon name="shield" size={12} color="#6d28d9" /> Secure Google login</span>
+              </div>
             </div>
           ) : (
-            <div>
+            <div key={stage} className="ob-step">
               {stage === "role" && (
                 <>
                   <div className="flex items-center gap-3 mb-5">
@@ -227,7 +242,7 @@ export default function Onboarding() {
                     </div>
                   </div>
 
-                  {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#fff" }}>{error}</div> : null}
+                  {error ? <div className="mb-4 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(248,113,113,0.12)", color: "#14112b" }}>{error}</div> : null}
 
                   <div className="grid gap-3">
                     <button
@@ -239,16 +254,16 @@ export default function Onboarding() {
                       className="onboarding-choice-card onboarding-choice-card--active"
                     >
                       <div className="font-bold">Student</div>
-                      <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Class 1-12 or exam prep like NEET, JEE, BITS.</div>
+                      <div className="text-[12px] mt-1" style={{ color: "#6b6880" }}>Class 1-12 or exam prep like NEET, JEE, BITS.</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedRole("teacher")}
                       className="onboarding-choice-card"
-                      style={{ borderColor: selectedRole === "teacher" ? GOLD : "rgba(255,255,255,0.08)", background: selectedRole === "teacher" ? "rgba(238,179,43,0.12)" : "#071028" }}
+                      style={{ borderColor: selectedRole === "teacher" ? GOLD : "#ebe7f5", background: selectedRole === "teacher" ? "#f5f3ff" : "#ffffff" }}
                     >
                       <div className="font-bold">Teacher</div>
-                      <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Create classes and manage student access.</div>
+                      <div className="text-[12px] mt-1" style={{ color: "#6b6880" }}>Create classes and manage student access.</div>
                     </button>
                   </div>
 
@@ -285,7 +300,7 @@ export default function Onboarding() {
                         className="onboarding-choice-card onboarding-choice-card--active"
                       >
                         <div className="font-bold">Class 1-12</div>
-                        <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Open the class picker with 12 boxes.</div>
+                        <div className="text-[12px] mt-1" style={{ color: "#6b6880" }}>Open the class picker with 12 boxes.</div>
                       </button>
                       <button
                         type="button"
@@ -293,7 +308,7 @@ export default function Onboarding() {
                         className="onboarding-choice-card onboarding-choice-card--active"
                       >
                         <div className="font-bold">JEE / NEET / BITS / Board</div>
-                        <div className="text-[12px] mt-1" style={{ color: "#8b95b0" }}>Open the exam picker and continue.</div>
+                        <div className="text-[12px] mt-1" style={{ color: "#6b6880" }}>Open the exam picker and continue.</div>
                       </button>
                     </div>
                   </div>
@@ -323,9 +338,9 @@ export default function Onboarding() {
                           onClick={() => setSelectedClassLevel(level)}
                           className="class-pill"
                           style={{
-                            borderColor: selectedClassLevel === level ? GOLD : "rgba(255,255,255,0.08)",
-                            background: selectedClassLevel === level ? "rgba(238,179,43,0.18)" : "#071028",
-                            color: selectedClassLevel === level ? GOLD : "#fff",
+                            borderColor: selectedClassLevel === level ? GOLD : "#ebe7f5",
+                            background: selectedClassLevel === level ? "#f5f3ff" : "#ffffff",
+                            color: selectedClassLevel === level ? GOLD : "#14112b",
                           }}
                         >
                           Class {level}
@@ -337,7 +352,7 @@ export default function Onboarding() {
                       {busy ? "Please wait…" : "Enter"}
                     </button>
                     {ReferralField}
-                    <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
+                    <div className="mt-3 text-[11px] text-center" style={{ color: "#6b6880" }}>
                       Choose any class from 1 to 12 to continue.
                     </div>
                   </div>
@@ -367,9 +382,9 @@ export default function Onboarding() {
                           onClick={() => setSelectedExam(exam)}
                           className="class-pill exam-pill"
                           style={{
-                            borderColor: selectedExam === exam ? GOLD : "rgba(255,255,255,0.08)",
-                            background: selectedExam === exam ? "rgba(238,179,43,0.18)" : "#071028",
-                            color: selectedExam === exam ? GOLD : "#fff",
+                            borderColor: selectedExam === exam ? GOLD : "#ebe7f5",
+                            background: selectedExam === exam ? "#f5f3ff" : "#ffffff",
+                            color: selectedExam === exam ? GOLD : "#14112b",
                           }}
                         >
                           {exam}
@@ -381,7 +396,7 @@ export default function Onboarding() {
                       {busy ? "Please wait…" : "Enter"}
                     </button>
                     {ReferralField}
-                    <div className="mt-3 text-[11px] text-center" style={{ color: "#8b95b0" }}>
+                    <div className="mt-3 text-[11px] text-center" style={{ color: "#6b6880" }}>
                       We’ll open the same app, but tuned for your exam.
                     </div>
                   </div>
