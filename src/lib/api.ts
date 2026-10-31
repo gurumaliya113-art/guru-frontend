@@ -64,6 +64,27 @@ export interface AdminStats {
   bySource: Record<string, number>;
 }
 
+export interface StorageCategory { files: number; bytes: number }
+export interface StorageUsage {
+  pending?: boolean;
+  refreshing?: boolean;
+  updatedAt?: string;
+  projects?: {
+    name: "primary" | "media";
+    source: "sql" | "listing";
+    storage: {
+      usedBytes: number;
+      limitBytes: number;
+      categories: { documents: StorageCategory; pages: StorageCategory; images: StorageCategory };
+    };
+    db: { usedBytes: number | null; limitBytes: number } | null;
+  }[];
+  questions?: number | null;
+  totals?: { storageUsedBytes: number; storageLimitBytes: number; storageFreeBytes: number };
+  averages?: { diagramBytes: number; pdfBytes: number; questionBytes: number | null };
+  estimates?: { diagramsLeft: number; pdfsLeft: number; questionsLeft: number | null };
+}
+
 export interface AdminSubscriptionRow {
   userId: string;
   email: string | null;
@@ -395,6 +416,8 @@ export const adminApi = {
     return request<{ ok: true; geminiAvailable: boolean; groqAvailable: boolean }>("/api/admin/me", {}, { admin: true });
   },
   stats: () => request<AdminStats>("/api/admin/stats", {}, { admin: true }),
+  storageUsage: (refresh = false) =>
+    request<StorageUsage>(`/api/admin/storage-usage${refresh ? "?refresh=1" : ""}`, {}, { admin: true }),
 
   // ---- Subscriptions & revenue ----
   subscriptions: (q?: string) =>

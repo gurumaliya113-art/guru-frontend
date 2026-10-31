@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/ui";
 import { adminApi, AdminStats } from "@/lib/api";
 import { colors, examColor, subjectColor, difficultyColor } from "@/lib/colors";
+import StorageCard from "./StorageCard";
 
 export default function AdminDashboard() {
   const nav = useNavigate();
@@ -76,6 +77,8 @@ export default function AdminDashboard() {
         <div className="text-5xl font-bold">{stats.total}</div>
         <div className="text-xs opacity-60 mt-2">across {Object.keys(stats.bySubject).length} subjects</div>
       </div>
+
+      <StorageCard />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {breakdownCard("By Subject", stats.bySubject, subjectColor)}
