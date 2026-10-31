@@ -1,1386 +1,740 @@
-import { useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import {
-  Brain,
-  BookOpen,
-  Zap,
-  FileText,
-  ClipboardList,
-  Star,
-  ChevronDown,
-  Menu,
-  X,
-  CheckCircle,
   ArrowRight,
-  Play,
-  MessageCircle,
-  TrendingUp,
+  Atom,
   Award,
-  Users,
-  Globe,
-  Smartphone,
-  Layers,
-  Target,
-  Gift,
-  Crown,
-  Share2,
-  GraduationCap,
+  BarChart3,
+  BookOpen,
+  Brain,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
   Coins,
+  Gift,
+  GraduationCap,
+  Layers,
+  Medal,
+  Menu,
+  MessageCircle,
+  Play,
+  School,
+  Share2,
+  ShieldCheck,
   Sparkles,
+  Star,
+  Stethoscope,
+  Target,
+  Timer,
+  TrendingUp,
+  Trophy,
+  Users,
   Wallet,
+  X,
+  Zap,
 } from "lucide-react";
 import "../landing.css";
 
+/* ───────────────────────────── Data ───────────────────────────── */
+
 const NAV_LINKS = [
-  { label: "For Students", href: "#students" },
+  { label: "Mock Tests", href: "#exams" },
+  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
   { label: "For Teachers", href: "/teachers" },
   { label: "For Schools", href: "/schools" },
-  { label: "Exams", href: "#exams" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Refer & Earn", href: "#referral" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Refer & Earn", href: "#referral", badge: "NEW" },
 ];
 
-const FEATURES = [
-  {
-    icon: Brain,
-    title: "AI Doubt Solving",
-    desc: "Ask any question — get instant, step-by-step explanations powered by AI. Works 24/7, never judges, always patient.",
-    badge: "AI Powered",
-  },
-  {
-    icon: Layers,
-    title: "Smart Flashcards",
-    desc: "Auto-generated flashcards from your notes and syllabus. Spaced repetition ensures you remember what matters most.",
-    badge: "Adaptive",
-  },
-  {
-    icon: FileText,
-    title: "Revision Notes",
-    desc: "Crisp, exam-ready notes for every chapter. Curated by toppers, updated regularly, available offline.",
-    badge: "Updated",
-  },
-  {
-    icon: ClipboardList,
-    title: "Mock Tests",
-    desc: "Full-length, timed mock tests with real exam patterns. Detailed analysis tells you exactly where to improve.",
-    badge: "1000+ Tests",
-  },
-  {
-    icon: Target,
-    title: "Practice by Topic",
-    desc: "Drill individual topics with 50,000+ questions categorized by difficulty. From basics to advanced.",
-    badge: "50K+ Qs",
-  },
-  {
-    icon: TrendingUp,
-    title: "Performance Tracker",
-    desc: "Visual graphs of your progress over time. Know your weak spots, celebrate your growth.",
-    badge: "Analytics",
-  },
+const EXAM_CARDS = [
+  { icon: Atom,          title: "JEE Main",       sub: "Engineering entrance", tag: "Mock tests · PYQs" },
+  { icon: Trophy,        title: "JEE Advanced",   sub: "IIT entrance",          tag: "Full-length tests" },
+  { icon: Stethoscope,   title: "NEET",           sub: "Medical entrance",      tag: "NCERT based" },
+  { icon: Medal,         title: "Olympiads",      sub: "Science & Maths",       tag: "Level-wise practice" },
+  { icon: GraduationCap, title: "Class 12 Board", sub: "CBSE & State boards",   tag: "Chapter tests" },
+  { icon: Award,         title: "Class 10 Board", sub: "CBSE & State boards",   tag: "Sample papers" },
+  { icon: BookOpen,      title: "Class 9 & 11",   sub: "Foundation years",      tag: "Concept practice" },
+  { icon: School,        title: "Class 1 – 8",    sub: "School syllabus",       tag: "Daily practice" },
 ];
 
-const EXAMS = [
-  "JEE Main", "JEE Advanced", "NEET", "UPSC", "SSC CGL",
-  "GATE", "CAT", "Class 10 Board", "Class 12 Board", "NDA",
+const QUICK_ACCESS = [
+  { icon: ClipboardCheck, title: "Mock Tests",      desc: "Timed tests on the real exam pattern.",      tint: "#7c3aed", bg: "#f3efff", wave: "#e7defd" },
+  { icon: Brain,          title: "AI Doubt Solving", desc: "Step-by-step answers, any time of day.",    tint: "#2563eb", bg: "#eef4ff", wave: "#dde8fe" },
+  { icon: Layers,         title: "Flashcards & Notes", desc: "Revise faster with crisp notes and cards.", tint: "#16a34a", bg: "#ecfbf1", wave: "#d6f3e0" },
+  { icon: TrendingUp,     title: "Progress Tracker", desc: "See weak topics and track your growth.",    tint: "#ea8a0c", bg: "#fff6e8", wave: "#fde9c8" },
 ];
 
-const STATS = [
-  { value: "50K+", label: "Questions", icon: BookOpen },
-  { value: "10+", label: "Exams Covered", icon: ClipboardList },
-  { value: "Free*", label: "To Start", icon: Star },
-  { value: "4.8★", label: "Play Store", icon: Award },
+const PRICING_PLANS = [
+  {
+    name: "Free", monthly: 0, yearly: 0, note: "free forever · no card needed", popular: false, cta: "Start Free",
+    features: ["Sample chapter summaries & notes", "AI tutor & daily practice", "2 practice tests / month", "3 chapter unlocks / day"],
+  },
+  {
+    name: "Plus", monthly: 249, yearly: 2490, note: "auto-renews · cancel anytime", popular: true, cta: "Choose Plus",
+    features: ["Full-syllabus summaries & notes", "8 practice tests / month", "40 chapter unlocks / day", "Basic progress analytics"],
+  },
+  {
+    name: "Pro", monthly: 499, yearly: 4990, note: "auto-renews · cancel anytime", popular: false, cta: "Choose Pro",
+    features: ["Everything in Plus", "Unlimited practice tests", "Board-pattern test series (10 & 12)", "Full analytics + parent reports", "Video lessons"],
+  },
 ];
 
 const TESTIMONIALS = [
-  {
-    name: "Priya Sharma",
-    exam: "JEE Main 2024",
-    score: "99.2 percentile",
-    text: "Gurtron's AI doubt solver saved me hours every day. I could get answers to complex physics problems at 2 AM without waiting for anyone!",
-    avatar: "PS",
-  },
-  {
-    name: "Rohan Mehta",
-    exam: "NEET 2024",
-    score: "680 / 720",
-    text: "The flashcards are insane — I revised all of Biology in just 3 days before my exam. The spaced repetition actually works.",
-    avatar: "RM",
-  },
-  {
-    name: "Ananya Singh",
-    exam: "UPSC Prelims",
-    score: "Cleared",
-    text: "Best revision notes I found anywhere. Concise, accurate, and they cover everything in the syllabus. Gurtron is a game changer.",
-    avatar: "AS",
-  },
+  { name: "Priya Sharma", exam: "JEE Main 2024", score: "99.2 percentile", rating: 5, icon: Star,
+    text: "Gurtron's AI doubt solver saved me hours every day. I could get answers to complex physics problems at 2 AM without waiting for anyone!" },
+  { name: "Rohan Mehta", exam: "NEET 2024", score: "680 / 720", rating: 5, icon: TrendingUp,
+    text: "The flashcards are insane — I revised all of Biology in just 3 days before my exam. The spaced repetition actually works." },
+  { name: "Ananya Singh", exam: "UPSC Prelims", score: "Cleared", rating: 5, icon: Award,
+    text: "Best revision notes I found anywhere. Concise, accurate, and they cover everything in the syllabus. Gurtron is a game changer." },
 ];
 
-const FAQS = [
-  {
-    q: "Is Gurtron free to use?",
-    a: "Gurtron is currently in its initial phase with basic features accessible to get started. Pricing details for premium features will be announced soon — stay tuned!",
-  },
-  {
-    q: "Which exams does Gurtron cover?",
-    a: "We currently cover JEE Main, JEE Advanced, NEET, UPSC, SSC CGL, GATE, CAT, Class 10 & 12 Board exams, and NDA. More coming soon.",
-  },
-  {
-    q: "Is there an iOS / App Store version?",
-    a: "Currently Gurtron is available on the web and Google Play Store. We are working on the iOS version — stay tuned!",
-  },
-  {
-    q: "How does AI Doubt Solving work?",
-    a: "Simply type or upload a photo of your doubt. Our AI instantly gives you a clear, step-by-step explanation tailored to your level and exam.",
-  },
-  {
-    q: "Can teachers use Gurtron?",
-    a: "Absolutely. Teachers can assign practice tests, track student performance, and share revision notes. A dedicated teacher dashboard is rolling out soon.",
-  },
+const STATS = [
+  { value: "50K+",  label: "Questions",     icon: BookOpen,       tint: "#7c3aed", bg: "#f3efff" },
+  { value: "10+",   label: "Exams Covered", icon: ClipboardCheck, tint: "#2563eb", bg: "#eef4ff" },
+  { value: "Free*", label: "To Start",      icon: Zap,            tint: "#16a34a", bg: "#ecfbf1" },
+  { value: "4.8★",  label: "Play Store",    icon: Star,           tint: "#ea8a0c", bg: "#fff6e8" },
 ];
 
-const GOLD = "#EEB32B";
-const BG = "#040718";
-const CARD = "#0c1129";
-const BORDER = "rgba(238,179,43,0.18)";
+const WHY = [
+  { n: "01", icon: ClipboardCheck, title: "Mock Tests That Feel Like the Real Exam", tint: "#16a34a", bg: "#ecfbf1",
+    desc: "Full-length, timed tests on the latest pattern so exam day feels familiar." },
+  { n: "02", icon: Brain, title: "AI Doubt Solving, 24×7", tint: "#7c3aed", bg: "#f3efff",
+    desc: "Stuck on a question? Get a clear, step-by-step explanation in seconds." },
+  { n: "03", icon: BarChart3, title: "Detailed Analysis & Feedback", tint: "#ea8a0c", bg: "#fff6e8",
+    desc: "Know your weak topics, track accuracy and improve with every test." },
+];
 
-// ── Referral program tiers (dynamic — single source of truth) ──
 const REFERRAL_TIERS = [
-  {
-    icon: Wallet,
-    from: "Teacher",
-    to: "Student",
-    headline: "Earn 10% Cash",
-    desc: "Jab aapka refer kiya student koi bhi paid plan ya course kharide, aapko uski value ka 10% commission milega.",
-    example: "₹1,000 plan → ₹100 aapke",
-    badge: "10% Commission",
-    color: "#34d399",
-  },
-  {
-    icon: GraduationCap,
-    from: "Teacher",
-    to: "Teacher",
-    headline: "Earn 10% Cash",
-    desc: "Doosre teachers ko invite karo. Wo jab plan lenge, aapko har purchase pe 10% commission milega.",
-    example: "₹2,000 plan → ₹200 aapke",
-    badge: "10% Commission",
-    color: "#60a5fa",
-  },
-  {
-    icon: Coins,
-    from: "Student",
-    to: "Student",
-    headline: "Coins + Premium",
-    desc: "Har successful referral pe 100 coins. 10 friends invite karo aur paao 1 month Premium bilkul free.",
-    example: "10 referrals → 1 month Premium",
-    badge: "100 Coins / Refer",
-    color: GOLD,
-  },
+  { icon: Wallet, who: "Teacher → Student", headline: "Earn 10% Cash", example: "₹1,000 plan → ₹100 aapke",
+    desc: "Aapka refer kiya student jab paid plan le, aapko uski value ka 10% commission milega." },
+  { icon: GraduationCap, who: "Teacher → Teacher", headline: "Earn 10% Cash", example: "₹2,000 plan → ₹200 aapke",
+    desc: "Doosre teachers ko invite karo. Wo plan lenge to har purchase pe 10% commission." },
+  { icon: Coins, who: "Student → Student", headline: "Coins + Premium", example: "10 referrals → 1 month Premium",
+    desc: "Har successful referral pe 100 coins. 10 friends invite karo, 1 month Premium free." },
 ];
 
 const REFERRAL_STEPS = [
-  { icon: Share2, title: "Apna code share karo", desc: "Har user ko ek unique code milta hai (jaise GURU-MUKUL). WhatsApp, Email ya link se bhejo." },
-  { icon: Users, title: "Friend join kare", desc: "Aapke code se sign up karte hi referral permanently link ho jaata hai." },
-  { icon: Gift, title: "Reward paao", desc: "Teacher ko cash commission, student ko coins & premium — sab automatic track hota hai." },
+  { icon: Share2, title: "Code share karo" },
+  { icon: Users,  title: "Friend join kare" },
+  { icon: Gift,   title: "Reward paao" },
 ];
 
-// ── Pricing (matches the pricing screenshots) ──
-const PRICING_PLANS = [
-  {
-    name: "Free",
-    tagline: "Perfect to start",
-    monthly: 0,
-    yearly: 0,
-    note: "free forever · no card needed",
-    popular: false,
-    cta: "Start Free",
-    features: [
-      "Sample chapter summaries & notes",
-      "AI tutor & daily practice",
-      "2 practice tests / month",
-      "3 chapter unlocks / day",
-    ],
-  },
-  {
-    name: "Plus",
-    tagline: "Everyday syllabus mastery",
-    monthly: 249,
-    yearly: 2490,
-    note: "auto-renews · cancel anytime",
-    popular: true,
-    cta: "Choose Plus",
-    features: [
-      "Full-syllabus summaries & notes",
-      "8 practice tests / month",
-      "40 chapter unlocks / day",
-      "Basic progress analytics",
-    ],
-  },
-  {
-    name: "Pro",
-    tagline: "Going all-in for top marks",
-    monthly: 499,
-    yearly: 4990,
-    note: "auto-renews · cancel anytime",
-    popular: false,
-    cta: "Choose Pro",
-    features: [
-      "Everything in Plus, plus:",
-      "Unlimited practice tests",
-      "Board-pattern test series (10 & 12)",
-      "Full analytics + parent reports",
-      "Video lessons",
-      "Marks-improvement guarantee",
-    ],
-  },
+const FAQS = [
+  { q: "Is Gurtron free to use?",
+    a: "Yes, you can start free. Premium plans unlock more tests, notes and analytics." },
+  { q: "Which exams does Gurtron cover?",
+    a: "Class 1–12 (CBSE & State boards), JEE Main, JEE Advanced, NEET and Olympiads." },
+  { q: "How does AI Doubt Solving work?",
+    a: "Type or upload a photo of your doubt. The AI gives a clear, step-by-step explanation for your level and exam." },
+  { q: "Can teachers use Gurtron?",
+    a: "Yes. Teachers can create papers, assign tests to their classes and track student performance." },
 ];
 
-const BUNDLES = [
-  { name: "Foundation — Class 9 & 10", desc: "Two-year board foundation, sorted in one go", price: 2999, was: 3998, save: "Save ₹999 · 2 yrs" },
-  { name: "Senior — Class 11 & 12", desc: "Class 11 to boards, two years sorted", price: 2999, was: 3998, save: "Save ₹999 · 2 yrs" },
-];
+/* ─────────────────────────── Helpers ─────────────────────────── */
+
+/** Fade-up on first scroll into view (same feel as mocktestt's Framer Motion setup). */
+function R({
+  children, delay = 0, y = 22, scale = 1, className = "", style, as: Tag = "div",
+}: {
+  children: ReactNode; delay?: number; y?: number; scale?: number; className?: string;
+  style?: CSSProperties; as?: "div" | "section" | "article" | "li";
+}) {
+  const vars = { "--rd": `${delay}s`, "--ry": `${y}px`, "--rs": scale, ...style } as CSSProperties;
+  return <Tag className={`gl-reveal ${className}`} style={vars}>{children}</Tag>;
+}
+
+function useRevealOnScroll(root: React.RefObject<HTMLElement>) {
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const items = el.querySelectorAll<HTMLElement>(".gl-reveal");
+    if (!("IntersectionObserver" in window)) { items.forEach((i) => i.classList.add("is-in")); return; }
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+      }),
+      { threshold: 0.2, rootMargin: "0px 0px -40px 0px" },
+    );
+    items.forEach((i) => io.observe(i));
+    return () => io.disconnect();
+  }, [root]);
+}
+
+function usePerView(sm: number, md: number, lg: number) {
+  const get = () => (window.innerWidth >= 1024 ? lg : window.innerWidth >= 640 ? md : sm);
+  const [n, setN] = useState(get);
+  useEffect(() => {
+    const on = () => setN(get());
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return n;
+}
+
+/** Auto-advancing page index; pauses while hovered. */
+function useAutoPage(pages: number, ms: number) {
+  const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => { if (page >= pages) setPage(0); }, [page, pages]);
+  useEffect(() => {
+    if (pages <= 1 || paused) return;
+    const t = window.setInterval(() => setPage((p) => (p + 1) % pages), ms);
+    return () => window.clearInterval(t);
+  }, [pages, ms, paused]);
+  const hover = { onMouseEnter: () => setPaused(true), onMouseLeave: () => setPaused(false) };
+  return { page, setPage, hover };
+}
+
+function Spark({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={`gl-twinkle ${className}`} style={{ animationDelay: `${delay}s` }}>
+      <path d="M12 0c1 7 4 10 12 12-8 2-11 5-12 12-1-7-4-10-12-12C8 10 11 7 12 0z" />
+    </svg>
+  );
+}
+
+function Kicker({ icon: Icon, children, dark = false }: { icon: any; children: ReactNode; dark?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
+      style={dark
+        ? { background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.25)" }
+        : { background: "var(--p50)", color: "var(--p600)", border: "1px solid var(--p100)" }}
+    >
+      <Icon className="h-3.5 w-3.5" /> {children}
+    </span>
+  );
+}
+
+function SectionTitle({ kicker, icon, title, accent, sub }: { kicker: string; icon: any; title: string; accent: string; sub?: string }) {
+  return (
+    <R className="mx-auto max-w-2xl text-center">
+      <Kicker icon={icon}>{kicker}</Kicker>
+      <h2 className="gl-h mt-4 text-3xl font-extrabold md:text-[42px] md:leading-[1.15]">
+        {title} <span className="gl-grad-text">{accent}</span>
+      </h2>
+      {sub && <p className="mt-3 text-[15px]" style={{ color: "var(--text)" }}>{sub}</p>}
+    </R>
+  );
+}
+
+function Logo({ light = false }: { light?: boolean }) {
+  return (
+    <a href="/" className="flex items-center gap-2.5 shrink-0">
+      <span className="gl-grad flex h-9 w-9 items-center justify-center rounded-xl shadow-md">
+        <GraduationCap className="h-5 w-5 text-white" />
+      </span>
+      <span className="gl-h text-xl font-extrabold" style={{ color: light ? "#fff" : "var(--ink)" }}>Gurtron</span>
+    </a>
+  );
+}
+
+/** Hero visual: a mock-test card with a timer and score chip (no stock art). */
+function HeroVisual() {
+  return (
+    <div className="relative mx-auto w-full max-w-[420px]" aria-hidden>
+      <div className="gl-float rounded-[22px] border border-white/20 bg-white/95 p-5 shadow-[0_30px_60px_-20px_rgba(15,5,40,.6)]">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">JEE Main · Mock 12</div>
+            <div className="gl-h text-[17px] font-bold" style={{ color: "var(--ink)" }}>Physics — Kinematics</div>
+          </div>
+          <span className="flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[12px] font-bold text-violet-700">
+            <Timer className="h-3.5 w-3.5" /> 42:18
+          </span>
+        </div>
+        {["A ball is thrown vertically upward…", "Velocity-time graph shows…", "Relative velocity of two trains…"].map((q, i) => (
+          <div key={q} className="mb-2.5 flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-2.5">
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${i < 2 ? "bg-violet-600 text-white" : "border-2 border-violet-300 text-violet-500"}`}>
+              {i < 2 ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+            </span>
+            <span className="truncate text-[13px] text-gray-600">{q}</span>
+          </div>
+        ))}
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-violet-100">
+          <div className="gl-grad h-full w-[64%] rounded-full" />
+        </div>
+        <div className="mt-1.5 flex justify-between text-[11px] text-gray-500"><span>16 / 25 answered</span><span>64%</span></div>
+      </div>
+
+      <div className="gl-float-2 absolute -left-6 -bottom-8 hidden rounded-2xl bg-white px-4 py-3 shadow-xl sm:block">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50"><BarChart3 className="h-5 w-5 text-emerald-600" /></span>
+          <div><div className="text-[11px] text-gray-500">Accuracy</div><div className="gl-h text-lg font-extrabold text-emerald-600">86%</div></div>
+        </div>
+      </div>
+      <div className="gl-float-3 absolute -right-5 -top-6 hidden rounded-2xl bg-white px-4 py-3 shadow-xl sm:block">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50"><Brain className="h-5 w-5 text-amber-500" /></span>
+          <div><div className="text-[11px] text-gray-500">AI Doubt</div><div className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>Solved in 8s</div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── Page ─────────────────────────── */
 
 export default function Landing() {
+  const root = useRef<HTMLDivElement>(null);
+  useRevealOnScroll(root);
+
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activeExam, setActiveExam] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
-  return (
-    <div
-      className="min-h-screen w-full overflow-x-hidden"
-      style={{ fontFamily: "'Nunito Sans', sans-serif", background: BG, color: "#fff" }}
-    >
-      {/* ── NAVBAR ── */}
-      <header
-        className="sticky top-0 z-50 backdrop-blur-md"
-        style={{ background: "rgba(4,7,24,0.92)", borderBottom: `1px solid ${BORDER}` }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          {/* Logo */}
-          <a href="/landing" className="flex items-center gap-2 shrink-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md"
-              style={{ background: GOLD }}
-            >
-              <Zap className="w-4 h-4" style={{ color: BG }} />
-            </div>
-            <span
-              className="text-xl font-black tracking-tight"
-              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-            >
-              Gurtron
-            </span>
-          </a>
+  const perView = usePerView(1, 2, 3);
+  const tPages = Math.max(1, TESTIMONIALS.length - perView + 1);
+  const t = useAutoPage(tPages, 4000);
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6">
+  const muted = { color: "var(--text)" };
+
+  return (
+    <div ref={root} className="gl min-h-screen w-full overflow-x-hidden">
+      {/* ── NAVBAR ── */}
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Logo />
+          <nav className="hidden items-center gap-7 lg:flex">
             {NAV_LINKS.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className="text-sm font-semibold transition-colors"
-                style={{ color: "#8b95b0" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#8b95b0")}
-              >
+              <a key={l.label} href={l.href} className="flex items-center gap-1.5 text-[14px] font-medium text-gray-700 transition-colors hover:text-violet-700">
                 {l.label}
+                {l.badge && <span className="animate-pulse rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{l.badge}</span>}
               </a>
             ))}
           </nav>
-
-          {/* CTA */}
-          <div className="hidden md:flex items-center gap-3">
-              <a
-                href="/onboarding"
-                className="text-sm font-semibold transition-colors bg-transparent"
-                style={{ color: GOLD }}
-              >
-                Web Login
-              </a>
-            <a
-              href="#"
-              className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-full shadow hover:scale-105 transition-transform"
-              style={{ background: GOLD, color: BG }}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              Get on Play Store
-            </a>
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <a href="/onboarding" className="rounded-lg bg-gray-100 px-4 py-2 text-[14px] font-semibold text-gray-800 transition-colors hover:bg-gray-200">Login</a>
+            <a href="/signup" className="gl-grad rounded-lg px-4 py-2 text-[14px] font-semibold text-white shadow-md transition-transform hover:-translate-y-0.5">Sign Up</a>
           </div>
-
-          {/* Hamburger */}
-          <button
-            className="md:hidden p-2 rounded-lg transition-colors"
-            style={{ color: "#8b95b0" }}
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <button className="rounded-lg p-2 text-gray-700 lg:hidden" onClick={() => setMobileOpen((v) => !v)} aria-label="Menu">
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-
-        {/* Mobile Menu */}
+        <div className="gl-grad h-[3px] w-full" />
         {mobileOpen && (
-          <div
-            className="md:hidden px-4 py-4 flex flex-col gap-3"
-            style={{ background: CARD, borderTop: `1px solid ${BORDER}` }}
-          >
+          <div className="flex flex-col gap-1 border-t border-gray-100 bg-white px-4 py-3 lg:hidden">
             {NAV_LINKS.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className="text-sm font-semibold py-1"
-                style={{ color: "#cbd5e1" }}
-                onClick={() => setMobileOpen(false)}
-              >
+              <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)} className="rounded-lg px-2 py-2 text-[15px] font-medium text-gray-700 hover:bg-violet-50">
                 {l.label}
               </a>
             ))}
-            <div className="flex flex-col gap-2 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
-              <a href="/onboarding" className="text-sm font-semibold text-center py-2" style={{ color: GOLD }} onClick={() => setMobileOpen(false)}>
-                Web Login
-              </a>
-              <a
-                href="#"
-                className="flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-full"
-                style={{ background: GOLD, color: BG }}
-              >
-                <Smartphone className="w-4 h-4" />
-                Get on Play Store
-              </a>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <a href="/onboarding" className="rounded-lg bg-gray-100 py-2.5 text-center text-sm font-semibold text-gray-800">Login</a>
+              <a href="/signup" className="gl-grad rounded-lg py-2.5 text-center text-sm font-semibold text-white">Sign Up</a>
             </div>
           </div>
         )}
       </header>
 
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden py-24 md:py-36">
-        {/* Glow blobs */}
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[120px] opacity-25 pointer-events-none"
-          style={{ background: GOLD }}
-        />
-        <div
-          className="absolute bottom-0 right-0 w-[350px] h-[350px] rounded-full blur-[100px] opacity-10 pointer-events-none"
-          style={{ background: "#fff" }}
-        />
+      <section className="gl-grad relative overflow-hidden">
+        <span className="gl-blob-a pointer-events-none absolute -left-24 -bottom-24 h-80 w-80 rounded-full bg-white/[0.06]" />
+        <span className="gl-blob-b pointer-events-none absolute -right-24 -top-16 h-[28rem] w-[28rem] rounded-full bg-fuchsia-400/10" />
+        <Spark className="absolute left-[8%] top-[18%] h-3 w-3 text-white/60" />
+        <Spark className="absolute left-[46%] top-[12%] h-4 w-4 text-violet-200/80" delay={1.2} />
+        <Spark className="absolute right-[6%] bottom-[16%] h-3.5 w-3.5 text-white/50" delay={2.1} />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
-          <div
-            className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 border"
-            style={{ borderColor: BORDER, color: GOLD, background: "rgba(238,179,43,0.08)" }}
-          >
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: GOLD }} />
-            Empowering India's Future Doctors, Engineers & Leaders
-          </div>
-
-          <h1
-            className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight mb-6"
-            style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-          >
-            India's Most{" "}
-            <span style={{ color: GOLD }}>Powerful AI</span>
-            <br />
-            Learning Platform
-          </h1>
-
-          <p className="text-lg md:text-xl font-medium max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: "#8b95b0" }}>
-            AI Doubt Solving · Smart Flashcards · Revision Notes · Mock Tests
-            <br className="hidden sm:block" />
-            <span className="font-bold" style={{ color: "#fff" }}>Ek app, poori taiyari — ab India ka baari.</span>
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <a
-              href="/onboarding"
-              className="flex items-center gap-2 font-bold text-base px-8 py-4 rounded-full shadow-xl hover:scale-105 transition-transform"
-              style={{ background: GOLD, color: BG }}
-            >
-              <Globe className="w-5 h-5" />
-              Try on Web Now
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 font-bold text-base px-8 py-4 rounded-full border hover:scale-105 transition-transform"
-              style={{ border: `1.5px solid ${BORDER}`, color: "#fff", background: "rgba(255,255,255,0.05)" }}
-            >
-              <Play className="w-4 h-4" style={{ fill: GOLD, color: GOLD }} />
-              Download on Play Store
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {STATS.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-2xl py-5 px-3 text-center border"
-                style={{ background: CARD, borderColor: BORDER }}
-              >
-                <s.icon className="w-5 h-5 mx-auto mb-2" style={{ color: GOLD }} />
-                <div
-                  className="text-2xl font-black"
-                  style={{ fontFamily: "'Outfit', sans-serif", color: GOLD }}
-                >
-                  {s.value}
-                </div>
-                <div className="text-xs font-semibold mt-0.5" style={{ color: "#8b95b0" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TICKER ── */}
-      <div
-        className="py-3 overflow-hidden border-y"
-        style={{ background: "rgba(238,179,43,0.08)", borderColor: BORDER }}
-      >
-        <div
-          className="flex gap-12 text-sm font-bold whitespace-nowrap"
-          style={{ animation: "marquee 20s linear infinite", color: GOLD }}
-        >
-          {[...Array(3)].map((_, i) =>
-            EXAMS.map((e) => (
-              <span key={`${i}-${e}`} className="shrink-0">✦ {e}</span>
-            ))
-          )}
-        </div>
-        <style>{`@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-33.33%) } }`}</style>
-      </div>
-
-      {/* ── FEATURES ── */}
-      <section id="features" className="py-20 md:py-28" style={{ background: BG }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span
-              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-            >
-              Everything You Need
-            </span>
-            <h2
-              className="text-3xl md:text-5xl font-black mb-4"
-              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-            >
-              Study Smarter, Not Harder
-            </h2>
-            <p className="text-lg max-w-xl mx-auto" style={{ color: "#8b95b0" }}>
-              Gurtron brings the power of AI and expert curation into one seamless platform.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-3xl p-7 border group cursor-default transition-all hover:-translate-y-1"
-                style={{
-                  background: CARD,
-                  borderColor: BORDER,
-                  boxShadow: "0 0 0 0 transparent",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.boxShadow = `0 0 32px rgba(238,179,43,0.12)`)
-                }
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-              >
-                <div className="flex items-start justify-between mb-5">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(238,179,43,0.12)", color: GOLD }}
-                  >
-                    <f.icon className="w-6 h-6" />
-                  </div>
-                  <span
-                    className="text-xs font-bold px-2.5 py-1 rounded-full border"
-                    style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-                  >
-                    {f.badge}
-                  </span>
-                </div>
-                <h3
-                  className="text-lg font-bold mb-2"
-                  style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-                >
-                  {f.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>{f.desc}</p>
-                <div
-                  className="mt-5 flex items-center gap-1 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: GOLD }}
-                >
-                  Learn more <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── AI DOUBT SOLVING SPOTLIGHT ── */}
-      <section
-        className="py-20 md:py-28 relative overflow-hidden"
-        style={{ background: CARD }}
-      >
-        <div
-          className="absolute left-0 top-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: GOLD }}
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid md:grid-cols-2 gap-14 items-center">
-            <div>
-              <span
-                className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wider border"
-                style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-              >
-                🧠 AI Doubt Solving
-              </span>
-              <h2
-                className="text-3xl md:text-5xl font-black mb-5 leading-tight"
-                style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-              >
-                Never Get Stuck{" "}
-                <span style={{ color: GOLD }}>Again.</span>
-              </h2>
-              <p className="text-lg mb-8 leading-relaxed" style={{ color: "#8b95b0" }}>
-                Got a doubt at midnight? No problem. Gurtron's AI gives you instant, step-by-step
-                solutions with explanations — in Hindi or English, whichever you prefer.
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24 lg:px-8">
+          <div>
+            <R><Kicker icon={Sparkles} dark>Class 1–12 · JEE · NEET · Olympiads</Kicker></R>
+            <R delay={0.09}>
+              <h1 className="gl-h mt-5 text-[40px] font-extrabold leading-[1.08] text-white sm:text-5xl lg:text-[64px]">
+                Master Your<br />Preparation with<br /><span className="gl-shine">Gurtron</span>
+              </h1>
+            </R>
+            <R delay={0.18}>
+              <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-violet-100/90">
+                Mock tests, AI doubt solving, flashcards and revision notes — all in one place.
+                Ek app, poori taiyari.
               </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "Type or photograph your doubt",
-                  "Get detailed, step-by-step explanation",
-                  "Ask follow-ups until you truly understand",
-                  "Works for Maths, Physics, Chemistry, Biology & more",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm" style={{ color: "#cbd5e1" }}>
-                    <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: GOLD }} />
-                    {item}
-                  </li>
+            </R>
+            <R delay={0.27}>
+              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-violet-100/90">
+                {[["Real exam pattern", ShieldCheck], ["AI doubt solving", Brain], ["Detailed analysis", BarChart3]].map(([label, Icon]: any) => (
+                  <span key={label} className="flex items-center gap-1.5"><Icon className="h-4 w-4" /> {label}</span>
                 ))}
-              </ul>
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full transition-all hover:scale-105"
-                style={{ background: GOLD, color: BG }}
-              >
-                Try AI Doubt Solver <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-
-            {/* Chat UI */}
-            <div
-              className="rounded-3xl p-6 border"
-              style={{ background: BG, borderColor: BORDER }}
-            >
-              <div
-                className="flex items-center gap-2 mb-5 pb-4"
-                style={{ borderBottom: `1px solid ${BORDER}` }}
-              >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: GOLD }}
-                >
-                  <Zap className="w-4 h-4" style={{ color: BG }} />
-                </div>
-                <span className="font-bold text-sm text-white">Gurtron AI</span>
-                <span className="ml-auto flex items-center gap-1 text-xs font-semibold" style={{ color: "#4ade80" }}>
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                  Online
-                </span>
               </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-end">
-                  <div
-                    className="text-sm px-4 py-3 rounded-2xl rounded-br-sm max-w-[80%]"
-                    style={{ background: "rgba(238,179,43,0.15)", color: "#fff", border: `1px solid ${BORDER}` }}
-                  >
-                    Why is the time period of a simple pendulum independent of mass?
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div
-                    className="text-sm px-4 py-3 rounded-2xl rounded-bl-sm max-w-[85%] leading-relaxed border"
-                    style={{ background: CARD, color: "#cbd5e1", borderColor: BORDER }}
-                  >
-                    Great question! The formula for time period is:{" "}
-                    <strong style={{ color: GOLD }}>T = 2π√(L/g)</strong>
-                    <br /><br />
-                    Mass (m) doesn't appear because the restoring force <em>mg·sinθ</em> and
-                    inertia both scale with m — they cancel out, leaving only{" "}
-                    <strong style={{ color: "#4ade80" }}>length (L)</strong> and{" "}
-                    <strong style={{ color: "#4ade80" }}>gravity (g)</strong>. 🎯
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <div
-                    className="text-sm px-4 py-3 rounded-2xl rounded-br-sm max-w-[80%] border"
-                    style={{ background: "rgba(238,179,43,0.15)", color: "#fff", borderColor: BORDER }}
-                  >
-                    What if I double the length?
-                  </div>
-                </div>
-                <div
-                  className="flex items-center gap-2 rounded-xl px-4 py-3 border"
-                  style={{ background: CARD, borderColor: BORDER }}
-                >
-                  <MessageCircle className="w-4 h-4" style={{ color: "#8b95b0" }} />
-                  <span className="text-sm" style={{ color: "#8b95b0" }}>Ask your doubt...</span>
-                  <div
-                    className="ml-auto w-6 h-6 rounded-full flex items-center justify-center"
-                    style={{ background: GOLD }}
-                  >
-                    <ArrowRight className="w-3 h-3" style={{ color: BG }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── EXAMS COVERED ── */}
-      <section id="exams" className="py-20 md:py-24" style={{ background: BG }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span
-            className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-            style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-          >
-            Exams We Cover
-          </span>
-          <h2
-            className="text-3xl md:text-4xl font-black mb-3"
-            style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-          >
-            10+ Competitive Exams
-          </h2>
-          <p className="mb-10" style={{ color: "#8b95b0" }}>
-            Click an exam to explore its content on Gurtron.
-          </p>
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            {EXAMS.map((exam) => (
-              <button
-                key={exam}
-                onClick={() => setActiveExam(activeExam === exam ? null : exam)}
-                className="px-5 py-2.5 rounded-full text-sm font-bold border transition-all hover:scale-105"
-                style={
-                  activeExam === exam
-                    ? { background: GOLD, color: BG, borderColor: GOLD, transform: "scale(1.05)" }
-                    : { background: "rgba(238,179,43,0.06)", color: "#fff", borderColor: BORDER }
-                }
-              >
-                {exam}
-              </button>
-            ))}
-          </div>
-
-          {activeExam && (
-            <div
-              className="mt-8 rounded-3xl p-8 max-w-xl mx-auto border"
-              style={{ background: CARD, borderColor: GOLD, boxShadow: `0 0 40px rgba(238,179,43,0.15)` }}
-            >
-              <div
-                className="text-2xl font-black mb-2"
-                style={{ fontFamily: "'Outfit', sans-serif", color: GOLD }}
-              >
-                {activeExam}
-              </div>
-              <p className="text-sm mb-5" style={{ color: "#8b95b0" }}>
-                Study material, mock tests, AI doubt solving and revision notes — all ready for{" "}
-                {activeExam}.
-              </p>
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-full hover:scale-105 transition-transform"
-                style={{ background: GOLD, color: BG }}
-              >
-                Start Preparing <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-20 md:py-28" style={{ background: CARD }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span
-              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-            >
-              Student Stories
-            </span>
-            <h2
-              className="text-3xl md:text-5xl font-black"
-              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-            >
-              Toppers Love Gurtron
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t) => (
-              <div
-                key={t.name}
-                className="rounded-3xl p-7 border hover:-translate-y-1 transition-all"
-                style={{ background: BG, borderColor: BORDER }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.boxShadow = `0 0 32px rgba(238,179,43,0.10)`)
-                }
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4" style={{ fill: GOLD, color: GOLD }} />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed mb-6" style={{ color: "#cbd5e1" }}>
-                  "{t.text}"
-                </p>
-                <div
-                  className="flex items-center gap-3 pt-4"
-                  style={{ borderTop: `1px solid ${BORDER}` }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                    style={{ background: GOLD, color: BG }}
-                  >
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-white">{t.name}</div>
-                    <div className="text-xs" style={{ color: "#8b95b0" }}>
-                      {t.exam} ·{" "}
-                      <span className="font-semibold" style={{ color: GOLD }}>
-                        {t.score}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── AVAILABILITY ── */}
-      <section className="py-20 md:py-28" id="students" style={{ background: BG }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Web */}
-            <div
-              className="rounded-3xl p-8 flex flex-col justify-between min-h-[220px] border"
-              style={{ background: CARD, borderColor: BORDER }}
-            >
-              <div>
-                <Globe className="w-8 h-8 mb-4" style={{ color: GOLD }} />
-                <h3
-                  className="text-2xl font-black mb-2 text-white"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  Available on Web
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>
-                  No downloads needed. Open your browser and start studying instantly from any device.
-                </p>
-              </div>
-              <a
-                href="#"
-                className="mt-6 self-start inline-flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-full hover:scale-105 transition-transform"
-                style={{ background: GOLD, color: BG }}
-              >
-                Open Gurtron Web <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-
-            {/* Play Store */}
-            <div
-              className="rounded-3xl p-8 flex flex-col justify-between min-h-[220px] border"
-              style={{
-                background: "rgba(238,179,43,0.08)",
-                borderColor: GOLD,
-                boxShadow: `0 0 40px rgba(238,179,43,0.08)`,
-              }}
-            >
-              <div>
-                <Smartphone className="w-8 h-8 mb-4" style={{ color: GOLD }} />
-                <h3
-                  className="text-2xl font-black mb-2 text-white"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  Available on Play Store
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>
-                  Download the Gurtron app on Android for offline access, notifications, and a native
-                  experience.
-                </p>
-              </div>
-              <a
-                href="#"
-                className="mt-6 self-start inline-flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-full hover:scale-105 transition-transform"
-                style={{ background: GOLD, color: BG }}
-              >
-                <Play className="w-3.5 h-3.5" style={{ fill: BG }} /> Get on Play Store
-              </a>
-            </div>
-          </div>
-
-          {/* For Teachers */}
-          <div
-            id="teachers"
-            className="mt-6 rounded-3xl p-8 border"
-            style={{ background: CARD, borderColor: BORDER }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <div className="flex-1">
-                <span
-                  className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 border"
-                  style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-                >
-                  For Teachers
-                </span>
-                <h3
-                  className="text-2xl font-black mb-2 text-white"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  Empower Your Classroom with Gurtron
-                </h3>
-                <p className="text-sm leading-relaxed max-w-xl" style={{ color: "#8b95b0" }}>
-                  Assign tests, track student progress, share custom revision notes, and let AI handle
-                  doubt resolution — so you can focus on teaching.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <a
-                  href="#"
-                  className="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full transition-all hover:scale-105"
-                  style={{ background: GOLD, color: BG }}
-                >
-                  <Users className="w-4 h-4" /> Teacher Dashboard
+            </R>
+            <R delay={0.36}>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <a href="/onboarding" className="gl-glow group inline-flex items-center gap-2.5 rounded-full bg-white py-3 pl-6 pr-3 text-[15px] font-bold text-violet-800">
+                  Start Your Test
+                  <span className="gl-grad flex h-8 w-8 items-center justify-center rounded-full"><ArrowRight className="gl-arrow h-4 w-4 text-white" /></span>
+                </a>
+                <a href="#features" className="group inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-white/10">
+                  Explore Features <ArrowRight className="gl-arrow h-4 w-4" />
                 </a>
               </div>
-            </div>
+            </R>
           </div>
-
-          {/* For Schools */}
-          <div
-            id="schools"
-            className="mt-6 rounded-3xl p-8 border"
-            style={{
-              background: "rgba(238,179,43,0.05)",
-              borderColor: GOLD,
-              boxShadow: `0 0 48px rgba(238,179,43,0.07)`,
-            }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center gap-8">
-              <div className="flex-1">
-                <span
-                  className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 border"
-                  style={{ color: GOLD, borderColor: GOLD, background: "rgba(238,179,43,0.12)" }}
-                >
-                  For Schools
-                </span>
-                <h3
-                  className="text-2xl font-black mb-2 text-white"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  Bring Gurtron to Your Entire School
-                </h3>
-                <p className="text-sm leading-relaxed max-w-xl mb-5" style={{ color: "#8b95b0" }}>
-                  Partner with Gurtron to give every student in your institution access to AI-powered
-                  learning. Get a school-wide dashboard, bulk student management, custom exam sets,
-                  and detailed performance reports — all under your school's brand.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { icon: Users, label: "Bulk Student Onboarding" },
-                    { icon: ClipboardList, label: "Custom Exam Sets" },
-                    { icon: TrendingUp, label: "School-wide Analytics" },
-                    { icon: Award, label: "Institution Branding" },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex flex-col items-center text-center gap-2 rounded-2xl p-3 border"
-                      style={{ background: "rgba(238,179,43,0.06)", borderColor: BORDER }}
-                    >
-                      <item.icon className="w-5 h-5" style={{ color: GOLD }} />
-                      <span className="text-xs font-semibold" style={{ color: "#cbd5e1" }}>
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="shrink-0 flex flex-col gap-3">
-                <a
-                  href="#"
-                  className="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full transition-all hover:scale-105 text-center justify-center"
-                  style={{ background: GOLD, color: BG }}
-                >
-                  <Globe className="w-4 h-4" /> Partner with Us
-                </a>
-                <a
-                  href="#"
-                  className="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full border transition-all hover:scale-105 text-center justify-center text-sm"
-                  style={{ borderColor: BORDER, color: "#fff", background: "rgba(255,255,255,0.04)" }}
-                >
-                  Request a Demo
-                </a>
-              </div>
-            </div>
-          </div>
+          <R delay={0.1} y={0} scale={0.94}><HeroVisual /></R>
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" className="py-20 md:py-28" style={{ background: CARD }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span
-              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-            >
-              FAQ
-            </span>
-            <h2
-              className="text-3xl md:text-4xl font-black text-white"
-              style={{ fontFamily: "'Outfit', sans-serif" }}
-            >
-              Got Questions?
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {FAQS.map((faq, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border overflow-hidden"
-                style={{ background: BG, borderColor: openFaq === i ? GOLD : BORDER }}
-              >
-                <button
-                  className="w-full text-left px-6 py-5 flex items-center justify-between gap-4 transition-colors"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  <span className="font-bold text-sm text-white">{faq.q}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`}
-                    style={{ color: GOLD }}
-                  />
-                </button>
-                {openFaq === i && (
-                  <div
-                    className="px-6 pb-5 text-sm leading-relaxed pt-4"
-                    style={{ color: "#8b95b0", borderTop: `1px solid ${BORDER}` }}
-                  >
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── REFERRAL & EARN ── */}
-      <section id="referral" className="py-20 md:py-28 relative overflow-hidden" style={{ background: BG }}>
-        <div
-          className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[130px] opacity-15 pointer-events-none"
-          style={{ background: GOLD }}
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-14">
-            <span
-              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-            >
-              💸 Refer & Earn
-            </span>
-            <h2
-              className="text-3xl md:text-5xl font-black mb-4"
-              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-            >
-              Invite Friends, <span style={{ color: GOLD }}>Earn Rewards</span>
-            </h2>
-            <p className="text-lg max-w-2xl mx-auto" style={{ color: "#8b95b0" }}>
-              Har user ko milta hai apna unique referral code. Teachers kamaate hain cash commission,
-              students kamaate hain coins aur free premium — sab fully automatic.
-            </p>
-          </div>
-
-          {/* Who gets what */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
-            {REFERRAL_TIERS.map((t) => (
-              <div
-                key={`${t.from}-${t.to}`}
-                className="rounded-3xl p-7 border transition-all hover:-translate-y-1"
-                style={{ background: CARD, borderColor: BORDER }}
-                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = `0 0 32px rgba(238,179,43,0.12)`)}
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(238,179,43,0.12)", color: t.color }}
-                  >
-                    <t.icon className="w-6 h-6" />
-                  </div>
-                  <span
-                    className="text-xs font-bold px-2.5 py-1 rounded-full border"
-                    style={{ color: t.color, borderColor: BORDER, background: "rgba(255,255,255,0.04)" }}
-                  >
-                    {t.badge}
+      {/* ── QUICK ACCESS ── */}
+      <section id="features" className="relative bg-[#faf9ff] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle kicker="Everything you need" icon={Zap} title="Quick" accent="Access" sub="Jump into your preparation with the most used features." />
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {QUICK_ACCESS.map((c, i) => (
+              <R key={c.title} delay={0.1 + i * 0.12} y={26}>
+                <a href="/onboarding" className="gl-lift group relative block h-full overflow-hidden rounded-[22px] p-6 shadow-[0_14px_34px_-22px_rgba(46,16,101,.4)]" style={{ background: c.bg }}>
+                  <span className="gl-dots absolute right-5 top-5 h-12 w-12" style={{ color: c.tint, opacity: 0.18 }} />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md" style={{ background: c.tint }}>
+                    <c.icon className="h-5 w-5" />
                   </span>
-                </div>
-                <div className="flex items-center gap-2 mb-2 text-sm font-bold" style={{ color: "#cbd5e1" }}>
-                  <span>{t.from}</span>
-                  <ArrowRight className="w-4 h-4" style={{ color: GOLD }} />
-                  <span>{t.to}</span>
-                </div>
-                <h3 className="text-xl font-black mb-2" style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}>
-                  {t.headline}
-                </h3>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: "#8b95b0" }}>{t.desc}</p>
-                <div
-                  className="text-sm font-bold rounded-xl px-3 py-2"
-                  style={{ background: "rgba(238,179,43,0.08)", color: t.color, border: `1px solid ${BORDER}` }}
-                >
-                  {t.example}
-                </div>
-              </div>
+                  <h3 className="gl-h mt-6 text-[19px] font-bold">{c.title}</h3>
+                  <span className="mt-2 block h-[3px] w-8 rounded-full" style={{ background: c.tint }} />
+                  <p className="mt-3 text-[14px]" style={muted}>{c.desc}</p>
+                  <svg className="pointer-events-none absolute inset-x-0 bottom-0 h-24 w-full" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden>
+                    <path d="M0,40 C90,10 160,70 260,40 C320,22 370,30 400,44 L400,100 L0,100 Z" fill={c.wave} />
+                  </svg>
+                  <span className="relative mt-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow">
+                    <ArrowRight className="gl-arrow h-4 w-4" style={{ color: c.tint }} />
+                  </span>
+                </a>
+              </R>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* How it works */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
-            {REFERRAL_STEPS.map((s, i) => (
-              <div key={s.title} className="rounded-2xl p-6 border" style={{ background: "rgba(255,255,255,0.03)", borderColor: BORDER }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm"
-                    style={{ background: GOLD, color: BG }}
-                  >
-                    {i + 1}
-                  </div>
-                  <s.icon className="w-5 h-5" style={{ color: GOLD }} />
-                </div>
-                <h4 className="font-bold text-base mb-1 text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>{s.title}</h4>
-                <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>{s.desc}</p>
-              </div>
+      {/* ── EXAMS ── */}
+      <section id="exams" className="relative py-20">
+        <span className="gl-dots pointer-events-none absolute left-6 top-10 hidden h-16 w-20 text-violet-300 md:block" />
+        <span className="gl-dots pointer-events-none absolute bottom-10 right-6 hidden h-16 w-20 text-violet-300 md:block" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle kicker="Mock tests for every goal" icon={Target} title="Pick Your" accent="Exam" sub="From school classes to competitive entrances." />
+          <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
+            {EXAM_CARDS.map((e, i) => (
+              <R key={e.title} delay={0.05 + (i % 4) * 0.09}>
+                <a href="/onboarding" className="gl-lift group flex h-full items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-[0_10px_30px_-20px_rgba(46,16,101,.35)]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-50 ring-4 ring-violet-50/60 transition-colors group-hover:bg-violet-100">
+                    <e.icon className="h-5 w-5 text-violet-600" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="gl-h block text-[16px] font-bold text-violet-700">{e.title}</span>
+                    <span className="block truncate text-[12px]" style={muted}>{e.sub}</span>
+                    <span className="mt-1 block h-[2px] w-6 rounded-full bg-violet-300" />
+                    <span className="mt-1 block truncate text-[12px] font-semibold text-gray-800">{e.tag}</span>
+                  </span>
+                </a>
+              </R>
             ))}
-          </div>
-
-          <div className="text-center">
-            <a
-              href="/onboarding"
-              className="inline-flex items-center gap-2 font-bold px-8 py-4 rounded-full hover:scale-105 transition-transform shadow-xl"
-              style={{ background: GOLD, color: BG }}
-            >
-              <Gift className="w-5 h-5" /> Get Your Referral Code
-            </a>
-            <p className="text-xs mt-3" style={{ color: "#8b95b0" }}>
-              Self-referral allowed nahi · Commission sirf successful payment ke baad · Refund hone par commission cancel
-            </p>
           </div>
         </div>
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="py-20 md:py-28 relative overflow-hidden" style={{ background: CARD }}>
-        <div
-          className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[120px] opacity-10 pointer-events-none"
-          style={{ background: GOLD }}
-        />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10">
-            <span
-              className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider border"
-              style={{ color: GOLD, borderColor: BORDER, background: "rgba(238,179,43,0.08)" }}
-            >
-              Score Higher
-            </span>
-            <h2
-              className="text-3xl md:text-5xl font-black mb-4"
-              style={{ fontFamily: "'Outfit', sans-serif", color: "#fff" }}
-            >
-              Pick the Plan that <span style={{ color: GOLD }}>Lifts Your Marks</span>
-            </h2>
-            <p className="text-lg max-w-2xl mx-auto mb-6" style={{ color: "#8b95b0" }}>
-              Full-syllabus notes, AI tutor aur practice har plan me. Sirf zyada support ke liye zyada pay karo — basics ke liye kabhi nahi.
-            </p>
-
-            {/* Billing toggle */}
-            <div
-              className="inline-flex items-center gap-1 p-1 rounded-full border"
-              style={{ background: BG, borderColor: BORDER }}
-            >
+      <section id="pricing" className="bg-[#faf9ff] py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <R className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="gl-h text-3xl font-extrabold md:text-[40px]" style={{ color: "#1f1653" }}>Popular Plans</h2>
+              <p className="mt-1 text-[14px]" style={muted}>Start free. Upgrade when you're ready.</p>
+            </div>
+            <div className="inline-flex rounded-full border border-violet-100 bg-white p-1 text-[13px] font-semibold">
               {(["monthly", "yearly"] as const).map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setBilling(b)}
-                  className="px-5 py-2 rounded-full text-sm font-bold transition-all capitalize"
-                  style={
-                    billing === b
-                      ? { background: GOLD, color: BG }
-                      : { background: "transparent", color: "#8b95b0" }
-                  }
-                >
-                  {b}{b === "yearly" ? " · 2 months free" : ""}
+                <button key={b} onClick={() => setBilling(b)}
+                  className={`rounded-full px-4 py-1.5 capitalize transition-colors ${billing === b ? "gl-grad text-white" : "text-gray-600"}`}>
+                  {b}{b === "yearly" && <span className="ml-1 text-[11px] opacity-80">(2 months free)</span>}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Plan cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto mb-10 items-stretch">
-            {PRICING_PLANS.map((p) => {
+          </R>
+          <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {PRICING_PLANS.map((p, i) => {
               const price = billing === "monthly" ? p.monthly : p.yearly;
-              const suffix = p.monthly === 0 ? "/mo" : billing === "monthly" ? "/mo" : "/yr";
+              const hi = p.popular;
               return (
-                <div
-                  key={p.name}
-                  className="rounded-3xl p-7 border flex flex-col relative transition-all hover:-translate-y-1"
-                  style={{
-                    background: p.popular ? "rgba(238,179,43,0.06)" : BG,
-                    borderColor: p.popular ? GOLD : BORDER,
-                    boxShadow: p.popular ? `0 0 40px rgba(238,179,43,0.15)` : "none",
-                  }}
-                >
-                  {p.popular && (
-                    <span
-                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ background: GOLD, color: BG }}
-                    >
-                      MOST POPULAR
-                    </span>
-                  )}
-                  <div className="flex items-center gap-2 mb-1">
-                    {p.name === "Pro" && <Crown className="w-5 h-5" style={{ color: GOLD }} />}
-                    <h3 className="text-xl font-black text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>{p.name}</h3>
-                  </div>
-                  <p className="text-sm mb-5" style={{ color: "#8b95b0" }}>{p.tagline}</p>
-                  <div className="flex items-end gap-1 mb-1">
-                    <span className="text-4xl font-black" style={{ fontFamily: "'Outfit', sans-serif", color: GOLD }}>
+                <R key={p.name} delay={0.1 + i * 0.12} y={26}>
+                  <div className={`gl-lift relative flex h-full flex-col overflow-hidden rounded-[20px] p-6 ${hi ? "gl-grad text-white shadow-[0_24px_50px_-24px_rgba(76,29,149,.8)]" : "border border-gray-200 bg-white"}`}>
+                    {hi && <>
+                      <span className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10" />
+                      <span className="absolute right-4 top-4 rounded-md bg-amber-300 px-2 py-0.5 text-[11px] font-bold text-amber-900">Most Popular</span>
+                    </>}
+                    <h3 className="gl-h text-[22px] font-bold">{p.name}</h3>
+                    <div className={`gl-h mt-2 text-[44px] font-extrabold leading-none ${hi ? "" : "text-violet-700"}`}>
                       ₹{price.toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-sm font-semibold mb-1.5" style={{ color: "#8b95b0" }}>{suffix}</span>
+                    </div>
+                    <div className={`mt-1 text-[13px] ${hi ? "text-violet-100" : "text-gray-500"}`}>
+                      {price === 0 ? "forever" : billing === "monthly" ? "per month" : "per year"} · {p.note}
+                    </div>
+                    <ul className="mt-5 flex-1 space-y-2.5">
+                      {p.features.map((f) => (
+                        <li key={f} className={`flex items-start gap-2 text-[14px] ${hi ? "text-violet-50" : "text-gray-700"}`}>
+                          <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${hi ? "text-white/80" : "text-emerald-500"}`} /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <a href="/onboarding"
+                      className={`mt-6 rounded-xl py-3 text-center text-[14px] font-bold transition-colors ${hi ? "bg-white text-violet-800 hover:bg-violet-50" : "border border-violet-300 text-violet-700 hover:bg-violet-50"}`}>
+                      {p.cta}
+                    </a>
                   </div>
-                  <p className="text-xs mb-5" style={{ color: "#8b95b0" }}>{p.note}</p>
-                  <ul className="space-y-2.5 mb-7 flex-1">
-                    {p.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "#cbd5e1" }}>
-                        <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href="/onboarding"
-                    className="text-center font-bold px-5 py-3 rounded-full transition-all hover:scale-105"
-                    style={
-                      p.popular
-                        ? { background: GOLD, color: BG }
-                        : { border: `1.5px solid ${BORDER}`, color: "#fff", background: "rgba(255,255,255,0.04)" }
-                    }
-                  >
-                    {p.cta}
-                  </a>
-                </div>
+                </R>
               );
             })}
           </div>
+        </div>
+      </section>
 
-          {/* Try a week */}
-          <div
-            className="max-w-5xl mx-auto rounded-2xl p-5 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 border"
-            style={{ background: "rgba(255,255,255,0.03)", borderColor: BORDER }}
-          >
-            <div>
-              <div className="font-bold text-white mb-0.5">Plan ke liye ready nahi? — Try a week — ₹49</div>
-              <div className="text-sm" style={{ color: "#8b95b0" }}>
-                7 din full access, generous daily caps. Pay once — no auto-debit, cancel karne ki zaroorat nahi.
+      {/* ── TESTIMONIALS + STATS ── */}
+      <section className="relative py-20">
+        <span className="gl-dots pointer-events-none absolute left-6 top-8 hidden h-14 w-24 text-violet-200 md:block" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle kicker="Voices of our community" icon={MessageCircle} title="What Gurtron" accent="Users Say"
+            sub="Real stories from students learning and improving with Gurtron." />
+          <div className="relative mt-12" {...t.hover}>
+            <div className="overflow-hidden px-1 py-2">
+              <div className="gl-track" style={{ transform: `translateX(-${(t.page * 100) / perView}%)` }}>
+                {TESTIMONIALS.map((r) => (
+                  <div key={r.name} className="shrink-0 px-2.5" style={{ width: `${100 / perView}%` }}>
+                    <article className="relative h-full overflow-hidden rounded-[18px] border border-gray-100 bg-white p-6 shadow-[0_14px_34px_-22px_rgba(46,16,101,.35)]">
+                      <div className="flex items-start justify-between">
+                        <span className="gl-h text-4xl leading-none text-violet-300">“</span>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-50"><r.icon className="h-4 w-4 text-violet-600" /></span>
+                      </div>
+                      <div className="mt-1 flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`} />
+                        ))}
+                      </div>
+                      <p className="mt-3 text-[14px] leading-relaxed" style={muted}>{r.text}</p>
+                      <div className="mt-5 flex items-center gap-3 border-t border-gray-100 pt-4">
+                        <span className="gl-grad flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-bold text-white">
+                          {r.name.split(" ").map((w) => w[0]).join("")}
+                        </span>
+                        <div>
+                          <div className="text-[14px] font-bold">{r.name}</div>
+                          <div className="text-[12px] italic text-gray-500">{r.exam} · {r.score}</div>
+                        </div>
+                      </div>
+                      <span className="gl-grad absolute inset-x-6 bottom-0 h-[3px] rounded-full opacity-70" />
+                    </article>
+                  </div>
+                ))}
               </div>
             </div>
-            <a
-              href="/onboarding"
-              className="shrink-0 inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full border hover:scale-105 transition-transform"
-              style={{ borderColor: GOLD, color: GOLD, background: "rgba(238,179,43,0.08)" }}
-            >
-              Try a week — ₹49
-            </a>
+            {tPages > 1 && <>
+              <button aria-label="Previous" onClick={() => t.setPage((t.page - 1 + tPages) % tPages)}
+                className="absolute -left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-105">
+                <ChevronLeft className="h-5 w-5 text-gray-700" />
+              </button>
+              <button aria-label="Next" onClick={() => t.setPage((t.page + 1) % tPages)}
+                className="gl-grad absolute -right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform hover:scale-105">
+                <ChevronRight className="h-5 w-5 text-white" />
+              </button>
+              <div className="mt-5 flex justify-center gap-2">
+                {Array.from({ length: tPages }).map((_, i) => (
+                  <button key={i} aria-label={`Slide ${i + 1}`} onClick={() => t.setPage(i)} className={`gl-dot ${i === t.page ? "is-active" : ""}`} />
+                ))}
+              </div>
+            </>}
           </div>
 
-          {/* Bundles */}
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-black text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>Bundle &amp; Save</h3>
-            <p className="text-sm" style={{ color: "#8b95b0" }}>One simple payment — no loans, no EMIs, no auto-debit. Access poore term ke liye aapka.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-            {BUNDLES.map((b) => (
-              <div
-                key={b.name}
-                className="rounded-3xl p-6 border flex items-center justify-between gap-4"
-                style={{ background: BG, borderColor: BORDER }}
-              >
-                <div className="flex-1">
-                  <h4 className="font-black text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>{b.name}</h4>
-                  <p className="text-sm mb-2" style={{ color: "#8b95b0" }}>{b.desc}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black" style={{ color: GOLD }}>₹{b.price.toLocaleString("en-IN")}</span>
-                    <span className="text-sm line-through" style={{ color: "#8b95b0" }}>₹{b.was.toLocaleString("en-IN")}</span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(52,211,153,0.15)", color: "#34d399" }}>{b.save}</span>
-                  </div>
+          <R delay={0.1} className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-y-6 rounded-2xl border border-gray-100 bg-white px-4 py-6 shadow-[0_14px_34px_-24px_rgba(46,16,101,.35)] md:grid-cols-4 md:divide-x md:divide-gray-100">
+            {STATS.map((s) => (
+              <div key={s.label} className="flex items-center justify-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: s.bg }}>
+                  <s.icon className="h-4 w-4" style={{ color: s.tint }} />
+                </span>
+                <div>
+                  <div className="gl-h text-[22px] font-extrabold leading-none" style={{ color: s.tint }}>{s.value}</div>
+                  <div className="mt-1 text-[12px] text-gray-500">{s.label}</div>
                 </div>
-                <a
-                  href="/onboarding"
-                  className="shrink-0 font-bold px-5 py-2.5 rounded-full hover:scale-105 transition-transform"
-                  style={{ background: GOLD, color: BG }}
-                >
-                  Get bundle
-                </a>
               </div>
             ))}
-          </div>
+          </R>
+        </div>
+      </section>
 
-          <p className="text-center text-xs mt-8" style={{ color: "#8b95b0" }}>
-            <Sparkles className="w-3.5 h-3.5 inline mr-1" style={{ color: GOLD }} />
-            GST included · Instant access after payment · Secure UPI &amp; cards · Cancel anytime
-          </p>
+      {/* ── WHY CHOOSE US ── */}
+      <section className="gl-grad relative overflow-hidden py-20">
+        <span className="gl-blob-a pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-white/[0.06]" />
+        <span className="gl-blob-b pointer-events-none absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-white/[0.05]" />
+        <span className="gl-dots pointer-events-none absolute left-6 top-8 h-14 w-16 text-white/25" />
+        <span className="gl-dots pointer-events-none absolute right-6 top-24 h-14 w-16 text-white/25" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <R className="mx-auto max-w-2xl text-center">
+            <Kicker icon={Star} dark>Why choose us</Kicker>
+            <h2 className="gl-h mt-4 text-3xl font-extrabold text-white md:text-[44px]">
+              Why Students Trust <span className="text-violet-200">Gurtron</span>
+            </h2>
+            <span className="mx-auto mt-4 block h-[3px] w-14 rounded-full bg-white/60" />
+            <p className="mt-4 text-[15px] text-violet-100/90">Smart practice, instant help and real exam experience — everything you need to score better.</p>
+          </R>
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {WHY.map((w, i) => (
+              <R key={w.n} delay={0.1 + i * 0.12} y={26}>
+                <article className="gl-tilt h-full rounded-[20px] bg-white p-7 shadow-[0_24px_50px_-24px_rgba(15,5,40,.6)]"
+                  style={{ transform: `rotate(${[-2, 0, 2][i]}deg)` }}>
+                  <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full" style={{ background: w.bg }}>
+                    <w.icon className="h-10 w-10" style={{ color: w.tint }} />
+                  </span>
+                  <div className="mt-6 flex items-start gap-3">
+                    <span className="gl-h rounded-lg px-2 py-1 text-[13px] font-bold" style={{ background: w.bg, color: w.tint }}>{w.n}</span>
+                    <h3 className="gl-h text-[18px] font-bold leading-snug">{w.title}</h3>
+                  </div>
+                  <span className="mt-4 block h-[3px] w-10 rounded-full" style={{ background: w.tint }} />
+                  <p className="mt-4 text-[14px] leading-relaxed" style={muted}>{w.desc}</p>
+                </article>
+              </R>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── REFER & EARN ── */}
+      <section id="referral" className="py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle kicker="Refer & Earn" icon={Gift} title="Invite Friends," accent="Earn Rewards"
+            sub="Teachers earn cash commission, students earn coins and free Premium." />
+          <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {REFERRAL_TIERS.map((r, i) => (
+              <R key={r.who} delay={0.1 + i * 0.12} y={26}>
+                <div className="gl-lift h-full rounded-[20px] border border-gray-100 bg-white p-6 shadow-[0_14px_34px_-24px_rgba(46,16,101,.35)]">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50"><r.icon className="h-5 w-5 text-violet-600" /></span>
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-[11px] font-bold text-violet-700">{r.who}</span>
+                  </div>
+                  <h3 className="gl-h mt-5 text-[20px] font-bold">{r.headline}</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed" style={muted}>{r.desc}</p>
+                  <div className="mt-4 rounded-lg bg-[#faf9ff] px-3 py-2 text-[13px] font-semibold text-violet-700">{r.example}</div>
+                </div>
+              </R>
+            ))}
+          </div>
+          <R delay={0.1} className="mt-8 flex flex-wrap items-center justify-center gap-3 text-[13px] font-semibold text-gray-700">
+            {REFERRAL_STEPS.map((s, i) => (
+              <span key={s.title} className="flex items-center gap-3">
+                <span className="flex items-center gap-2 rounded-full border border-violet-100 bg-white px-4 py-2">
+                  <s.icon className="h-4 w-4 text-violet-600" /> {i + 1}. {s.title}
+                </span>
+                {i < REFERRAL_STEPS.length - 1 && <ArrowRight className="h-4 w-4 text-violet-300" />}
+              </span>
+            ))}
+          </R>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" className="bg-[#faf9ff] py-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle kicker="FAQ" icon={MessageCircle} title="Questions?" accent="Answered." />
+          <div className="mt-10 space-y-3">
+            {FAQS.map((f, i) => {
+              const open = openFaq === i;
+              return (
+                <R key={f.q} delay={i * 0.06}>
+                  <div className="rounded-2xl border border-gray-100 bg-white">
+                    <button onClick={() => setOpenFaq(open ? null : i)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
+                      <span className="text-[15px] font-semibold">{f.q}</span>
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-violet-600 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+                    </button>
+                    <div className={`gl-faq-body ${open ? "is-open" : ""}`}>
+                      <div><p className="px-5 pb-4 text-[14px] leading-relaxed" style={muted}>{f.a}</p></div>
+                    </div>
+                  </div>
+                </R>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="py-24 md:py-32 relative overflow-hidden" style={{ background: BG }}>
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div
-            className="w-[600px] h-[300px] rounded-full blur-[120px] opacity-20"
-            style={{ background: GOLD }}
-          />
-        </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <h2
-            className="text-4xl md:text-6xl font-black text-white mb-5 leading-tight"
-            style={{ fontFamily: "'Outfit', sans-serif" }}
-          >
-            Start Your Journey
-            <br />
-            <span style={{ color: GOLD }}>with Gurtron Today</span>
-          </h2>
-          <p className="text-lg mb-10" style={{ color: "#8b95b0" }}>
-            Available on Web & Google Play Store · India ka #1 AI Learning App
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="#"
-              className="flex items-center gap-2 font-bold text-base px-8 py-4 rounded-full hover:scale-105 transition-transform shadow-2xl"
-              style={{ background: GOLD, color: BG }}
-            >
-              <Globe className="w-5 h-5" />
-              Start on Web Now
-            </a>
-            <a
-              href="#"
-              className="flex items-center gap-2 font-bold text-base px-8 py-4 rounded-full border hover:scale-105 transition-all"
-              style={{ border: `1.5px solid ${BORDER}`, color: "#fff", background: "rgba(255,255,255,0.05)" }}
-            >
-              <Play className="w-4 h-4" style={{ fill: GOLD, color: GOLD }} />
-              Download on Play Store
-            </a>
+      <section className="relative overflow-hidden bg-[#fbfaff]">
+        <span className="gl-blob-a pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#f0ecfd]" />
+        <span className="gl-blob-b pointer-events-none absolute -right-28 -top-10 h-96 w-96 rounded-full bg-[#f5f2fe]" />
+        <span className="gl-dots pointer-events-none absolute left-6 top-8 h-12 w-12 text-violet-200" />
+        <span className="gl-dots pointer-events-none absolute bottom-8 right-6 h-12 w-12 text-violet-200" />
+        <Spark className="absolute right-[8%] top-[18%] h-5 w-5 text-violet-500" />
+        <Spark className="absolute bottom-[18%] left-[6%] h-3.5 w-3.5 text-violet-400" delay={1.5} />
+        <span className="gl-twinkle absolute right-[12%] top-[34%] hidden h-3.5 w-3.5 rounded-full border-2 border-violet-200 md:block" style={{ animationDelay: ".8s" }} />
+
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-20 lg:px-8">
+          <div>
+            <R><span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] text-violet-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-100"><Sparkles className="h-3.5 w-3.5" /></span>
+              Challenge yourself
+            </span></R>
+            <R delay={0.09}>
+              <h2 className="gl-h mt-4 text-4xl font-extrabold leading-[1.1] md:text-[52px]">
+                Ready to Test<br />Your <span className="gl-grad-text">Knowledge?</span>
+              </h2>
+            </R>
+            <R delay={0.18}><p className="mt-4 max-w-sm text-[15px]" style={muted}>Take a test, track your progress and step closer to your goal.</p></R>
+            <R delay={0.27}>
+              <div className="relative mt-8 inline-block">
+                <span className="gl-ring" aria-hidden />
+                <a href="/onboarding" className="gl-grad group relative inline-flex items-center gap-4 rounded-full py-3 pl-6 pr-3 text-[15px] font-bold text-white shadow-[0_14px_30px_-12px_rgba(76,29,149,.7)]">
+                  Explore the Tests
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white"><ArrowRight className="gl-arrow h-4 w-4 text-violet-700" /></span>
+                </a>
+              </div>
+            </R>
           </div>
+          <R delay={0.1} y={0} scale={0.94} className="flex justify-center md:order-2">
+            <div className="gl-float relative" aria-hidden>
+              <div className="gl-grad flex h-56 w-44 flex-col gap-3 rounded-[26px] p-5 shadow-[0_30px_50px_-20px_rgba(76,29,149,.7)]">
+                <span className="mx-auto -mt-8 h-7 w-16 rounded-lg bg-[#1e0b47]" />
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-2.5 rounded-xl bg-white/95 p-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-600"><CheckCircle2 className="h-4 w-4 text-white" /></span>
+                    <span className="h-2 flex-1 rounded-full bg-violet-200" />
+                  </div>
+                ))}
+              </div>
+              <span className="absolute -bottom-6 -right-12 flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-[#1e0b47] bg-white shadow-xl">
+                <Timer className="h-10 w-10 text-violet-700" />
+              </span>
+            </div>
+          </R>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: CARD, borderTop: `1px solid ${BORDER}` }} className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: GOLD }}
-                >
-                  <Zap className="w-4 h-4" style={{ color: BG }} />
-                </div>
-                <span
-                  className="text-xl font-black text-white"
-                  style={{ fontFamily: "'Outfit', sans-serif" }}
-                >
-                  Gurtron
-                </span>
+      <footer className="bg-[#0d0826] text-white">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
+            <div>
+              <Logo light />
+              <p className="mt-4 text-[14px] leading-relaxed text-gray-400">AI-powered exam preparation for Class 1–12, JEE, NEET and Olympiads.</p>
+            </div>
+            {[
+              { h: "Platform", links: [["Start on Web", "/onboarding"], ["For Teachers", "/teachers"], ["For Schools", "/schools"], ["Exams", "/exams"]] },
+              { h: "Explore", links: [["Features", "#features"], ["Pricing", "#pricing"], ["Refer & Earn", "#referral"], ["FAQ", "#faq"]] },
+            ].map((col) => (
+              <div key={col.h}>
+                <h4 className="text-[16px] font-bold">{col.h}</h4>
+                <span className="gl-grad mt-2 block h-[3px] w-10 rounded-full" />
+                <ul className="mt-4 space-y-1">
+                  {col.links.map(([label, href]) => (
+                    <li key={label}>
+                      <a href={href} className="group flex items-center justify-between border-b border-white/5 py-2 text-[14px] text-gray-300 transition-colors hover:text-violet-300">
+                        {label} <ChevronRight className="gl-arrow h-4 w-4 text-gray-500" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: "#8b95b0" }}>
-                India's most powerful AI learning platform for students and teachers.
-              </p>
-            </div>
-
+            ))}
             <div>
-              <h4 className="text-white font-bold text-sm mb-3">Platform</h4>
-              <ul className="space-y-2 text-sm">
-                {["Web App", "Android App", "AI Doubt Solver", "Mock Tests"].map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="transition-colors"
-                      style={{ color: "#8b95b0" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#8b95b0")}
-                    >
-                      {l}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold text-sm mb-3">Exams</h4>
-              <ul className="space-y-2 text-sm">
-                {["JEE", "NEET", "UPSC", "SSC CGL", "GATE"].map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="transition-colors"
-                      style={{ color: "#8b95b0" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#8b95b0")}
-                    >
-                      {l}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold text-sm mb-3">Company</h4>
-              <ul className="space-y-2 text-sm">
-                {["About Us", "Careers", "Blog", "Contact", "Privacy Policy"].map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="transition-colors"
-                      style={{ color: "#8b95b0" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#8b95b0")}
-                    >
-                      {l}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <h4 className="text-[16px] font-bold">Get the App</h4>
+              <span className="gl-grad mt-2 block h-[3px] w-10 rounded-full" />
+              <p className="mt-4 text-[14px] text-gray-400">Practice anytime, anywhere.</p>
+              <a href="#" className="mt-3 inline-flex items-center gap-2.5 rounded-lg border border-white/30 bg-black px-4 py-2 transition-colors hover:border-white/60">
+                <Play className="h-5 w-5 fill-white text-white" />
+                <span className="leading-none"><span className="block text-[9px] uppercase text-gray-300">Get it on</span><span className="text-[15px] font-semibold">Google Play</span></span>
+              </a>
             </div>
           </div>
-
-          <div
-            className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
-            style={{ borderTop: `1px solid ${BORDER}`, color: "#8b95b0" }}
-          >
-            <span>© 2024 Gurtron. All rights reserved. Made with ❤️ in India.</span>
-            <span>Available on Web & Google Play Store</span>
+          <div className="mt-12 border-t border-white/10 pt-6 text-center text-[13px] text-gray-500">
+            © {new Date().getFullYear()} Gurtron. All rights reserved.
           </div>
         </div>
       </footer>

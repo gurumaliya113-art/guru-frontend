@@ -1,134 +1,123 @@
-@custom-variant dark (&:is(.dark *));
+/* Gurtron landing — white theme, purple gradient accents.
+   All rules are scoped under .gl so nothing leaks into the app. */
 
-:root {
-  --font-size: 16px;
-  --background: #040718;
-  --foreground: #ffffff;
-  --card: #0c1129;
-  --card-foreground: #ffffff;
-  --popover: #0c1129;
-  --popover-foreground: #ffffff;
-  --primary: #EEB32B;
-  --primary-foreground: #040718;
-  --secondary: #111829;
-  --secondary-foreground: #ffffff;
-  --muted: #0c1129;
-  --muted-foreground: #8b95b0;
-  --accent: #EEB32B;
-  --accent-foreground: #040718;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(238, 179, 43, 0.15);
-  --input: transparent;
-  --input-background: #111829;
-  --switch-background: #EEB32B;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --ring: #EEB32B;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+.gl {
+  --p950: #1e0b47;
+  --p900: #2e1065;
+  --p800: #4c1d95;
+  --p700: #5b21b6;
+  --p600: #6d28d9;
+  --p500: #7c3aed;
+  --p300: #c4b5fd;
+  --p100: #ede9fe;
+  --p50:  #f5f3ff;
+  --ink:  #14112b;
+  --text: #4b5563;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --grad: linear-gradient(135deg, var(--p900) 0%, var(--p800) 45%, var(--p500) 100%);
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--ink);
+  background: #fff;
+}
+.gl * { box-sizing: border-box; }
+.gl section[id] { scroll-margin-top: 80px; }
+.gl-h { font-family: "Outfit", "Inter", sans-serif; letter-spacing: -0.02em; }
+.gl-grad { background: var(--grad); }
+.gl-grad-text {
+  background: linear-gradient(90deg, var(--p600), var(--p500));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+/* ---------- Scroll reveal (fade-up, once) ---------- */
+.gl-reveal {
+  opacity: 0;
+  transform: translateY(var(--ry, 22px)) scale(var(--rs, 1));
+  transition:
+    opacity .55s var(--ease) var(--rd, 0s),
+    transform .55s var(--ease) var(--rd, 0s);
+  will-change: opacity, transform;
+}
+.gl-reveal.is-in { opacity: 1; transform: none; }
+
+/* ---------- Hero ---------- */
+.gl-shine {
+  background: linear-gradient(90deg, #fff 0%, var(--p300) 25%, #fff 50%, var(--p300) 75%, #fff 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 16px rgba(167, 139, 250, .45));
+  animation: gl-shine 7s ease-in-out 1.2s infinite;
+}
+@keyframes gl-shine {
+  0%, 55% { background-position: 0% 0; }
+  75%     { background-position: 100% 0; }
+  95%, 100% { background-position: 0% 0; }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+.gl-glow { animation: gl-glow 3.4s ease-in-out 1.4s infinite; }
+.gl-glow:hover { animation-play-state: paused; box-shadow: 0 16px 40px rgba(196, 181, 253, .55); }
+@keyframes gl-glow {
+  0%, 100% { box-shadow: 0 10px 28px rgba(196, 181, 253, .25); }
+  50%      { box-shadow: 0 10px 36px rgba(196, 181, 253, .6); }
 }
 
-/* Basic landing page base styles (plain CSS - avoid Tailwind @layer here) */
-* { box-sizing: border-box; }
+.gl-float   { animation: gl-float 6s ease-in-out infinite; }
+.gl-float-2 { animation: gl-float 7.5s ease-in-out .8s infinite; }
+.gl-float-3 { animation: gl-float 5.2s ease-in-out .4s infinite; }
+@keyframes gl-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(1.5deg); }
+}
 
-body { background: var(--background); color: var(--foreground); }
+.gl-blob-a { animation: gl-drift-a 16s ease-in-out infinite; }
+.gl-blob-b { animation: gl-drift-b 20s ease-in-out infinite; }
+@keyframes gl-drift-a { 0%,100% { transform: translate(0,0); } 50% { transform: translate(18px,-14px); } }
+@keyframes gl-drift-b { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-16px,16px); } }
 
-html { font-size: var(--font-size); }
+.gl-twinkle { animation: gl-twinkle 4.5s ease-in-out infinite; }
+@keyframes gl-twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: .55; }
+  50%      { transform: scale(1.35) rotate(90deg); opacity: 1; }
+}
 
-h1, h2, h3, h4, label, button, input { line-height: 1.5; }
+.gl-ring {
+  position: absolute; inset: 0; border-radius: 9999px;
+  background: rgba(124, 58, 237, .3);
+  animation: gl-ring 2.8s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes gl-ring {
+  0%   { transform: scale(1);    opacity: .5; }
+  70%  { transform: scale(1.16); opacity: 0; }
+  100% { transform: scale(1.16); opacity: 0; }
+}
 
-button, label { font-weight: var(--font-weight-medium); }
-input { font-weight: var(--font-weight-normal); }
+.gl-dots {
+  background-image: radial-gradient(currentColor 1.6px, transparent 1.8px);
+  background-size: 13px 13px;
+}
 
-/* Typography is configured globally in index.css */
+/* ---------- Cards ---------- */
+.gl-lift { transition: transform .35s var(--ease), box-shadow .35s var(--ease); }
+.gl-lift:hover { transform: translateY(-6px); box-shadow: 0 22px 44px -22px rgba(46, 16, 101, .45); }
+
+.gl-tilt { transition: transform .45s var(--ease), box-shadow .45s var(--ease); }
+.gl-tilt:hover { transform: rotate(0deg) translateY(-6px) !important; }
+
+.gl-arrow { transition: transform .25s var(--ease); }
+.group:hover .gl-arrow { transform: translateX(4px); }
+
+/* ---------- Carousel ---------- */
+.gl-track { display: flex; transition: transform .65s var(--ease); }
+.gl-dot { width: 9px; height: 9px; border-radius: 9999px; background: var(--p100); transition: transform .2s, background .2s; }
+.gl-dot.is-active { background: var(--p500); transform: scale(1.35); }
+
+/* ---------- FAQ ---------- */
+.gl-faq-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s var(--ease); }
+.gl-faq-body.is-open { grid-template-rows: 1fr; }
+.gl-faq-body > div { overflow: hidden; }
+
+/* Respect "reduce motion" OS setting */
+@media (prefers-reduced-motion: reduce) {
+  .gl *, .gl *::before, .gl *::after { animation: none !important; transition: none !important; }
+  .gl-reveal { opacity: 1; transform: none; }
+}
