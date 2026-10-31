@@ -11,6 +11,7 @@ import ClassJoin from "@/pages/ClassJoin";
 import ClassInfo from "@/pages/ClassInfo";
 import Home from "@/pages/Home";
 import Quiz from "@/pages/Quiz";
+import Practice from "@/pages/Practice";
 import QuizSession from "@/pages/QuizSession";
 import MockTest from "@/pages/MockTest";
 import Papers from "@/pages/Papers";
@@ -198,6 +199,7 @@ export default function App() {
         <Route path="/class/:id" element={<ClassInfo />} />
         <Route path="/" element={<Shell role={role}><Home /></Shell>} />
         <Route path="/quiz" element={<Shell role={role}><Quiz /></Shell>} />
+        <Route path="/practice" element={<Shell role={role}><Practice /></Shell>} />
         <Route path="/quiz/:id" element={<QuizSession />} />
         <Route path="/mock/:id" element={<MockTest />} />
         {/* /papers is the teacher's generated paper bank. Students arriving

@@ -77,6 +77,9 @@ const ICON_MAP: Record<string, keyof typeof Icons> = {
   image: "Image",
   upload: "Upload",
   sliders: "Sliders",
+  "message-circle": "MessageCircle",
+  bell: "Bell",
+  "bell-off": "BellOff",
 };
 
 export function Icon({

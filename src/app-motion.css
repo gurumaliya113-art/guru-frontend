@@ -82,6 +82,35 @@
   100% { scale: 1; translate: 0 0; }
 }
 
+/* ---------- Student home ---------- */
+/* 1) Mock-test card: orbiting rings + floating answer chips */
+.am-orbit { animation: am-orbit 14s linear infinite; }
+.am-orbit-rev { animation: am-orbit 20s linear infinite reverse; }
+@keyframes am-orbit { to { rotate: 1turn; } }
+.am-ripple {
+  position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, .55);
+  animation: am-ripple 2.4s ease-out infinite;
+}
+@keyframes am-ripple { 70%, 100% { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); } }
+
+/* 2) Score ring fills on load */
+.am-ring-track { transition: stroke-dashoffset 1.4s var(--am-ease) .2s; }
+
+/* 3) Daily updates: live dot + swinging bell */
+.am-live { position: relative; }
+.am-live::after {
+  content: ""; position: absolute; inset: 0; border-radius: 9999px; background: inherit;
+  animation: am-live 1.8s ease-out infinite;
+}
+@keyframes am-live { from { scale: 1; opacity: .7; } to { scale: 2.6; opacity: 0; } }
+.am-bell { transform-origin: 50% 0; animation: am-bell 3s ease-in-out infinite; }
+@keyframes am-bell {
+  0%, 60%, 100% { rotate: 0deg; }
+  66% { rotate: 14deg; } 72% { rotate: -12deg; } 78% { rotate: 8deg; } 84% { rotate: -5deg; }
+}
+.am-tile:hover .am-tile-icon, .am-tile:active .am-tile-icon { animation: am-pop .45s var(--am-ease); }
+
 /* ---------- "Building your paper" overlay ---------- */
 .am-paper-line { transform-origin: left center; animation: am-line .5s var(--am-ease) backwards; }
 @keyframes am-line { from { scale: 0 1; opacity: 0; } to { scale: 1 1; opacity: 1; } }

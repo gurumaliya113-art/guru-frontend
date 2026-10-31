@@ -1,5 +1,6 @@
 // Small decorative motion pieces shared by the student/teacher panels.
 // Styles live in src/app-motion.css.
+import { useEffect, useState } from "react";
 
 /** 4-point twinkling star used on purple gradient headers. */
 export function Sparkle({ className = "", delay = 0 }: { className?: string; delay?: number }) {
@@ -25,6 +26,42 @@ export function GradientHeader({ children, className = "" }: { children: React.R
       <Sparkle className="absolute right-[36%] top-10 h-3 w-3 text-white/60" />
       <Sparkle className="absolute bottom-6 right-6 h-3.5 w-3.5 text-violet-200/80" delay={1.6} />
       <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+/** Counts up from 0 to `to` on mount (ease-out). */
+export function CountUp({ to, ms = 1200, suffix = "" }: { to: number; ms?: number; suffix?: string }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || to <= 0) { setVal(to); return; }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms);
+      setVal(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, ms]);
+  return <>{val}{suffix}</>;
+}
+
+/** Circular progress ring that fills from 0 to `pct` on mount. */
+export function ScoreRing({ pct, size = 64, stroke = 6, children }: { pct: number; size?: number; stroke?: number; children?: React.ReactNode }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const [filled, setFilled] = useState(0);
+  useEffect(() => { const t = requestAnimationFrame(() => setFilled(Math.max(0, Math.min(100, pct)))); return () => cancelAnimationFrame(t); }, [pct]);
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ rotate: "-90deg" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.18)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#fff" strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - filled / 100)} className="am-ring-track" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
     </div>
   );
 }

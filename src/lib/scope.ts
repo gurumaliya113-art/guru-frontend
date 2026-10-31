@@ -15,3 +15,20 @@ export function showExamTracks(classLevel?: string): boolean {
 export function isLowerClass(classLevel?: string): boolean {
   return !!classLevel && !showExamTracks(classLevel);
 }
+
+/**
+ * Questions a student is allowed to practise.
+ *  - Classes 1–10: strictly questions tagged with their class.
+ *  - Class 11/12 & exam aspirants: untagged exam questions plus 11/12 tagged.
+ * (Same rule the Quiz page uses.)
+ */
+export function scopeQuestionsForClass<T extends { classLevel?: unknown }>(all: T[], classLevel?: string): T[] {
+  if (classLevel && !showExamTracks(classLevel)) {
+    return all.filter((q) => String(q.classLevel ?? "") === classLevel);
+  }
+  const senior = classLevel ? [classLevel] : ["11", "12"];
+  return all.filter((q) => {
+    const ql = String(q.classLevel ?? "");
+    return ql === "" || senior.includes(ql);
+  });
+}
