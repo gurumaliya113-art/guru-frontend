@@ -250,8 +250,8 @@ export default function PaperView() {
               <Icon name="refresh-cw" size={16} color="#fff" />
             </span>
             <div className="text-[13px] leading-5" style={{ color: colors.foreground }}>
-              <b>Review your paper.</b> Koi question badalna ho to uske <b>Replace</b> button pe tap karo — usi topic ke
-              dusre questions dikhenge, jo chaho select kar lo.
+              <b>Review your paper.</b> Want to change a question? Tap its <b>Replace</b> button to see other
+              questions from the same topic and pick the one you want.
             </div>
           </div>
         )}
@@ -382,7 +382,7 @@ export default function PaperView() {
                   <div className="py-10 text-center text-[13px]" style={{ color: colors.mutedForeground }}>
                     <Icon name="inbox" size={28} color={colors.mutedForeground} />
                     <div className="mt-2">
-                      {all.length === 0 ? "Is topic mein aur koi question nahi hai." : "Search se koi question match nahi hua."}
+                      {all.length === 0 ? "No other questions available for this topic." : "No questions match your search."}
                     </div>
                   </div>
                 ) : (
