@@ -179,7 +179,7 @@ export default function QuestionBank() {
                     className="rounded-2xl border py-4 font-bold text-[15px] active:scale-95 transition"
                     style={{
                       borderColor: c === profile.classLevel ? colors.primary : colors.border,
-                      background: c === profile.classLevel ? "#eff6ff" : colors.card,
+                      background: c === profile.classLevel ? "#f5f3ff" : colors.card,
                       color: c === profile.classLevel ? colors.primary : colors.foreground,
                     }}
                   >
@@ -206,7 +206,7 @@ export default function QuestionBank() {
                     className="flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[0.99] transition"
                     style={{ borderColor: colors.border, background: colors.card }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#eff6ff" }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#f5f3ff" }}>
                       <Icon name="book-open" size={18} color={colors.primary} />
                     </div>
                     <div className="flex-1">
@@ -255,7 +255,7 @@ export default function QuestionBank() {
               return (
                 <div key={q.id} className="rounded-2xl border p-4 shadow-sm" style={{ borderColor: colors.border, background: colors.card }}>
                   <div className="flex items-start gap-2 mb-2">
-                    <span className="text-[12px] font-bold px-2 py-0.5 rounded-md shrink-0" style={{ background: "#eff6ff", color: colors.primary }}>Q{i + 1}</span>
+                    <span className="text-[12px] font-bold px-2 py-0.5 rounded-md shrink-0" style={{ background: "#f5f3ff", color: colors.primary }}>Q{i + 1}</span>
                     <span className="text-[11px] px-2 py-0.5 rounded-md" style={{ background: colors.muted, color: colors.mutedForeground }}>{q.type || "MCQ"}</span>
                   </div>
                   {(() => {
@@ -307,7 +307,7 @@ export default function QuestionBank() {
                     <button
                       onClick={() => tryRevealSolution(q)}
                       className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-white active:opacity-90"
-                      style={{ background: colors.primary }}
+                      style={{ background: colors.primaryGradient }}
                     >
                       View Answer & Solution
                     </button>

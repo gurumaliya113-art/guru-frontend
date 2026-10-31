@@ -13,15 +13,15 @@ import DppGeminiChat from "@/components/DppGeminiChat";
 const SUBJECTS: Subject[] = ["Mathematics", "Physics", "Chemistry", "Biology"];
 
 const SUBJECT_META: Record<Subject, { label: string; icon: string; color: string; soft: string }> = {
-  Mathematics: { label: "Maths", icon: "calculator", color: "#2563eb", soft: "#dbeafe" },
+  Mathematics: { label: "Maths", icon: "calculator", color: "#6d28d9", soft: "#ede9fe" },
   Physics: { label: "Physics", icon: "atom", color: "#f97316", soft: "#ffedd5" },
   Chemistry: { label: "Chemistry", icon: "flask", color: "#16a34a", soft: "#dcfce7" },
   Biology: { label: "Biology", icon: "leaf", color: "#8b5cf6", soft: "#ede9fe" },
 };
 
 const DIFFICULTIES: Array<{ label: Difficulty; color: string; bg: string }> = [
-  { label: "Easy", color: "#1d4ed8", bg: "#eff6ff" },
-  { label: "Moderate", color: "#2563eb", bg: "#f8fafc" },
+  { label: "Easy", color: "#5b21b6", bg: "#f5f3ff" },
+  { label: "Moderate", color: "#6d28d9", bg: "#f8fafc" },
   { label: "Hard", color: "#ea580c", bg: "#fff7ed" },
 ];
 
@@ -218,7 +218,7 @@ export default function Dpp() {
 
   return (
     <div className="min-h-full px-4 pt-4 pb-28 md:px-5 md:pt-5">
-      <div className="rounded-[30px] border bg-[#eef5ff] p-4 md:p-5" style={{ borderColor: "#dbeafe" }}>
+      <div className="rounded-[30px] border bg-[#eef5ff] p-4 md:p-5" style={{ borderColor: "#ede9fe" }}>
         <div className="flex items-start justify-between gap-3 mb-4">
           <button
             onClick={() => nav(-1)}
@@ -239,7 +239,7 @@ export default function Dpp() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="rounded-[26px] border bg-white p-3 md:p-4" style={{ borderColor: "#dbeafe" }}>
+          <div className="rounded-[26px] border bg-white p-3 md:p-4" style={{ borderColor: "#ede9fe" }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: selectedSubjectMeta.soft }}>
                 <Icon name={selectedSubjectMeta.icon} size={22} color={selectedSubjectMeta.color} />
@@ -285,7 +285,7 @@ export default function Dpp() {
             </div>
           </div>
 
-          <div className="rounded-[26px] border bg-white p-3 md:p-4" style={{ borderColor: "#dbeafe" }}>
+          <div className="rounded-[26px] border bg-white p-3 md:p-4" style={{ borderColor: "#ede9fe" }}>
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <div className="text-[18px] font-bold" style={{ color: colors.foreground }}>All chapters ({subjectChapters.length})</div>
@@ -311,7 +311,7 @@ export default function Dpp() {
                     onClick={() => setSelectedChapter(chapter)}
                     className="w-full rounded-[20px] border px-4 py-3 text-left transition"
                     style={{
-                      background: active ? "#eff6ff" : colors.card,
+                      background: active ? "#f5f3ff" : colors.card,
                       borderColor: active ? colors.primary : colors.border,
                       boxShadow: active ? "0 14px 28px rgba(37, 99, 235, 0.12)" : "none",
                     }}
@@ -356,7 +356,7 @@ export default function Dpp() {
             style={{
               borderColor: bookmarkedChapterId === selectedChapter.id ? colors.primary : colors.border,
               color: bookmarkedChapterId === selectedChapter.id ? colors.primary : colors.foreground,
-              background: bookmarkedChapterId === selectedChapter.id ? "#eff6ff" : "#fff",
+              background: bookmarkedChapterId === selectedChapter.id ? "#f5f3ff" : "#fff",
             }}
           >
             <Icon name="bookmark" size={14} color={bookmarkedChapterId === selectedChapter.id ? colors.primary : colors.foreground} />

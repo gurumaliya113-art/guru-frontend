@@ -71,7 +71,7 @@ export default function Profile() {
               className="border-[1.5px] rounded-xl px-3 py-2 text-lg font-semibold w-[180px] outline-none"
               style={{ borderColor: colors.primary, background: colors.card, color: colors.foreground }}
             />
-            <button onClick={handleSaveName} className="px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: colors.primary }}>
+            <button onClick={handleSaveName} className="px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: colors.primaryGradient }}>
               Save
             </button>
           </div>
@@ -157,31 +157,31 @@ export default function Profile() {
         <button
           onClick={() => nav("/class/join")}
           className="w-full rounded-2xl p-4 mb-3 border shadow-sm text-left active:scale-[0.99] transition"
-          style={{ background: "linear-gradient(135deg,#eff6ff,#dbeafe)", borderColor: "#bfdbfe" }}
+          style={{ background: "linear-gradient(135deg,#f5f3ff,#ede9fe)", borderColor: "#ddd6fe" }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#1e3a8a" }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#2e1065" }}>
               <Icon name="qr-code" size={20} color="#fff" />
             </div>
             <div className="flex-1 min-w-0">
               {approvedClass?.class ? (
                 <>
-                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>{approvedClass.class.name}</div>
-                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Joined · tap to switch or join another class</div>
+                  <div className="text-[14px] font-bold" style={{ color: "#2e1065" }}>{approvedClass.class.name}</div>
+                  <div className="text-[12px]" style={{ color: "#5b21b6" }}>Joined · tap to switch or join another class</div>
                 </>
               ) : pendingClass ? (
                 <>
-                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>Class join pending approval</div>
-                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Waiting for your teacher · tap to manage</div>
+                  <div className="text-[14px] font-bold" style={{ color: "#2e1065" }}>Class join pending approval</div>
+                  <div className="text-[12px]" style={{ color: "#5b21b6" }}>Waiting for your teacher · tap to manage</div>
                 </>
               ) : (
                 <>
-                  <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>Join your class</div>
-                  <div className="text-[12px]" style={{ color: "#1d4ed8" }}>Enter the code your teacher shared</div>
+                  <div className="text-[14px] font-bold" style={{ color: "#2e1065" }}>Join your class</div>
+                  <div className="text-[12px]" style={{ color: "#5b21b6" }}>Enter the code your teacher shared</div>
                 </>
               )}
             </div>
-            <Icon name="chevron-right" size={18} color="#1e3a8a" />
+            <Icon name="chevron-right" size={18} color="#2e1065" />
           </div>
         </button>
       )}
@@ -234,7 +234,7 @@ export default function Profile() {
         <button
           onClick={handleBecomeTeacher}
           className="w-full rounded-2xl p-4 mb-3 border shadow-sm text-left active:scale-[0.99] transition"
-          style={{ background: "linear-gradient(135deg,#1c1917,#292524)", borderColor: "rgba(251,191,36,0.4)" }}
+          style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)", borderColor: "rgba(251,191,36,0.4)" }}
         >
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(251,191,36,0.15)" }}>

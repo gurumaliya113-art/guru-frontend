@@ -92,7 +92,7 @@ export default function TeacherProgress() {
       {classes.length === 0 ? (
         <div className="rounded-2xl border p-6 text-center" style={{ borderColor: colors.border, background: "#fff" }}>
           <div className="text-sm mb-3" style={{ color: colors.mutedForeground }}>You have no classes yet.</div>
-          <button onClick={() => nav("/class/create")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: "#1c1917" }}>
+          <button onClick={() => nav("/class/create")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: "#2e1065" }}>
             <Icon name="plus" size={14} color="#fbbf24" /> Create a class
           </button>
         </div>
@@ -104,7 +104,7 @@ export default function TeacherProgress() {
             className="w-full flex items-center gap-3 rounded-2xl border bg-white p-3.5 mb-3"
             style={{ borderColor: colors.border }}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style={{ background: "#fbbf24", color: "#1c1917" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style={{ background: "#fbbf24", color: "#2e1065" }}>
               {active?.classLevel || "?"}
             </div>
             <div className="flex-1 min-w-0 text-left">
@@ -128,7 +128,7 @@ export default function TeacherProgress() {
                     className="w-full flex items-center px-4 py-3 gap-3 text-left"
                     style={{ borderBottom: idx < classes.length - 1 ? `1px solid ${colors.border}` : "none", background: a ? "#fef3c7" : "#fff" }}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs" style={{ background: a ? "#fbbf24" : colors.muted, color: a ? "#1c1917" : colors.foreground }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs" style={{ background: a ? "#fbbf24" : colors.muted, color: a ? "#2e1065" : colors.foreground }}>
                       {c.classLevel}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import type { Assignment } from "@/lib/types";
 import TeacherClassPanel from "@/pages/TeacherClassPanel";
+import { Sparkle } from "@/components/motion";
 
 export default function Home() {
   const { profile, attempts, papers, students, questions, myMemberships } = useApp();
@@ -80,14 +81,15 @@ export default function Home() {
     return (
       <div>
         {/* Hero */}
-        <div className="relative overflow-hidden px-5 pt-16 pb-7 text-white"
-          style={{ background: "radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.02), transparent 20%), linear-gradient(160deg, #040718 0%, #0f1630 60%, #040718 100%)" }}>
-          <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
-          <div className="absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+        <div className="am-grad relative overflow-hidden px-5 pt-16 pb-7 text-white rounded-b-[28px]">
+          <div className="am-blob-a absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
+          <div className="am-blob-b absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(240,171,252,0.10)" }} />
+          <Sparkle className="absolute right-[38%] top-12 h-3 w-3 text-white/60" />
+          <Sparkle className="absolute right-6 bottom-24 h-3.5 w-3.5 text-violet-200/80" delay={1.6} />
           <div className="flex items-start justify-between mb-5 relative">
             <div>
-              <div className="text-[13px]" style={{ color: "rgba(255,255,255,0.55)" }}>Good day</div>
-              <div className="text-2xl font-bold tracking-tight">{profile.name}</div>
+              <div className="text-[13px]" style={{ color: "rgba(255,255,255,0.65)" }}>Good day</div>
+              <div className="am-shine text-2xl font-bold tracking-tight">{profile.name}</div>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
               style={{ background: examC + "30", borderColor: examC + "60" }}>
@@ -121,7 +123,7 @@ export default function Home() {
             <button
               onClick={() => nav("/pyp?section=chat")}
               className="flex-[1.4] flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold shadow-md active:opacity-90"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               <Icon name="message-circle" size={22} color="#fff" /> AI Chat
             </button>
@@ -140,25 +142,25 @@ export default function Home() {
               onClick={() => nav("/class/join")}
               className="w-full text-left rounded-2xl p-3.5 mb-6 border shadow-sm active:opacity-90 flex items-center gap-3"
               style={{
-                background: "linear-gradient(135deg,#eff6ff,#dbeafe)",
-                borderColor: "#bfdbfe",
+                background: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+                borderColor: "#ddd6fe",
               }}
             >
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "#1e3a8a" }}
+                style={{ background: "#2e1065" }}
               >
                 <Icon name="qr-code" size={20} color="#fff" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-bold" style={{ color: "#1e3a8a" }}>
+                <div className="text-[14px] font-bold" style={{ color: "#2e1065" }}>
                   Join your class
                 </div>
-                <div className="text-[12px]" style={{ color: "#1d4ed8" }}>
+                <div className="text-[12px]" style={{ color: "#5b21b6" }}>
                   Scan QR or enter the code your teacher shared.
                 </div>
               </div>
-              <Icon name="chevron-right" size={18} color="#1e3a8a" />
+              <Icon name="chevron-right" size={18} color="#2e1065" />
             </button>
           )}
 
@@ -174,10 +176,10 @@ export default function Home() {
             {feed.length > 0 && (
               <div
                 className="flex items-center gap-1 px-2 py-0.5 rounded-md"
-                style={{ background: "#eff6ff" }}
+                style={{ background: "#f5f3ff" }}
               >
-                <Icon name="bell" size={11} color="#2563eb" />
-                <span className="text-[11px] font-semibold" style={{ color: "#1d4ed8" }}>
+                <Icon name="bell" size={11} color="#6d28d9" />
+                <span className="text-[11px] font-semibold" style={{ color: "#5b21b6" }}>
                   {feed.length} new
                 </span>
               </div>
@@ -225,9 +227,9 @@ export default function Home() {
                     <div className="flex items-start gap-3">
                       <div
                         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: "#dbeafe" }}
+                        style={{ background: "#ede9fe" }}
                       >
-                        <Icon name="file-text" size={16} color="#2563eb" />
+                        <Icon name="file-text" size={16} color="#6d28d9" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div
@@ -483,8 +485,8 @@ export default function Home() {
 
           <div className="rounded-2xl p-3.5 border mb-2 bg-white" style={{ borderColor: colors.border }}>
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#dbeafe" }}>
-                <Icon name="info" size={16} color="#2563eb" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#ede9fe" }}>
+                <Icon name="info" size={16} color="#6d28d9" />
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-semibold mb-1" style={{ color: colors.foreground }}>Daily Tip</div>
@@ -512,14 +514,15 @@ export default function Home() {
 
     return (
       <div>
-        <div className="relative overflow-hidden px-5 pt-16 pb-7 text-white"
-          style={{ background: "linear-gradient(135deg,#1c1917,#292524)" }}>
-          <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(251,191,36,0.08)" }} />
-          <div className="absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(251,191,36,0.05)" }} />
+        <div className="am-grad relative overflow-hidden px-5 pt-16 pb-7 text-white rounded-b-[28px]">
+          <div className="am-blob-a absolute -top-14 -right-10 w-52 h-52 rounded-full" style={{ background: "rgba(251,191,36,0.08)" }} />
+          <div className="am-blob-b absolute -bottom-8 left-8 w-32 h-32 rounded-full" style={{ background: "rgba(240,171,252,0.10)" }} />
+          <Sparkle className="absolute right-[38%] top-12 h-3 w-3 text-white/60" />
+          <Sparkle className="absolute right-6 bottom-24 h-3.5 w-3.5 text-amber-200/80" delay={1.6} />
           <div className="flex items-start justify-between mb-5 relative">
             <div>
-              <div className="text-[13px]" style={{ color: "rgba(255,255,255,0.55)" }}>Welcome back</div>
-              <div className="text-2xl font-bold tracking-tight">{profile.name}</div>
+              <div className="text-[13px]" style={{ color: "rgba(255,255,255,0.65)" }}>Welcome back</div>
+              <div className="am-shine text-2xl font-bold tracking-tight">{profile.name}</div>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
               style={{ background: "rgba(251,191,36,0.15)", borderColor: "rgba(251,191,36,0.3)" }}>
@@ -566,7 +569,7 @@ export default function Home() {
             <button
               onClick={() => nav("/paper/generate?mode=quiz")}
               className="flex flex-col items-center justify-center gap-1 py-3 rounded-2xl text-white font-bold shadow-md"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               <Icon name="play-circle" size={20} color="#fff" />
               <span className="text-[12px]">Create Quiz</span>
@@ -585,7 +588,7 @@ export default function Home() {
           <button
             onClick={() => nav("/referral")}
             className="w-full text-left rounded-2xl p-4 mb-6 border shadow-sm active:opacity-90"
-            style={{ background: "linear-gradient(135deg,#1c1917,#292524)", borderColor: "rgba(251,191,36,0.3)" }}
+            style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)", borderColor: "rgba(251,191,36,0.3)" }}
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(251,191,36,0.15)" }}>

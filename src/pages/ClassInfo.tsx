@@ -81,7 +81,7 @@ export default function ClassInfo() {
   return (
     <div className="min-h-screen" style={{ background: colors.background, paddingBottom: 40 }}>
       {/* Header */}
-      <div className="px-5 pt-12 pb-6 text-white" style={{ background: "linear-gradient(135deg,#1c1917,#292524)" }}>
+      <div className="px-5 pt-12 pb-6 text-white" style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)" }}>
         <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm font-semibold mb-3" style={{ color: "#fbbf24" }}>
           <Icon name="arrow-left" size={16} color="#fbbf24" /> Back
         </button>

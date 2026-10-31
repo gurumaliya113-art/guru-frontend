@@ -121,7 +121,7 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
             Real-time help for {chapter}
           </div>
         </div>
-        <div className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#eff6ff", color: colors.primary }}>
+        <div className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#f5f3ff", color: colors.primary }}>
           AI Pro Max
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function DppGeminiChat({ subject, chapter }: DppGeminiChatProps) 
           onClick={handleSendMessage}
           disabled={loading || !input.trim()}
           className="w-10 h-10 rounded-2xl flex items-center justify-center disabled:opacity-50"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
         >
           <Icon name="send" size={16} color="#fff" />
         </button>

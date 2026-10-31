@@ -41,7 +41,7 @@ export default function FloatingLogout() {
         right: 14,
         bottom: 84, // sits above the bottom tab bar (which is ~64px tall + safe area)
         zIndex: 60,
-        background: "#1c1917",
+        background: "#2e1065",
         color: "#fff",
         borderRadius: 999,
         padding: "10px 14px",

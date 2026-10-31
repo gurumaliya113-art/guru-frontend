@@ -79,7 +79,7 @@ export default function Papers() {
           <button
             onClick={() => nav("/paper/generate")}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-white text-[13px] font-semibold"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             <Icon name="plus" size={18} color="#fff" /> New Paper
           </button>
@@ -98,7 +98,7 @@ export default function Papers() {
           <button
             onClick={() => nav("/paper/generate")}
             className="px-6 py-3 rounded-full text-white text-sm font-semibold"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             Generate Paper
           </button>
@@ -237,7 +237,7 @@ function AssignToClassModal({
       >
         <div
           className="px-5 pt-5 pb-3 text-white"
-          style={{ background: "linear-gradient(135deg,#1c1917,#292524)" }}
+          style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)" }}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -278,7 +278,7 @@ function AssignToClassModal({
               <button
                 onClick={onGoCreateClass}
                 className="px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: "#1c1917" }}
+                style={{ background: "#2e1065" }}
               >
                 <Icon name="plus" size={14} color="#fbbf24" /> Create new class
               </button>

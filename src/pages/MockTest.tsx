@@ -135,7 +135,7 @@ export default function MockTest() {
     return (
       <div className="p-6 text-center">
         <div className="text-sm mb-3" style={{ color: colors.mutedForeground }}>This test could not be loaded.</div>
-        <button onClick={() => nav("/pyp")} className="px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: colors.primary }}>Back to Super App</button>
+        <button onClick={() => nav("/pyp")} className="px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: colors.primaryGradient }}>Back to Super App</button>
       </div>
     );
   }
@@ -267,7 +267,7 @@ export default function MockTest() {
         </label>
         <div className="flex gap-2">
           <button onClick={() => nav("/pyp")} className="flex-1 py-3 rounded-2xl border text-sm font-semibold" style={{ borderColor: colors.border, background: colors.secondary, color: colors.foreground }}>Back</button>
-          <button disabled={!agreed} onClick={() => { setStage("test"); startRef.current = Date.now(); }} className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold disabled:opacity-50" style={{ background: colors.primary }}>I am ready to begin</button>
+          <button disabled={!agreed} onClick={() => { setStage("test"); startRef.current = Date.now(); }} className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold disabled:opacity-50" style={{ background: colors.primaryGradient }}>I am ready to begin</button>
         </div>
       </div>
     );
@@ -312,7 +312,7 @@ export default function MockTest() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => nav("/progress")} className="flex-1 py-3 rounded-2xl border text-sm font-semibold" style={{ borderColor: colors.border, background: colors.secondary, color: colors.foreground }}>View Progress</button>
-          <button onClick={() => nav("/pyp")} className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold" style={{ background: colors.primary }}>Done</button>
+          <button onClick={() => nav("/pyp")} className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold" style={{ background: colors.primaryGradient }}>Done</button>
         </div>
       </div>
     );
@@ -350,7 +350,7 @@ export default function MockTest() {
         <span><span className="inline-block w-3 h-3 rounded mr-1 align-middle border" style={{ background: "#fff", borderColor: colors.border }} />Not visited</span>
       </div>
       <div className="mt-auto p-3">
-        <button onClick={() => { if (window.confirm("Submit the test now?")) submit(); }} className="w-full py-2.5 rounded-xl text-white font-bold text-[13px]" style={{ background: colors.primary }}>Submit Test</button>
+        <button onClick={() => { if (window.confirm("Submit the test now?")) submit(); }} className="w-full py-2.5 rounded-xl text-white font-bold text-[13px]" style={{ background: colors.primaryGradient }}>Submit Test</button>
       </div>
     </div>
   );
@@ -366,7 +366,7 @@ export default function MockTest() {
           <Icon name="clock" size={14} color={timeLeft < 300 ? colors.destructive : colors.foreground} />
           <span className="text-[13px] font-bold tabular-nums" style={{ color: timeLeft < 300 ? colors.destructive : colors.foreground }}>{fmtTime(timeLeft)}</span>
         </div>
-        <button onClick={() => setPaletteOpen(true)} className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold" style={{ background: colors.primary, color: "#fff" }}>
+        <button onClick={() => setPaletteOpen(true)} className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold" style={{ background: colors.primaryGradient, color: "#fff" }}>
           <Icon name="grid" size={13} color="#fff" /> Palette
         </button>
       </div>
@@ -411,7 +411,7 @@ export default function MockTest() {
                     return (
                       <button key={idx} onClick={() => setAns(cur.id, String(idx))}
                         className="flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-[14px]"
-                        style={{ borderColor: selected ? colors.primary : colors.border, background: selected ? "#eff6ff" : "#fff", color: colors.foreground }}>
+                        style={{ borderColor: selected ? colors.primary : colors.border, background: selected ? "#f5f3ff" : "#fff", color: colors.foreground }}>
                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
                           style={{ background: selected ? colors.primary : colors.muted, color: selected ? "#fff" : colors.mutedForeground }}>
                           {String.fromCharCode(65 + idx)}
@@ -436,7 +436,7 @@ export default function MockTest() {
       <div className="flex gap-2 px-3 py-2.5 border-t bg-white sticky bottom-0" style={{ borderColor: colors.border }}>
         <button onClick={markAndNext} className="flex-1 py-2.5 rounded-xl border text-[12px] font-semibold" style={{ borderColor: "#7c3aed", color: "#7c3aed", background: "#f5f3ff" }}>Mark &amp; Next</button>
         <button onClick={clearResponse} className="px-3 py-2.5 rounded-xl border text-[12px] font-semibold" style={{ borderColor: colors.border, color: colors.foreground, background: colors.secondary }}>Clear</button>
-        <button onClick={saveAndNext} className="flex-1 py-2.5 rounded-xl text-white text-[12px] font-bold" style={{ background: colors.primary }}>Save &amp; Next</button>
+        <button onClick={saveAndNext} className="flex-1 py-2.5 rounded-xl text-white text-[12px] font-bold" style={{ background: colors.primaryGradient }}>Save &amp; Next</button>
       </div>
 
       {/* Mobile palette drawer */}

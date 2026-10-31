@@ -216,9 +216,9 @@ export default function PaperCapture() {
         >
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center"
-            style={{ background: "#dbeafe" }}
+            style={{ background: "#ede9fe" }}
           >
-            <Icon name="camera" size={22} color="#2563eb" />
+            <Icon name="camera" size={22} color="#6d28d9" />
           </div>
           <div className="text-[15px] font-semibold" style={{ color: colors.foreground }}>
             Take photo / Choose images
@@ -287,7 +287,7 @@ export default function PaperCapture() {
           onClick={submit}
           disabled={submitting || picks.length === 0 || !title.trim()}
           className="w-full py-4 rounded-2xl text-white font-bold text-base disabled:opacity-50 active:opacity-90"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
         >
           {submitting ? "Uploading…" : `Save & continue (${picks.length} photo${picks.length === 1 ? "" : "s"})`}
         </button>

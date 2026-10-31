@@ -136,7 +136,7 @@ export default function PaperView() {
         <button
           onClick={handleDownload}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl text-white text-xs font-semibold"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
           title="Download as PDF (Save as PDF in the print dialog)"
         >
           <Icon name="download" size={14} color="#fff" />
@@ -157,7 +157,7 @@ export default function PaperView() {
           <button
             onClick={handleAttempt}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl text-xs font-semibold"
-            style={{ background: colors.primary, color: "#fff" }}
+            style={{ background: colors.primaryGradient, color: "#fff" }}
           >
             <Icon name="book-open" size={15} color="#fff" />
             Attempt Exam
@@ -211,7 +211,7 @@ export default function PaperView() {
         {paper.questions.map((q, idx) => (
           <div key={q.id} className="rounded-2xl p-4 mb-4 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[13px] font-bold" style={{ background: colors.primary }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[13px] font-bold" style={{ background: colors.primaryGradient }}>
                 {idx + 1}
               </div>
               <div className="flex gap-1.5">

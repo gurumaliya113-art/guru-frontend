@@ -63,22 +63,31 @@ function TabBar({ role }: { role: "student" | "teacher" }) {
   const loc = useLocation();
   const nav = useNavigate();
   const TABS = role === "teacher" ? TEACHER_TABS : STUDENT_TABS;
+  const activeIdx = TABS.findIndex((t) => loc.pathname === t.path || (t.path !== "/" && loc.pathname.startsWith(t.path)));
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 border-t bg-white flex items-center justify-around z-50"
+      className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur flex items-center justify-around z-50"
       style={{ borderColor: colors.border, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {TABS.map((t) => {
-        const active = loc.pathname === t.path || (t.path !== "/" && loc.pathname.startsWith(t.path));
+      {activeIdx >= 0 && (
+        <span
+          className="am-tab-indicator"
+          style={{ left: `calc(${(activeIdx * 100) / TABS.length}% + ${50 / TABS.length}% - 14px)`, width: 28 }}
+        />
+      )}
+      {TABS.map((t, i) => {
+        const active = i === activeIdx;
         return (
           <button
             key={t.path}
             onClick={() => nav(t.path)}
-            className="flex-1 py-2.5 flex flex-col items-center gap-0.5"
+            className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 ${active ? "am-tab-active" : ""}`}
             style={{ color: active ? colors.primary : colors.mutedForeground }}
           >
-            <Icon name={t.icon} size={20} color={active ? colors.primary : colors.mutedForeground} />
-            <span className="text-[11px] font-medium">{t.label}</span>
+            <span className="am-tab-icon flex">
+              <Icon name={t.icon} size={20} color={active ? colors.primary : colors.mutedForeground} />
+            </span>
+            <span className={`text-[11px] ${active ? "font-bold" : "font-medium"}`}>{t.label}</span>
           </button>
         );
       })}
@@ -173,8 +182,12 @@ export default function App() {
     );
   }
 
+  // Student/teacher panels get the shared page-entry + press animations
+  // (see app-motion.css). Admin and the marketing landing are left as-is.
+  const animated = !loc.pathname.startsWith("/admin") && loc.pathname !== "/landing";
+
   return (
-    <>
+    <div className={animated ? "app-rise min-h-full" : "min-h-full"}>
       <Routes>
         {adminRoutes}
         <Route path="/landing" element={<Landing />} />
@@ -206,6 +219,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <FloatingLogout />
-    </>
+    </div>
   );
 }

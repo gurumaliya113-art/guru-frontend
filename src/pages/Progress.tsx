@@ -156,7 +156,7 @@ function StudentProgress() {
                 <button
                   onClick={() => improveTopic(topic)}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white"
-                  style={{ background: colors.primary }}
+                  style={{ background: colors.primaryGradient }}
                 >
                   <Icon name="sparkles" size={12} color="#fff" />
                   Improve

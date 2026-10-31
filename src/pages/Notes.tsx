@@ -139,7 +139,7 @@ export default function Notes() {
             {profile.role === "teacher" && (
               <button
                 onClick={() => nav("/notes/create")}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition"
               >
                 <Icon name="plus" size={18} />
                 <span className="text-sm font-medium">Add Note</span>
@@ -238,7 +238,7 @@ export default function Notes() {
           {/* Detail View */}
           <button
             onClick={() => setSelectedNote(null)}
-            className="flex items-center gap-1 mb-4 text-blue-500 hover:text-blue-600"
+            className="flex items-center gap-1 mb-4 text-violet-500 hover:text-violet-700"
           >
             <Icon name="chevron-left" size={18} />
             <span className="text-sm font-medium">Back</span>
@@ -287,7 +287,7 @@ export default function Notes() {
                 href={selectedNote.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition"
               >
                 <Icon name="download" size={18} />
                 <span className="text-sm font-medium">Download PDF</span>
@@ -328,7 +328,7 @@ export default function Notes() {
 
                   <div className="flex flex-wrap gap-2 mb-2">
                     {note.subject && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-50" style={{ color: colors.primary }}>
+                      <span className="text-xs px-2 py-1 rounded-full bg-violet-50" style={{ color: colors.primary }}>
                         {note.subject}
                       </span>
                     )}

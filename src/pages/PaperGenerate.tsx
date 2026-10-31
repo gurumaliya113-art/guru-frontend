@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, Spinner } from "@/components/ui";
+import { PaperBuilding } from "@/components/motion";
 import { useApp } from "@/context/AppContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import { api } from "@/lib/api";
@@ -371,6 +372,7 @@ export default function PaperGenerate() {
 
   return (
     <div className="min-h-full max-w-[680px] mx-auto pb-24">
+      {generating && <PaperBuilding />}
       {/* Top bar */}
       <div
         className="flex items-center justify-between px-4 pt-12 pb-3 border-b bg-white sticky top-0 z-10"
@@ -398,7 +400,8 @@ export default function PaperGenerate() {
             style={{
               width: i === stepIndex ? 24 : 8,
               height: 8,
-              background: i <= stepIndex ? colors.primary : colors.border,
+              background: i <= stepIndex ? colors.primaryGradient : colors.border,
+              transitionDuration: "400ms",
             }}
           />
         ))}
@@ -472,7 +475,7 @@ export default function PaperGenerate() {
               onClick={() => classLevels.length > 0 && setStep("subject")}
               disabled={classLevels.length === 0}
               className="w-full mt-5 py-3.5 rounded-2xl font-bold text-white disabled:opacity-50"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               {classLevels.length > 0 ? `Continue with ${classLevels.length} class${classLevels.length === 1 ? "" : "es"}` : "Select at least one class"}
             </button>
@@ -510,7 +513,7 @@ export default function PaperGenerate() {
               onClick={() => subjects.length > 0 && setStep("topic")}
               disabled={subjects.length === 0}
               className="w-full mt-5 py-3.5 rounded-2xl font-bold text-white disabled:opacity-50"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               {subjects.length > 0
                 ? `Continue with ${subjects.length === 1 ? subjects[0] : `${subjects.length} subjects`}`
@@ -650,7 +653,7 @@ export default function PaperGenerate() {
             <button
               onClick={() => setStep("mode")}
               className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-bold"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               <Icon name="arrow-right" size={18} color="#fff" />
               Continue with {topicLabel}
@@ -843,7 +846,7 @@ export default function PaperGenerate() {
               onClick={handleGenerate}
               disabled={generating || matchingQuestions.length === 0}
               className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold disabled:opacity-50"
-              style={{ background: reachedLimit ? "#d97706" : colors.primary }}
+              style={{ background: reachedLimit ? "#d97706" : colors.primaryGradient }}
             >
               {generating ? (
                 <><Spinner size={18} /> Generating…</>

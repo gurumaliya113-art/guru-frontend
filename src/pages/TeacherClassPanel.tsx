@@ -90,7 +90,7 @@ export default function TeacherClassPanel() {
         <button
           onClick={() => nav("/class/create")}
           className="w-full flex items-center justify-center gap-1.5 py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
-          style={{ background: "#1c1917" }}
+          style={{ background: "#2e1065" }}
         >
           <Icon name="plus" size={16} color="#fbbf24" />
           Create your first class
@@ -136,7 +136,7 @@ export default function TeacherClassPanel() {
         <button
           onClick={() => nav("/class/create")}
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm"
-          style={{ background: "#1c1917" }}
+          style={{ background: "#2e1065" }}
         >
           <Icon name="plus" size={16} color="#fbbf24" />
           Create new class
@@ -183,7 +183,7 @@ export default function TeacherClassPanel() {
                   className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs"
                   style={{
                     background: a ? "#fbbf24" : colors.muted,
-                    color: a ? "#1c1917" : colors.foreground,
+                    color: a ? "#2e1065" : colors.foreground,
                   }}
                 >
                   {c.classLevel}
@@ -257,9 +257,9 @@ export default function TeacherClassPanel() {
           <button
             onClick={() => setShowQr((s) => !s)}
             className="px-3 py-2 rounded-xl font-bold text-sm flex items-center gap-1.5"
-            style={{ background: "#fbbf24", color: "#1c1917" }}
+            style={{ background: "#fbbf24", color: "#2e1065" }}
           >
-            <Icon name="qr-code" size={16} color="#1c1917" />
+            <Icon name="qr-code" size={16} color="#2e1065" />
             {showQr ? "Hide" : "QR"}
           </button>
         </div>
@@ -277,7 +277,7 @@ export default function TeacherClassPanel() {
         <button
           onClick={() => nav(`/class/${active.id}`)}
           className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white"
-          style={{ background: "#1c1917" }}
+          style={{ background: "#2e1065" }}
         >
           <Icon name="bar-chart-2" size={16} color="#fbbf24" />
           View students & stats

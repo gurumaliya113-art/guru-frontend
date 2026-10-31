@@ -131,7 +131,7 @@ export default function QuizSession() {
           <Icon name="arrow-left" size={20} color={colors.foreground} />
         </button>
 
-        <div className="rounded-3xl p-8 flex flex-col items-center mb-5 text-white gap-3" style={{ background: colors.primary }}>
+        <div className="rounded-3xl p-8 flex flex-col items-center mb-5 text-white gap-3" style={{ background: colors.primaryGradient }}>
           <Icon name="play-circle" size={48} color="#fff" />
           <div className="text-xl font-bold text-center">{title}</div>
           <div className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{subject}</div>
@@ -182,7 +182,7 @@ export default function QuizSession() {
         <button
           onClick={() => { setPhase("quiz"); setStartTime(Date.now()); }}
           className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold active:scale-[0.98] transition"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
         >
           <Icon name="play" size={18} color="#fff" /> Start Quiz
         </button>
@@ -324,7 +324,7 @@ export default function QuizSession() {
             <button
               onClick={next}
               className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-semibold"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
             >
               {currentIndex < questions.length - 1 ? "Next Question" : "Finish Quiz"}
               <Icon name="arrow-right" size={18} color="#fff" />
@@ -389,7 +389,7 @@ export default function QuizSession() {
               setTimeLeft(timeLimit);
             }}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-semibold text-sm"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             <Icon name="refresh-cw" size={16} color="#fff" /> Try Again
           </button>

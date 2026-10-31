@@ -126,7 +126,7 @@ export default function ClassJoin() {
     return (
       <div
         className="min-h-full px-6 py-12 text-white relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#3b82f6 100%)" }}
+        style={{ background: "linear-gradient(135deg,#2e1065 0%,#6d28d9 50%,#3b82f6 100%)" }}
       >
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
         <div className="absolute bottom-24 -left-16 w-48 h-48 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
@@ -207,11 +207,11 @@ export default function ClassJoin() {
             onClick={() => lookup(code)}
             disabled={loading || code.trim().length < 3}
             className="w-full rounded-2xl overflow-hidden transition active:scale-[0.97] disabled:opacity-40"
-            style={{ background: "linear-gradient(to right, #ffffff, #e0e7ff)" }}
+            style={{ background: "linear-gradient(to right, #ffffff, #ede9fe)" }}
           >
-            <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#1e3a8a" }}>
+            <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#2e1065" }}>
               {loading ? "Looking up…" : "Next"}
-              <Icon name="arrow-right" size={18} color="#1e3a8a" />
+              <Icon name="arrow-right" size={18} color="#2e1065" />
             </div>
           </button>
 
@@ -247,7 +247,7 @@ export default function ClassJoin() {
   if (!cls) return null;
   return (
     <div className="min-h-full" style={{ background: colors.background }}>
-      <div className="px-6 pt-12 pb-6 text-white" style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)" }}>
+      <div className="px-6 pt-12 pb-6 text-white" style={{ background: "linear-gradient(135deg,#2e1065,#6d28d9)" }}>
         <button
           onClick={() => {
             setStep("entry");
@@ -327,7 +327,7 @@ export default function ClassJoin() {
             onClick={submitJoin}
             disabled={loading || !studentName.trim() || !rollNumber.trim()}
             className="w-full py-4 rounded-2xl text-base font-bold text-white disabled:opacity-40"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             {loading ? "Joining…" : "Confirm Join"}
           </button>
@@ -591,7 +591,7 @@ function MembershipStatusScreen({
           <button
             onClick={onLeave}
             className="mt-6 w-full py-4 rounded-2xl text-base font-bold text-white"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             {status === "approved" ? "Open Dashboard" : "Back to Home"}
           </button>

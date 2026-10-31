@@ -318,7 +318,7 @@ export default function AIChat() {
                   {typing?.id === msg.id && (
                     <span
                       className="inline-block w-[2px] h-4 align-middle ml-0.5"
-                      style={{ background: colors.primary, animation: "blink 1s step-start infinite" }}
+                      style={{ background: colors.primaryGradient, animation: "blink 1s step-start infinite" }}
                     />
                   )}
                   {typing?.id !== msg.id && msg.images && msg.images.length > 0 && (
@@ -404,7 +404,7 @@ export default function AIChat() {
           onClick={handleSendMessage}
           disabled={loading || !input.trim()}
           className="w-10 h-10 rounded-2xl flex items-center justify-center disabled:opacity-50"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
         >
           <Icon name="send" size={16} color="#fff" />
         </button>

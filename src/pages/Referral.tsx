@@ -31,10 +31,10 @@ function StatTile({ label, value, color }: { label: string; value: string | numb
 function statusPill(status: string) {
   const map: Record<string, { bg: string; fg: string }> = {
     pending: { bg: "#fef3c7", fg: "#92400e" },
-    approved: { bg: "#dbeafe", fg: "#1e40af" },
+    approved: { bg: "#ede9fe", fg: "#4c1d95" },
     paid: { bg: "#dcfce7", fg: "#14532d" },
     cancelled: { bg: "#fee2e2", fg: "#991b1b" },
-    joined: { bg: "#e0e7ff", fg: "#3730a3" },
+    joined: { bg: "#ede9fe", fg: "#3730a3" },
   };
   const c = map[status] || { bg: colors.muted, fg: colors.mutedForeground };
   return (
@@ -127,7 +127,7 @@ export default function Referral() {
         <div className="text-[11px] mb-1" style={{ color: colors.mutedForeground }}>Your referral code</div>
         <div className="flex items-center justify-between gap-2">
           <div className="text-2xl font-extrabold tracking-wide" style={{ color: colors.primary }}>{code}</div>
-          <button onClick={copyLink} className="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl" style={{ background: colors.primary, color: colors.primaryForeground }}>
+          <button onClick={copyLink} className="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl" style={{ background: colors.primaryGradient, color: colors.primaryForeground }}>
             <Icon name="copy" size={14} color={colors.primaryForeground} />
             {copied ? "Copied!" : "Copy link"}
           </button>
@@ -146,9 +146,9 @@ export default function Referral() {
           <a
             href={`mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
             className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold"
-            style={{ background: "#dbeafe", color: "#1e40af" }}
+            style={{ background: "#ede9fe", color: "#4c1d95" }}
           >
-            <Icon name="mail" size={16} color="#1e40af" /> Email
+            <Icon name="mail" size={16} color="#4c1d95" /> Email
           </a>
           <button
             onClick={copyLink}
@@ -192,7 +192,7 @@ export default function Referral() {
           <div className="flex items-end gap-2 h-28">
             {growth.entries.map(([day, val]) => (
               <div key={day} className="flex-1 flex flex-col items-center justify-end gap-1">
-                <div className="w-full rounded-t-md" style={{ height: `${(val / growth.max) * 100}%`, background: colors.primary, minHeight: 4 }} />
+                <div className="w-full rounded-t-md" style={{ height: `${(val / growth.max) * 100}%`, background: colors.primaryGradient, minHeight: 4 }} />
                 <div className="text-[9px]" style={{ color: colors.mutedForeground }}>{day}</div>
               </div>
             ))}

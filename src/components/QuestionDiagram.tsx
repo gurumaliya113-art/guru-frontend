@@ -54,7 +54,7 @@ export default function QuestionDiagram({
                 link.click();
               }}
               className="absolute top-2 right-2 px-3 py-1.5 rounded-lg text-white text-xs font-semibold shadow-lg"
-              style={{ background: colors.primary }}
+              style={{ background: colors.primaryGradient }}
               title="Download image"
             >
               Download

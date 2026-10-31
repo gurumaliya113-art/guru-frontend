@@ -184,7 +184,7 @@ export default function BookReader({ content, title }: { content: string; title?
           onClick={() => go("next")}
           disabled={atLast}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold text-white transition disabled:opacity-40"
-          style={{ background: colors.primary }}
+          style={{ background: colors.primaryGradient }}
         >
           Turn Page →
         </button>

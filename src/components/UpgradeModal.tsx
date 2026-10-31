@@ -100,7 +100,7 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
         </div>
 
         {/* What you unlock */}
-        <div className="mt-4 rounded-2xl border p-3 text-[12px]" style={{ borderColor: colors.border, background: "#eff6ff", color: colors.foreground }}>
+        <div className="mt-4 rounded-2xl border p-3 text-[12px]" style={{ borderColor: colors.border, background: "#f5f3ff", color: colors.foreground }}>
           <div className="font-semibold mb-1">Premium unlocks</div>
           {isTeacher ? (
             <ul className="list-disc pl-4 space-y-0.5">
@@ -142,7 +142,7 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
                   className="w-full text-left rounded-2xl border p-3.5 transition flex items-center justify-between gap-3"
                   style={{
                     borderColor: active ? colors.primary : colors.border,
-                    background: active ? "#eff6ff" : "#fff",
+                    background: active ? "#f5f3ff" : "#fff",
                     boxShadow: active ? `0 0 0 1px ${colors.primary}` : "none",
                   }}
                 >
@@ -157,7 +157,7 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
                       <div className="flex items-center gap-2">
                         <span className="text-[15px] font-bold" style={{ color: colors.foreground }}>{p.label}</span>
                         {p.popular && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: colors.primary, color: "#fff" }}>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: colors.primaryGradient, color: "#fff" }}>
                             POPULAR
                           </span>
                         )}
@@ -195,7 +195,7 @@ export default function UpgradeModal({ open, onClose, ctx, onSuccess, mode = "pa
             onClick={handleSubscribe}
             disabled={paying || loadingPlans || !selectedPlan}
             className="flex-[1.3] rounded-2xl py-3 text-[13px] font-bold text-white disabled:opacity-60 flex items-center justify-center gap-2"
-            style={{ background: colors.primary }}
+            style={{ background: colors.primaryGradient }}
           >
             {paying ? (
               <><Spinner size={16} /> Processing…</>

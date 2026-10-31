@@ -1,0 +1,102 @@
+/* App-wide motion for the student & teacher panels (not admin, not landing).
+   Uses the `translate` / `scale` properties (not `transform`) so it never
+   overrides a component's own inline transform, and `backwards` fill so
+   nothing sticks after the animation ends. */
+
+:root {
+  --am-ease: cubic-bezier(.22, 1, .36, 1);
+  --am-grad: linear-gradient(135deg, #2e1065 0%, #4c1d95 45%, #7c3aed 100%);
+}
+
+/* ---------- Page entry: page rises, then its sections cascade ---------- */
+@keyframes am-rise {
+  from { opacity: 0; translate: 0 14px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+.app-rise > * > :not(nav):not([class*="fixed"]),
+.app-rise > * > * > :not(nav):not([class*="fixed"]) {
+  animation: am-rise .5s var(--am-ease) backwards;
+}
+.app-rise > * > :nth-child(2) { animation-delay: .05s; }
+.app-rise > * > :nth-child(3) { animation-delay: .10s; }
+.app-rise > * > :nth-child(4) { animation-delay: .15s; }
+.app-rise > * > :nth-child(n+5) { animation-delay: .2s; }
+.app-rise > * > * > :nth-child(1) { animation-delay: .06s; }
+.app-rise > * > * > :nth-child(2) { animation-delay: .12s; }
+.app-rise > * > * > :nth-child(3) { animation-delay: .18s; }
+.app-rise > * > * > :nth-child(4) { animation-delay: .24s; }
+.app-rise > * > * > :nth-child(5) { animation-delay: .30s; }
+.app-rise > * > * > :nth-child(n+6) { animation-delay: .36s; }
+
+/* ---------- Press + hover feedback ---------- */
+.app-rise button:not(:disabled),
+.app-rise a[href] {
+  transition: scale .15s var(--am-ease), translate .25s var(--am-ease), box-shadow .25s var(--am-ease), opacity .15s;
+}
+.app-rise button:not(:disabled):active,
+.app-rise a[href]:active { scale: .97; }
+
+@media (hover: hover) {
+  .app-rise button[class*="rounded-2xl"]:not(:disabled):hover,
+  .app-rise a[class*="rounded-2xl"]:hover {
+    translate: 0 -2px;
+    box-shadow: 0 14px 30px -18px rgba(46, 16, 101, .45);
+  }
+}
+
+/* ---------- Gradient hero decorations ---------- */
+.am-grad { background: var(--am-grad); }
+.am-blob-a { animation: am-drift-a 16s ease-in-out infinite; }
+.am-blob-b { animation: am-drift-b 20s ease-in-out infinite; }
+@keyframes am-drift-a { 0%,100% { translate: 0 0; } 50% { translate: 18px -14px; } }
+@keyframes am-drift-b { 0%,100% { translate: 0 0; } 50% { translate: -16px 16px; } }
+
+.am-twinkle { animation: am-twinkle 4.5s ease-in-out infinite; }
+@keyframes am-twinkle {
+  0%, 100% { scale: 1; rotate: 0deg; opacity: .5; }
+  50%      { scale: 1.35; rotate: 90deg; opacity: 1; }
+}
+
+.am-shine {
+  background: linear-gradient(90deg, #fff 0%, #ddd6fe 25%, #fff 50%, #ddd6fe 75%, #fff 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: am-shine 7s ease-in-out 1s infinite;
+}
+@keyframes am-shine {
+  0%, 55% { background-position: 0% 0; }
+  75%     { background-position: 100% 0; }
+  95%, 100% { background-position: 0% 0; }
+}
+
+/* ---------- Bottom tab bar ---------- */
+.am-tab-indicator {
+  position: absolute; top: 0; height: 3px; border-radius: 0 0 4px 4px;
+  background: var(--am-grad);
+  transition: left .4s var(--am-ease), width .4s var(--am-ease);
+}
+.am-tab-active .am-tab-icon { animation: am-pop .45s var(--am-ease); }
+@keyframes am-pop {
+  0%   { scale: .8; translate: 0 3px; }
+  60%  { scale: 1.12; translate: 0 -2px; }
+  100% { scale: 1; translate: 0 0; }
+}
+
+/* ---------- "Building your paper" overlay ---------- */
+.am-paper-line { transform-origin: left center; animation: am-line .5s var(--am-ease) backwards; }
+@keyframes am-line { from { scale: 0 1; opacity: 0; } to { scale: 1 1; opacity: 1; } }
+.am-paper-check { animation: am-check .35s var(--am-ease) backwards; }
+@keyframes am-check { from { scale: 0; opacity: 0; } 70% { scale: 1.2; } to { scale: 1; opacity: 1; } }
+.am-pencil { animation: am-pencil 1.6s ease-in-out infinite; }
+@keyframes am-pencil {
+  0%, 100% { translate: 0 0; rotate: -8deg; }
+  50%      { translate: 26px 6px; rotate: 4deg; }
+}
+.am-float { animation: am-float 3.2s ease-in-out infinite; }
+@keyframes am-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+.am-fade-in { animation: am-fade .3s ease backwards; }
+@keyframes am-fade { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-rise *, .am-grad *, .am-tab-indicator { animation: none !important; transition: none !important; }
+}

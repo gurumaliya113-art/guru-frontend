@@ -64,7 +64,7 @@ export default function ClassCreate() {
   return (
     <div
       className="min-h-full px-6 py-10 text-white relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg,#1c1917 0%,#292524 50%,#44403c 100%)" }}
+      style={{ background: "linear-gradient(135deg,#2e1065 0%,#4c1d95 50%,#5b21b6 100%)" }}
     >
       <div
         className="absolute -top-20 -right-20 w-72 h-72 rounded-full"
@@ -157,7 +157,7 @@ export default function ClassCreate() {
           <div className="flex gap-2.5">
             {([
               { v: "toppers", label: "Toppers", icon: "award", c: "#fbbf24" },
-              { v: "normal", label: "Normal", icon: "users", c: "#60a5fa" },
+              { v: "normal", label: "Normal", icon: "users", c: "#a78bfa" },
             ] as { v: BatchType; label: string; icon: string; c: string }[]).map((b) => {
               const active = batchType === b.v;
               return (
@@ -258,9 +258,9 @@ export default function ClassCreate() {
           className="w-full rounded-2xl overflow-hidden transition active:scale-[0.97] disabled:opacity-40 mt-2"
           style={{ background: "linear-gradient(to right, #fbbf24, #f59e0b)" }}
         >
-          <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#1c1917" }}>
+          <div className="flex items-center justify-center gap-2.5 py-4 text-base font-bold" style={{ color: "#2e1065" }}>
             {submitting ? "Creating…" : "Create Class"}
-            <Icon name="arrow-right" size={18} color="#1c1917" />
+            <Icon name="arrow-right" size={18} color="#2e1065" />
           </div>
         </button>
 
@@ -320,7 +320,7 @@ function ClassCreatedScreen({ cls, onDone }: { cls: ClassRoom; onDone: () => voi
     <div className="min-h-full" style={{ background: colors.background }}>
       <div
         className="px-6 pt-14 pb-8 text-white"
-        style={{ background: "linear-gradient(135deg,#1c1917,#292524)" }}
+        style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)" }}
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
@@ -366,9 +366,9 @@ function ClassCreatedScreen({ cls, onDone }: { cls: ClassRoom; onDone: () => voi
             <button
               onClick={copy}
               className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: "#fbbf24", color: "#1c1917" }}
+              style={{ background: "#fbbf24", color: "#2e1065" }}
             >
-              <Icon name={copied ? "check" : "copy"} size={16} color="#1c1917" />
+              <Icon name={copied ? "check" : "copy"} size={16} color="#2e1065" />
               {copied ? "Copied!" : "Copy code"}
             </button>
           </div>
@@ -376,7 +376,7 @@ function ClassCreatedScreen({ cls, onDone }: { cls: ClassRoom; onDone: () => voi
           <button
             onClick={onDone}
             className="mt-5 w-full py-4 rounded-2xl text-base font-bold text-white"
-            style={{ background: "#1c1917" }}
+            style={{ background: "#2e1065" }}
           >
             Go to Dashboard
           </button>
