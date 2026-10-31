@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  ArrowRight, Camera, CheckCircle2, FilePlus, FileText, HelpCircle, Plus, Search, Send, Sparkles, Trash2,
+} from "lucide-react";
 import { Icon } from "@/components/ui";
 import { useApp } from "@/context/AppContext";
 import { colors, difficultyColor, examColor, examLight } from "@/lib/colors";
 import type { Assignment, ClassRoom, GeneratedPaper } from "@/lib/types";
+import { CountUp, Sparkle } from "@/components/motion";
 
 export default function Papers() {
   const nav = useNavigate();
@@ -20,6 +24,8 @@ export default function Papers() {
   const isTeacher = profile.role === "teacher";
   const [assignFor, setAssignFor] = useState<GeneratedPaper | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [query, setQuery] = useState("");
+  const [exam, setExam] = useState<string>("All");
 
   // Refresh assignments so we can show "Assigned" badges on cards.
   const refreshAssignments = async () => {
@@ -43,7 +49,6 @@ export default function Papers() {
     if (id && papers.length) {
       const p = papers.find((x) => x.id === id);
       if (p) setAssignFor(p);
-      // Strip query so the modal doesn't reopen after closing.
       searchParams.delete("assign");
       setSearchParams(searchParams, { replace: true });
     }
@@ -57,118 +62,163 @@ export default function Papers() {
   const classesForPaper = (paperId: string) =>
     assignments.filter((a) => a.paperId === paperId);
 
+  const examTabs = useMemo(() => ["All", ...Array.from(new Set(papers.map((p) => p.examType).filter(Boolean)))], [papers]);
+  const assignedCount = useMemo(() => new Set(assignments.map((a) => a.paperId)).size, [assignments]);
+  const totalQs = useMemo(() => papers.reduce((s, p) => s + p.questions.length, 0), [papers]);
+
+  const shown = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return [...papers]
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      .filter((p) => exam === "All" || p.examType === exam)
+      .filter((p) => !term || `${p.title} ${p.subject} ${p.topic}`.toLowerCase().includes(term));
+  }, [papers, exam, query]);
+
   return (
-    <div className="px-4 pt-12 pb-5">
-      <div className="flex justify-between items-start mb-5">
-        <div>
-          <div className="text-[26px] font-bold mb-0.5" style={{ color: colors.foreground }}>My Papers</div>
-          <div className="text-[13px]" style={{ color: colors.mutedForeground }}>{papers.length} generated</div>
+    <div className="pb-5">
+      {/* ── Header ── */}
+      <div className="am-grad relative overflow-hidden rounded-b-[26px] px-5 pb-5 pt-12 text-white">
+        <span className="am-blob-a pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-white/[0.07]" />
+        <span className="am-blob-b pointer-events-none absolute -bottom-10 left-10 h-28 w-28 rounded-full bg-amber-300/10" />
+        <Sparkle className="absolute right-[40%] top-10 h-3 w-3 text-white/60" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-200">
+              <Sparkles size={12} /> Paper bank
+            </div>
+            <div className="text-[22px] font-bold leading-tight">My Papers</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => nav("/paper/capture")} title="Snap photos of a handwritten/printed paper"
+              className="flex h-9 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[12px] font-semibold">
+              <Camera size={15} /> Snap
+            </button>
+            <button onClick={() => nav("/paper/generate")}
+              className="flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-[12px] font-bold text-violet-800">
+              <Plus size={15} /> New
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Quick photo-snap path for teachers who don't feel like typing
-              MCQs. Creates an image-only paper they can assign just like
-              any AI-generated one. */}
-          <button
-            onClick={() => nav("/paper/capture")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full border text-[12px] font-semibold"
-            style={{ borderColor: colors.border, background: "#fff", color: colors.foreground }}
-            title="Snap photos of your handwritten/printed paper"
-          >
-            <Icon name="camera" size={15} color={colors.foreground} /> Capture
-          </button>
-          <button
-            onClick={() => nav("/paper/generate")}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-white text-[13px] font-semibold"
-            style={{ background: colors.primaryGradient }}
-          >
-            <Icon name="plus" size={18} color="#fff" /> New Paper
-          </button>
+        <div className="relative mt-4 grid grid-cols-3 gap-2">
+          {[
+            { label: "papers", value: papers.length },
+            { label: "questions", value: totalQs },
+            { label: "assigned", value: assignedCount },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl bg-white/12 px-3 py-2 text-center" style={{ background: "rgba(255,255,255,.12)" }}>
+              <div className="text-[18px] font-extrabold leading-none"><CountUp to={s.value} /></div>
+              <div className="mt-1 text-[10px] text-white/70">{s.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {papers.length === 0 && (
-        <div className="rounded-3xl border-[1.5px] border-dashed p-8 flex flex-col items-center mt-5" style={{ borderColor: colors.border }}>
-          <div className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center mb-4" style={{ background: colors.muted }}>
-            <Icon name="file-text" size={32} color={colors.mutedForeground} />
-          </div>
-          <div className="text-lg font-semibold mb-2" style={{ color: colors.foreground }}>No papers yet</div>
-          <div className="text-sm text-center leading-5 mb-5" style={{ color: colors.mutedForeground }}>
-            Generate your first practice paper using the AI Paper Generator
-          </div>
-          <button
-            onClick={() => nav("/paper/generate")}
-            className="px-6 py-3 rounded-full text-white text-sm font-semibold"
-            style={{ background: colors.primaryGradient }}
-          >
-            Generate Paper
-          </button>
-        </div>
-      )}
-
-      {papers.map((paper) => (
-        <div key={paper.id} className="rounded-2xl p-4 mb-3 border bg-white shadow-sm" style={{ borderColor: colors.border }}>
-          <div className="flex justify-between items-center mb-2">
-            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold"
-              style={{ background: examLight(paper.examType), color: examColor(paper.examType) }}>
-              {paper.examType}
-            </span>
-            <button onClick={() => handleDelete(paper.id, paper.title)} className="p-1">
-              <Icon name="trash-2" size={16} color={colors.mutedForeground} />
-            </button>
-          </div>
-          <div className="text-base font-semibold mb-1" style={{ color: colors.foreground }}>{paper.title}</div>
-          <div className="text-[13px] mb-3" style={{ color: colors.mutedForeground }}>
-            {paper.subject} • {paper.topic}
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="flex items-center gap-1 text-xs" style={{ color: colors.mutedForeground }}>
-              <Icon name="help-circle" size={13} color={colors.mutedForeground} />
-              {paper.questions.length} questions
-            </span>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold"
-              style={{ background: difficultyColor(paper.difficulty) + "20", color: difficultyColor(paper.difficulty) }}>
-              {paper.difficulty}
-            </span>
-          </div>
-          <div className="text-[11px] mb-3" style={{ color: colors.mutedForeground }}>
-            {new Date(paper.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-          </div>
-          {isTeacher && classesForPaper(paper.id).length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {classesForPaper(paper.id).map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold"
-                  style={{ background: "#dcfce7", color: "#166534" }}
-                  title={`Assigned to ${a.className || a.classCode}`}
-                >
-                  <Icon name="check" size={10} color="#166534" />
-                  {a.classCode || a.className}
-                </span>
-              ))}
+      <div className="px-4 pt-4">
+        {papers.length > 0 && (
+          <>
+            <div className="mb-3 flex items-center gap-2 rounded-xl border bg-white px-3" style={{ borderColor: colors.border }}>
+              <Search size={15} color={colors.mutedForeground} />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search papers by title, subject or topic"
+                className="w-full bg-transparent py-2.5 text-[13px] outline-none" />
             </div>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => nav(`/paper/${paper.id}`)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-sm font-medium"
-              style={{ borderColor: colors.border, background: colors.secondary, color: colors.foreground }}
-            >
-              View <Icon name="arrow-right" size={14} color={colors.foreground} />
-            </button>
-            {isTeacher && (
-              <button
-                onClick={() => setAssignFor(paper)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: "#d97706" }}
-              >
-                <Icon name="send" size={14} color="#fff" /> Assign
-              </button>
+            {examTabs.length > 2 && (
+              <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+                {examTabs.map((e) => (
+                  <button key={e} onClick={() => setExam(e)}
+                    className="whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[12px] font-semibold"
+                    style={exam === e
+                      ? { background: colors.primaryGradient, borderColor: "transparent", color: "#fff" }
+                      : { background: "#fff", borderColor: colors.border, color: colors.mutedForeground }}>
+                    {e}
+                  </button>
+                ))}
+              </div>
             )}
-          </div>
-        </div>
-      ))}
+          </>
+        )}
+
+        {papers.length === 0 && (
+          <button onClick={() => nav("/paper/generate")}
+            className="am-grad group relative mt-2 block w-full overflow-hidden rounded-3xl p-6 text-left text-white">
+            <span className="am-orbit pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full border border-white/20">
+              <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300" />
+            </span>
+            <FilePlus size={28} className="am-float" />
+            <div className="mt-3 text-[18px] font-extrabold">No papers yet</div>
+            <div className="mt-1 max-w-[70%] text-[12px] text-violet-100/85">Create your first paper — pick exam, class and topics, then download the PDF.</div>
+            <span className="relative mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold text-violet-800">
+              <span className="am-ripple" /> Generate paper <ArrowRight size={15} />
+            </span>
+          </button>
+        )}
+
+        {papers.length > 0 && shown.length === 0 && (
+          <div className="py-10 text-center text-[13px]" style={{ color: colors.mutedForeground }}>No papers match your search.</div>
+        )}
+
+        {shown.map((paper) => {
+          const assigned = isTeacher ? classesForPaper(paper.id) : [];
+          return (
+            <div key={paper.id} className="mb-3 rounded-2xl border bg-white p-4" style={{ borderColor: colors.border }}>
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: examLight(paper.examType) }}>
+                  <FileText size={19} color={examColor(paper.examType)} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded-md px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: examLight(paper.examType), color: examColor(paper.examType) }}>
+                      {paper.examType}
+                    </span>
+                    <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold"
+                      style={{ background: difficultyColor(paper.difficulty) + "20", color: difficultyColor(paper.difficulty) }}>
+                      {paper.difficulty}
+                    </span>
+                    <span className="ml-auto text-[11px]" style={{ color: colors.mutedForeground }}>
+                      {new Date(paper.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-snug" style={{ color: colors.foreground }}>{paper.title}</div>
+                  <div className="mt-0.5 flex items-center gap-1 truncate text-[12px]" style={{ color: colors.mutedForeground }}>
+                    <HelpCircle size={12} /> {paper.questions.length} questions · {paper.subject}
+                  </div>
+                </div>
+              </div>
+
+              {assigned.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {assigned.map((a) => (
+                    <span key={a.id} title={`Assigned to ${a.className || a.classCode}`}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: "#dcfce7", color: "#166534" }}>
+                      <CheckCircle2 size={10} /> {a.classCode || a.className}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 flex gap-2">
+                <button onClick={() => nav(`/paper/${paper.id}`)}
+                  className="group flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[13px] font-semibold"
+                  style={{ borderColor: "#ddd6fe", background: colors.secondary, color: "#4c1d95" }}>
+                  View & PDF <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </button>
+                {isTeacher && (
+                  <button onClick={() => setAssignFor(paper)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-[13px] font-bold text-white"
+                    style={{ background: colors.primaryGradient }}>
+                    <Send size={14} /> Assign
+                  </button>
+                )}
+                <button onClick={() => handleDelete(paper.id, paper.title)} aria-label="Delete paper"
+                  className="flex w-10 items-center justify-center rounded-xl border" style={{ borderColor: colors.border }}>
+                  <Trash2 size={15} color={colors.mutedForeground} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {assignFor && (
         <AssignToClassModal
@@ -228,16 +278,16 @@ function AssignToClassModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(15,23,42,0.55)" }}
+      style={{ background: "rgba(20,17,43,0.45)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden"
+        className="am-sheet w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className="px-5 pt-5 pb-3 text-white"
-          style={{ background: "linear-gradient(135deg,#2e1065,#4c1d95)" }}
+          style={{ background: colors.primaryGradient }}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -278,7 +328,7 @@ function AssignToClassModal({
               <button
                 onClick={onGoCreateClass}
                 className="px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: "#2e1065" }}
+                style={{ background: colors.primaryGradient }}
               >
                 <Icon name="plus" size={14} color="#fbbf24" /> Create new class
               </button>
@@ -303,8 +353,8 @@ function AssignToClassModal({
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
                       style={{
-                        background: done ? "#16a34a" : "#fef3c7",
-                        color: done ? "#fff" : "#92400e",
+                        background: done ? "#16a34a" : "#ede9fe",
+                        color: done ? "#fff" : "#4c1d95",
                       }}
                     >
                       {c.classLevel}
