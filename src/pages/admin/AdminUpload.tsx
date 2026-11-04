@@ -312,24 +312,34 @@ export default function AdminUpload() {
     setError("");
   };
 
-  // Track which questions have been manually cropped/edited by the admin.
-  // Any question whose image was manually cropped via the Crop modal will get
-  // a `/figures/` URL. Ones we didn't touch still point to the raw page
-  // snapshot (`/pages/N.png`). This lets us strip uncropped full-page images.
+  // Track whether admin has acknowledged / removed unedited diagrams before saving.
+  const uneditedDiagramsExist = (arr: EditableQuestion[] = drafts) =>
+    arr.some((q) => q.pageImageUrl && !q.pageImageUrl.includes("/figures/"));
+  const [uneditedCleared, setUneditedCleared] = useState(false);
+
   const removeUneditedDiagrams = () => {
     setDrafts((arr) =>
-      arr.map((q) => {
+      arr.map((q): EditableQuestion => {
         if (!q.pageImageUrl) return q;
-        // If the URL points to a per-question figure crop, keep it.
         if (q.pageImageUrl.includes("/figures/")) return q;
-        // Otherwise it's an unedited full-page snapshot — remove it.
         return { ...q, pageImageUrl: undefined, hasFigure: false };
       })
     );
+    setUneditedCleared(true);
   };
 
   const onSave = async () => {
     if (drafts.length === 0) return;
+    // Block save if any unedited full-page diagrams still exist and admin
+    // hasn't explicitly removed them. This forces a deliberate choice.
+    if (uneditedDiagramsExist() && !uneditedCleared) {
+      setError(
+        "Some questions still have unedited full-page diagrams (raw page snapshots, not cropped figures). " +
+        "Please tick the checkbox and click \"Remove unedited diagrams\" before saving, " +
+        "or crop each diagram individually."
+      );
+      return;
+    }
     setSaving(true); setError("");
     try {
       // Validate minimally
@@ -346,6 +356,7 @@ export default function AdminUpload() {
       setSavedCount(res.added);
       setDrafts([]);
       setFile(null);
+      setUneditedCleared(false);
       if (fileRef.current) fileRef.current.value = "";
       await refreshQuestions();
     } catch (e: any) {
@@ -776,14 +787,43 @@ export default function AdminUpload() {
                 >
                   Remove flagged questions
                 </button>
-                <button
-                  type="button"
-                  onClick={removeUneditedDiagrams}
-                  className="w-full rounded-xl px-4 py-3 mt-3 font-bold text-sm"
-                  style={{ background: "#fff", border: `1.5px solid ${colors.border}`, color: colors.foreground }}
-                >
-                  🖼 Remove unedited diagrams
-                </button>
+
+                {/* Unedited diagrams — checkbox guard prevents accidental save */}
+                {uneditedDiagramsExist() ? (
+                  <div className="mt-4 rounded-xl border p-3" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}>
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={uneditedCleared}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            removeUneditedDiagrams();
+                          } else {
+                            setUneditedCleared(false);
+                          }
+                        }}
+                        className="mt-0.5 h-4 w-4 accent-violet-700"
+                      />
+                      <span className="text-[13px] leading-snug" style={{ color: "#92400e" }}>
+                        <b>Remove unedited diagrams</b> — some questions have raw full-page screenshots
+                        (not individually cropped). Tick this to strip them before saving.
+                        <br />
+                        <span className="text-[11px] text-amber-700">
+                          You must tick this (or crop each diagram manually) before Save is allowed.
+                        </span>
+                      </span>
+                    </label>
+                    {uneditedCleared && (
+                      <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "#16a34a" }}>
+                        <Icon name="check-circle" size={13} color="#16a34a" /> Unedited diagrams removed ✓
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-1.5 text-[12px]" style={{ color: colors.mutedForeground }}>
+                    <Icon name="check-circle" size={13} color={colors.neet} /> No unedited diagrams
+                  </div>
+                )}
               </div>
             </div>
           </div>
